@@ -1,0 +1,114 @@
+# =========================
+# Build output directories
+# =========================
+/build/
+/build-*/
+/bin/
+/Bin/
+/obj/
+/Obj/
+/out/
+/Out/
+/x64/
+/x86/
+/Debug/
+/Release/
+
+# Repository-specific build output paths
+/projects/msvc/build/
+/projects/msvc/**/build/
+/projects/**/build/
+/examples/**/build/
+/dwt/**/build/
+
+# CMake / Ninja / other generators
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+*.ninja
+.ninja_deps
+.ninja_log
+
+# =========================
+# Binaries and libraries
+# =========================
+*.exe
+*.dll
+*.so
+*.dylib
+*.app
+*.lib
+*.a
+*.exp
+*.pdb
+*.idb
+*.ilk
+*.manifest
+
+# =========================
+# Object/intermediate files
+# =========================
+*.obj
+*.o
+*.lo
+*.slo
+*.pch
+*.ipch
+*.iobj
+*.ipdb
+*.tlog
+*.lastbuildstate
+*.cache
+*.log
+
+# =========================
+# Visual Studio / IDE files
+# =========================
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.db
+*.db-shm
+*.db-wal
+
+# ReSharper / Rider
+_ReSharper*/
+*.DotSettings.user
+.idea/
+
+# VS Code workspace-local settings
+.vscode/
+
+# =========================
+# Test and coverage outputs
+# =========================
+TestResults/
+*.trx
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+*.coverage
+*.coveragexml
+
+# =========================
+# OS / temp files
+# =========================
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.tmp
+*.temp
+*.swp
+*.bak
+*~

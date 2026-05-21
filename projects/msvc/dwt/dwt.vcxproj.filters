@@ -1,0 +1,617 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files" />
+    <Filter Include="Header Files\\aspects" />
+    <Filter Include="Header Files\\resources" />
+    <Filter Include="Header Files\\util" />
+    <Filter Include="Header Files\\util\\win32" />
+    <Filter Include="Header Files\\widgets" />
+    <Filter Include="Source Files" />
+    <Filter Include="Source Files\\util" />
+    <Filter Include="Source Files\\util\\win32" />
+    <Filter Include="Source Files\\widgets" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Bitmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\CanvasClasses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Clipboard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\CommandLine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Dispatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\DWTException.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Events.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Font.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Icon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\ImageList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\LibraryLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Message.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Pen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Point.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Rectangle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Region.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Taskbar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Texts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Theme.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\util\DateTimeUtil.cpp">
+      <Filter>Source Files\\util</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\util\GDI.cpp">
+      <Filter>Source Files\\util</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\util\RegKey.cpp">
+      <Filter>Source Files\\util</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\util\StringUtils.cpp">
+      <Filter>Source Files\\util</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\util\TimeSpan.cpp">
+      <Filter>Source Files\\util</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\util\win32\ApiHelpers.cpp">
+      <Filter>Source Files\\util\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\util\win32\Version.cpp">
+      <Filter>Source Files\\util\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\Widget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Button.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\CheckBox.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ColorDialog.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ComboBox.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Control.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\DateTime.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\FolderDialog.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\FontDialog.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Grid.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\GroupBox.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Header.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Label.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Link.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\LoadDialog.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\MDIChild.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\MDIFrame.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\MDIParent.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Menu.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\MessageBox.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ModalDialog.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ModelessDialog.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Notification.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ProgressBar.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\RadioButton.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Rebar.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\RichTextBox.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\SaveDialog.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ScrolledContainer.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Slider.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Spinner.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Splitter.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\SplitterContainer.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\StatusBar.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Table.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\TableTree.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\TabView.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\TextBox.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ToolBar.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ToolTip.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Tree.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\VirtualTree.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Window.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Activate.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Border.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Caption.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Child.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Children.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Clickable.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Closeable.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Collection.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Colorable.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Columns.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Command.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\ContextMenu.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\CustomDraw.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Data.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Dialog.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\DragDrop.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Enabled.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\EraseBackground.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\FileFilter.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Fonts.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Help.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Keyboard.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\MinMax.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Mouse.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Painting.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Raw.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Scrollable.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Selection.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Sizable.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Timer.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Update.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\aspects\Visible.h">
+      <Filter>Header Files\\aspects</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Atom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\CanvasClasses.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Clipboard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\CommandLine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Cursor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Dispatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Dispatchers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\doxygen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\dwt_dwmapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\dwt_shlobj.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\dwt_vsstyle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\dwt_vssym32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\DWTException.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Events.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\forward.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\GCCHeaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\LibraryLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Message.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Rectangle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\Bitmap.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\Brush.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\Font.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\Handle.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\Icon.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\ImageList.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\Pen.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\resources\Region.h">
+      <Filter>Header Files\\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Taskbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Texts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Theme.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\tstring.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\check.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\DateTimeUtil.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\GDI.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\HoldRedraw.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\HoldResize.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\RegKey.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\StringConversion.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\StringUtils.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\TimeSpan.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\tstream.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\win32\ApiHelpers.h">
+      <Filter>Header Files\\util\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\win32\Version.h">
+      <Filter>Header Files\\util\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\xCeptionSmartUtilities.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\VCDesktopHeaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\Widget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\WidgetCreator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Button.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\CheckBox.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ColorDialog.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Column.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ComboBox.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Composite.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Container.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Control.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\DateTime.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\FolderDialog.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\FontDialog.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Frame.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Grid.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\GroupBox.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Header.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Label.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Link.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\LoadDialog.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\MDIChild.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\MDIFrame.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\MDIParent.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Menu.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\MessageBox.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ModalDialog.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ModelessDialog.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Notification.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ProgressBar.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\RadioButton.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Rebar.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\RichTextBox.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\SaveDialog.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ScrolledContainer.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Slider.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Spinner.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Splitter.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\SplitterContainer.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\StatusBar.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Table.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\TableTree.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\TabView.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\TextBox.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ToolBar.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ToolTip.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Tree.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\VirtualTree.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\Window.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\WindowsHeaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
+
