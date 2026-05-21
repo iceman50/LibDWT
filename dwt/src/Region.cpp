@@ -29,8 +29,9 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <boost/range/algorithm/transform.hpp>
 #include <dwt/resources/Region.h>
+
+#include <algorithm>
 
 #include <dwt/DWTException.h>
 #include <dwt/Point.h>
@@ -44,7 +45,7 @@ Region::Region(const Rectangle& rect) : Region(::CreateRectRgn(rect.left(), rect
 Region::Region(const std::vector<Point>& points, PolyFillMode mode)
 {
 	std::vector<POINT> tmp(points.size());
-	boost::transform(points, tmp.begin(), [](const Point& pt) { return pt.toPOINT(); });
+  std::transform(points.begin(), points.end(), tmp.begin(), [](const Point& pt) { return pt.toPOINT(); });
 	init(::CreatePolygonRgn(&tmp[0], static_cast<int>(tmp.size()), mode), true);
 }
 

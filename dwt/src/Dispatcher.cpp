@@ -35,12 +35,46 @@
 #include <dwt/DWTException.h>
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
+#include <random>
 #include <sstream>
 
 #ifdef DWT_SHARED
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid_io.hpp>
+namespace {
+
+	//Create a UUID v4 to generate unique class names in order to remove boost
+tstring createUuidV4() {
+	std::array<uint8_t, 16> bytes { };
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(0, 255);
+
+	for(auto& b: bytes) {
+		b = static_cast<uint8_t>(dist(gen));
+	}
+
+	// UUID version 4
+	bytes[6] = static_cast<uint8_t>((bytes[6] & 0x0F) | 0x40);
+	// RFC 4122 variant (10xx)
+	bytes[8] = static_cast<uint8_t>((bytes[8] & 0x3F) | 0x80);
+
+	const TCHAR hex[] = _T("0123456789abcdef");
+	tstring uuid;
+	uuid.reserve(36);
+
+	for(size_t i = 0; i < bytes.size(); ++i) {
+		if(i == 4 || i == 6 || i == 8 || i == 10) {
+			uuid += _T('-');
+		}
+		uuid += hex[(bytes[i] >> 4) & 0x0F];
+		uuid += hex[bytes[i] & 0x0F];
+	}
+
+	return uuid;
+}
+
+}
 #endif
 
 namespace dwt {
@@ -229,9 +263,9 @@ LPCTSTR Dispatcher::className(const std::string& name) {
 #ifdef DWT_SHARED
 	/* in a shared library, classes registered by the lib can't clash with those regged by the host
 	or by other dynamically loaded libs. append a unique string to that end. */
-	static boost::uuids::uuid uuid;
-	if(uuid.is_nil()) {
-		uuid = boost::uuids::random_generator()();
+	static tstring uuid;
+	if(uuid.empty()) {
+		uuid = createUuidV4();
 	}
 	stream << uuid;
 #endif
