@@ -31,16 +31,12 @@
 
 #include <dwt/widgets/Tree.h>
 
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm/for_each.hpp>
+#include <algorithm>
 
 #include <dwt/widgets/Header.h>
 #include <dwt/WidgetCreator.h>
 
 namespace dwt {
-
-using boost::range::for_each;
-using boost::adaptors::map_values;
 
 const TCHAR Tree::TreeView::windowClass[] = WC_TREEVIEW;
 
@@ -271,13 +267,14 @@ void Tree::eraseColumnImpl(unsigned column) {
 	}
 
 	if(column == 0 && getColumnCount() >= 1) {
-		for_each(texts, [&](const std::pair<HTREEITEM, std::vector<tstring>> & item) {
+		std::for_each(texts.begin(), texts.end(), [&](const std::pair<HTREEITEM, std::vector<tstring>>& item) {
 			setText(item.first, 0, item.second.empty() ? tstring() : item.second[0]);
 		});
 
 	}
 
-	for_each(texts | map_values, [&](std::vector<tstring> & v) {
+	std::for_each(texts.begin(), texts.end(), [&](std::pair<const HTREEITEM, std::vector<tstring>>& item) {
+		auto& v = item.second;
 		if(column < v.size()) {
 			v.erase(v.begin() + column);
 		}

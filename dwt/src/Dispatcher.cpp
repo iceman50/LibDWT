@@ -43,7 +43,7 @@
 #ifdef DWT_SHARED
 namespace {
 
-	//Create a UUID v4 to generate unique class names in order to remove boost
+//Create a UUID v4 to generate unique class names in order to remove boost
 tstring createUuidV4() {
 	std::array<uint8_t, 16> bytes { };
 	std::random_device rd;

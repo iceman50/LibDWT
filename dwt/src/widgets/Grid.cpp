@@ -35,9 +35,8 @@
 #include <dwt/util/GDI.h>
 #include <dwt/util/HoldResize.h>
 
-#include <boost/range/distance.hpp>
-
 #include <algorithm>
+#include <iterator>
 #include <numeric>
 
 namespace dwt {
@@ -133,7 +132,8 @@ std::vector<size_t> Grid::calcSizes(const GridInfoList& x, const GridInfoList& y
 			break;
 		case GridInfo::AUTO:
 			for(size_t j = 0; j < y.size(); ++j) {
-				ret[i] = std::max(ret[i], static_cast<size_t>(isRow ? getPreferredSize(i, j).y : getPreferredSize(j, i).x));
+				auto preferred = static_cast<size_t>(isRow ? getPreferredSize(i, j).y : getPreferredSize(j, i).x);
+				ret[i] = ret[i] > preferred ? ret[i] : preferred;
 			}
 			break;
 		}
@@ -175,7 +175,7 @@ void Grid::layout() {
 	std::vector<size_t> rowSize = calcSizes(rows, columns, size.y, true);
 	std::vector<size_t> colSize = calcSizes(columns, rows, size.x, false);
 
-	util::HoldResize hr(this, boost::distance(children));
+	util::HoldResize hr(this, std::distance(children.first, children.second));
 	for(auto i = children.first; i != children.second; ++i) {
 		WidgetInfo* wi = getWidgetInfo(*i);
 		if(!wi || wi->noResize) {

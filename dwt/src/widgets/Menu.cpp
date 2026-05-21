@@ -43,7 +43,7 @@
 #include <dwt/dwt_vsstyle.h>
 
 #include <algorithm>
-#include <boost/scoped_array.hpp>
+#include <memory>
 
 #include <dwt/widgets/Control.h>
 
@@ -281,7 +281,7 @@ tstring Menu::getText(unsigned index) const {
 	MENUITEMINFO mi = { sizeof(MENUITEMINFO), MIIM_STRING };
 	if ( ::GetMenuItemInfo( itsHandle, index, TRUE, & mi ) == FALSE )
 		throw Win32Exception( "Couldn't get item info 1 in Menu::getText" );
-	boost::scoped_array< TCHAR > buffer( new TCHAR[++mi.cch] );
+	std::unique_ptr<TCHAR[]> buffer(new TCHAR[++mi.cch]);
 	mi.dwTypeData = buffer.get();
 	if ( ::GetMenuItemInfo( itsHandle, index, TRUE, & mi ) == FALSE )
 		throw Win32Exception( "Couldn't get item info 2 in Menu::getText" );

@@ -31,8 +31,7 @@
 
 #include <dwt/widgets/Table.h>
 
-#include <boost/scoped_array.hpp>
-#include <boost/range/algorithm/for_each.hpp>
+#include <algorithm>
 
 #include <dwt/CanvasClasses.h>
 #include <dwt/util/check.h>
@@ -45,8 +44,6 @@
 #include <dwt/widgets/ToolTip.h>
 
 namespace dwt {
-
-using boost::range::for_each;
 
 const TCHAR Table::windowClass[] = WC_LISTVIEW;
 
@@ -393,7 +390,7 @@ void Table::initGroupSupport() {
 	// add some spacing between groups.
 	LVGROUPMETRICS metrics = { sizeof(LVGROUPMETRICS), LVGMF_BORDERSIZE };
 	ListView_GetGroupMetrics(handle(), &metrics);
-	metrics.Bottom += std::max(metrics.Top, 12u);
+	metrics.Bottom += metrics.Top > 12u ? metrics.Top : 12u;
 	ListView_SetGroupMetrics(handle(), &metrics);
 
 	/* fiddle with the painting of group headers to allow custom colors that match the background (the

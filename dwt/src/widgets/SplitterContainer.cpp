@@ -34,10 +34,8 @@
 #include <dwt/widgets/Splitter.h>
 #include <dwt/util/HoldResize.h>
 
-#include <boost/next_prior.hpp>
-#include <boost/range/distance.hpp>
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/algorithm/for_each.hpp>
+#include <algorithm>
+#include <iterator>
 
 namespace dwt {
 
@@ -45,11 +43,6 @@ namespace {
 	bool isSplitter(Widget *w) { return dynamic_cast<Splitter*>(w); }
 	bool isNotSplitter(Widget *w) { return !isSplitter(w); }
 }
-
-using boost::distance;
-using boost::for_each;
-using boost::next;
-using boost::adaptors::filtered;
 
 SplitterContainer::Seed::Seed(double startPos, bool horizontal) :
 BaseType::Seed(0, WS_EX_CONTROLPARENT),
@@ -70,7 +63,7 @@ void SplitterContainer::setSplitter(size_t n, double pos) {
 		return;
 	}
 
-	auto splitter = *next(getChildren<Splitter>().first, n);
+	auto splitter = *std::next(getChildren<Splitter>().first, n);
 	splitter->setRelativePos(pos);
 }
 
@@ -80,7 +73,7 @@ double SplitterContainer::getSplitterPos(size_t n) {
 		return startPos;
 	}
 
-	auto splitter = *next(getChildren<Splitter>().first, n);
+	auto splitter = *std::next(getChildren<Splitter>().first, n);
 	return splitter->getRelativePos();
 }
 
@@ -91,10 +84,10 @@ void SplitterContainer::layout() {
 	auto splitters = getChildren<Splitter>();
 
 	auto rc = Rectangle(getClientSize());
-	util::HoldResize hr(this, distance(children));
+	util::HoldResize hr(this, std::distance(children.first, children.second));
 
 	if(maximized) {
-		for_each(children, [&](Widget *w) {
+		std::for_each(children.first, children.second, [&](Widget *w) {
 			if(w == maximized) {
 				hr.resize(w, rc);
 			} else {
@@ -110,23 +103,28 @@ void SplitterContainer::layout() {
 
 	auto avail = size;
 
-	for_each(splitters, [&](Splitter *w) {
+	std::for_each(splitters.first, splitters.second, [&](Splitter *w) {
 		avail -= horizontal ? w->getPreferredSize().y : w->getPreferredSize().x;
 	});
 
 	auto splitter_iter = splitters.first;
 
-	auto nc = distance(children | filtered(&isNotSplitter));
+	auto nc = std::count_if(children.first, children.second, &isNotSplitter);
 	auto i = 0;
-	for_each(children | filtered(&isNotSplitter), [&](Widget *w) {
+	std::for_each(children.first, children.second, [&](Widget *w) {
+		if(!isNotSplitter(w)) {
+			return;
+		}
+
 		if(i++ == nc-1) {
 			// Last child - give it any remaining space
-			size = std::max(avail - pos, 0l);
+			size = (avail - pos) > 0l ? (avail - pos) : 0l;
 			hr.resize(w, rc);
 		} else {
 			auto splitter = *splitter_iter;
 			auto ss = horizontal ? splitter->getPreferredSize().y : splitter->getPreferredSize().x;
-			size = static_cast<long>(std::max(avail * splitter->getRelativePos() - ss / 2. - pos, 0.));
+			auto childSize = avail * splitter->getRelativePos() - ss / 2. - pos;
+			size = static_cast<long>(childSize > 0. ? childSize : 0.);
 			hr.resize(w, rc);
 
 			pos += size;
@@ -146,7 +144,7 @@ void SplitterContainer::layout() {
 size_t SplitterContainer::ensureSplitters() {
 	auto children = getChildren<Widget>();
 	auto nc = 0, ns = 0;
-	for_each(children, [&](Widget *w) { isSplitter(w) ? ns++ : nc++; });
+	std::for_each(children.first, children.second, [&](Widget *w) { isSplitter(w) ? ns++ : nc++; });
 
 	while(ns < nc - 1) {
 		addChild(Splitter::Seed(startPos, horizontal));
@@ -160,7 +158,8 @@ void SplitterContainer::checkSplitterPos(SplitterPtr splitter) {
 	/* ideally we'd just use find & iter-- to get the previous splitter, but the child enumeration
 	doesn't support going backwards. */
 	SplitterPtr last = nullptr, prev = nullptr, next = nullptr;
-	for_each(getChildren<Splitter>(), [&](Splitter* w) {
+	auto splitters = getChildren<Splitter>();
+	std::for_each(splitters.first, splitters.second, [&](Splitter* w) {
 		if(w == splitter) {
 			prev = last;
 		} else if(last == splitter) {
@@ -170,8 +169,8 @@ void SplitterContainer::checkSplitterPos(SplitterPtr splitter) {
 	});
 
 	auto& pos = splitter->pos;
-	pos = std::max(pos, prev ? prev->pos : 0.);
-	pos = std::min(pos, next ? next->pos : 1.);
+	pos = pos > (prev ? prev->pos : 0.) ? pos : (prev ? prev->pos : 0.);
+	pos = pos < (next ? next->pos : 1.) ? pos : (next ? next->pos : 1.);
 }
 
 void SplitterContainer::onMove() {
