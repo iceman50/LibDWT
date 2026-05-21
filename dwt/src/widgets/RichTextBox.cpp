@@ -1,7 +1,7 @@
 /*
   DC++ Widget Toolkit
 
-  Copyright (c) 2007-2013, Jacek Sieka
+  Copyright (c) 2007-2026, Jacek Sieka
 
   All rights reserved.
 
@@ -144,7 +144,7 @@ inline int RichTextBox::charFromPos(const ScreenCoordinate& pt) {
 	POINTL lp;
 	lp.x = cc.x();
 	lp.y = cc.y();
-	return sendMessage(EM_CHARFROMPOS, 0, (LPARAM)&lp);
+	return static_cast<int>(sendMessage(EM_CHARFROMPOS, 0, reinterpret_cast<LPARAM>(&lp)));
 }
 
 inline Point RichTextBox::posFromChar(int charOffset)
@@ -156,7 +156,7 @@ inline Point RichTextBox::posFromChar(int charOffset)
 
 inline int RichTextBox::lineFromPos(const ScreenCoordinate& pt) {
 	ClientCoordinate cc(pt, this);
-	return sendMessage(EM_EXLINEFROMCHAR, 0, charFromPos(pt));
+	return static_cast<int>(sendMessage(EM_EXLINEFROMCHAR, 0, charFromPos(pt)));
 }
 
 tstring RichTextBox::getSelection() const {
@@ -299,13 +299,13 @@ void RichTextBox::findText(tstring const& needle) {
 		return;
 
 	// find upwards
-	currentNeedlePos = sendMessage(EM_FINDTEXTW, 0, reinterpret_cast< LPARAM >(&ft));
+	currentNeedlePos = static_cast<int>(sendMessage(EM_FINDTEXTW, 0, reinterpret_cast< LPARAM >(&ft)));
 
 	// not found? try again on full range
 	if(currentNeedlePos == -1 && ft.chrg.cpMin != max) { // no need to search full range twice
 		currentNeedlePos = max;
 		ft.chrg.cpMin = currentNeedlePos;
-		currentNeedlePos = sendMessage(EM_FINDTEXTW, 0, reinterpret_cast< LPARAM >(&ft));
+		currentNeedlePos = static_cast<int>(sendMessage(EM_FINDTEXTW, 0, reinterpret_cast< LPARAM >(&ft)));
 	}
 
 	// found? set selection

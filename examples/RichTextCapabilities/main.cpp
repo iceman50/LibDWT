@@ -119,7 +119,7 @@ void setRtfDocument(RichTextBox::ObjectType box) {
 } // namespace
 
 int dwtMain(dwt::Application& app) {
-	Window::Seed seed(_T("DWT RichTextBox Capabilities"));
+	Window::Seed seed(_T("dwt RichTextBox Capabilities"));
 	seed.location = dwt::Rectangle(80, 80, 980, 680);
 	auto* window = WidgetCreator<Window>::create(seed);
 
