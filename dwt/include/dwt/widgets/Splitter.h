@@ -32,7 +32,7 @@
 #ifndef DWT_SPLITTER_H
 #define DWT_SPLITTER_H
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <dwt/forward.h>
 #include "Control.h"
@@ -94,7 +94,7 @@ private:
 	bool horizontal;
 
 	bool hovering;
-	boost::optional<Point> moving; // store the last point to only handle actual moves
+	std::optional<Point> moving; // store the last point to only handle actual moves
 
 	void handlePainting(PaintCanvas& canvas);
 

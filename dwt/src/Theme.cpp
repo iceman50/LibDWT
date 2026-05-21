@@ -59,13 +59,13 @@ void Theme::load(const tstring& classes, Widget* w_, bool handleThemeChanges) {
 	}
 }
 
-void Theme::drawBackground(Canvas& canvas, int part, int state, const Rectangle& rect, bool drawParent, boost::optional<Rectangle> clip) {
+void Theme::drawBackground(Canvas& canvas, int part, int state, const Rectangle& rect, bool drawParent, std::optional<Rectangle> clip) {
 	::RECT rc = rect;
-	boost::optional<RECT> rcClip(clip);
+	std::optional<RECT> rcClip(clip);
 	if(drawParent && isBackgroundPartiallyTransparent(part, state)) {
-		DrawThemeParentBackground(w->handle(), canvas.handle(), clip ? &rcClip.get() : &rc);
+		DrawThemeParentBackground(w->handle(), canvas.handle(), clip ? &rcClip.value() : &rc);
 	}
-	DrawThemeBackground(theme, canvas.handle(), part, state, &rc, clip ? &rcClip.get() : 0);
+	DrawThemeBackground(theme, canvas.handle(), part, state, &rc, clip ? &rcClip.value() : 0);
 }
 
 void Theme::drawText(Canvas& canvas, int part, int state, const tstring& text, unsigned textFlags, const Rectangle& rect) {

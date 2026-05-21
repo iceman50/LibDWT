@@ -33,8 +33,7 @@
 #define DWT_VIRTUALTREE_H
 
 #include <unordered_set>
-
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "Tree.h"
 
@@ -81,7 +80,7 @@ private:
 		Item* firstChild;
 		Item* lastChild;
 		UINT state;
-		boost::optional<tstring> text;
+		std::optional<tstring> text;
 		int image;
 		int selectedImage;
 		LPARAM lParam;
