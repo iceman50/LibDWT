@@ -58,7 +58,7 @@ MouseEvent::MouseEvent(const MSG& msg) {
 			)
 		);
 	} else {
-		keys = msg.wParam;
+		keys = static_cast<DWORD>(msg.wParam);
 
 		// These might be an issue when porting to Windows CE since CE does only support LEFT and RIGHT (or something...)
 		ButtonPressed = (

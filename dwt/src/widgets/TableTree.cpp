@@ -67,7 +67,7 @@ bool TableTree::handleMessage(const MSG& msg, LRESULT& retVal) {
 	switch(msg.message) {
 	case LVM_DELETEITEM:
 		{
-			handleDelete(msg.wParam);
+			handleDelete(static_cast<int>(msg.wParam));
 			break;
 		}
 	case LVM_DELETEALLITEMS:
@@ -178,7 +178,7 @@ LRESULT TableTree::handleCustomDraw(NMLVCUSTOMDRAW& data) {
 	if(data.nmcd.dwDrawStage == (CDDS_ITEMPREPAINT | CDDS_SUBITEM) && data.dwItemType == LVCDI_ITEM && data.iSubItem == 0) {
 		FreeCanvas canvas { data.nmcd.hdc };
 
-		auto rect = getRect(data.nmcd.dwItemSpec, 0, LVIR_BOUNDS);
+		auto rect = getRect(static_cast<int>(data.nmcd.dwItemSpec), 0, LVIR_BOUNDS);
 
 		{
 			// draw tree lines.
@@ -194,7 +194,7 @@ LRESULT TableTree::handleCustomDraw(NMLVCUSTOMDRAW& data) {
 				canvas.line(mid.x, rect.top(), mid.x, rect.bottom()); // vertical
 				rect.pos.x += indent;
 				mid.x += indent;
-				lastChild = children.find(getData(data.nmcd.dwItemSpec + 1)) == children.end();
+				lastChild = children.find(getData(static_cast<int>(data.nmcd.dwItemSpec) + 1)) == children.end();
 			}
 
 			canvas.line(mid, Point(rect.left() + indent, mid.y)); // horizontal

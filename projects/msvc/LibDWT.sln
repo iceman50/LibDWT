@@ -10,6 +10,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RichTextCapabilities", "exa
 		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850001} = {A1E250D3-8A9F-4AB6-9D8F-C6A79E850001}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MultiControlExample", "examples\MultiControlExample\MultiControlExample.vcxproj", "{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850001} = {A1E250D3-8A9F-4AB6-9D8F-C6A79E850001}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -34,6 +39,14 @@ Global
 		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850002}.Release|Win32.Build.0 = Release|Win32
 		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850002}.Release|x64.ActiveCfg = Release|x64
 		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850002}.Release|x64.Build.0 = Release|x64
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Debug|Win32.Build.0 = Debug|Win32
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Debug|x64.ActiveCfg = Debug|x64
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Debug|x64.Build.0 = Debug|x64
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Release|Win32.ActiveCfg = Release|Win32
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Release|Win32.Build.0 = Release|Win32
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Release|x64.ActiveCfg = Release|x64
+		{A1E250D3-8A9F-4AB6-9D8F-C6A79E850003}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

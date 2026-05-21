@@ -126,7 +126,7 @@ void SplitterContainer::layout() {
 		} else {
 			auto splitter = *splitter_iter;
 			auto ss = horizontal ? splitter->getPreferredSize().y : splitter->getPreferredSize().x;
-			size = std::max(avail * splitter->getRelativePos() - ss / 2. - pos, 0.);
+			size = static_cast<long>(std::max(avail * splitter->getRelativePos() - ss / 2. - pos, 0.));
 			hr.resize(w, rc);
 
 			pos += size;

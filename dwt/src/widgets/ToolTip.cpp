@@ -73,7 +73,7 @@ void ToolTip::setTool(Widget* widget, F f) {
 }
 
 int ToolTip::getDelay(int param) {
-	return sendMessage(TTM_GETDELAYTIME, param);
+	return static_cast<int>(sendMessage(TTM_GETDELAYTIME, param));
 }
 
 void ToolTip::setDelay(int param, int delay) {

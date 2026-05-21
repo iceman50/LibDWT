@@ -255,7 +255,7 @@ inline void Slider::setTickFrequency( unsigned frequency )
 
 inline int Slider::getPosition()
 {
-	return this->sendMessage( TBM_GETPOS );
+	return static_cast<int>(this->sendMessage( TBM_GETPOS ));
 }
 
 inline void Slider::assignBuddy( bool beginning, Widget * buddy )

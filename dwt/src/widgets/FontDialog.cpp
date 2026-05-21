@@ -112,7 +112,7 @@ UINT_PTR CALLBACK FontDialog::CFHookProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 			HWND colorCombo = ::GetDlgItem(hwnd, cmb4);
 			int i = ComboBox_GetCurSel(colorCombo);
 			if(i != CB_ERR)
-				canvas.setTextColor(ComboBox_GetItemData(colorCombo, i));
+				canvas.setTextColor(static_cast<COLORREF>(ComboBox_GetItemData(colorCombo, i)));
 
 			LOGFONT logFont;
 			::SendMessage(hwnd, WM_CHOOSEFONT_GETLOGFONT, 0, reinterpret_cast<LPARAM>(&logFont));

@@ -76,7 +76,7 @@ bool VirtualTree::handleMessage(const MSG& msg, LRESULT& retVal) {
 		}
 	case TVM_GETITEMSTATE:
 		{
-			retVal = handleGetItemState(msg.lParam, reinterpret_cast<Item*>(msg.wParam));
+			retVal = handleGetItemState(static_cast<UINT>(msg.lParam), reinterpret_cast<Item*>(msg.wParam));
 			return true;
 		}
 	case TVM_GETNEXTITEM:

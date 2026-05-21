@@ -177,12 +177,12 @@ void ToolBar::setButtonChecked(const std::string& id, bool check) {
 }
 
 unsigned ToolBar::size() const {
-	return sendMessage(TB_BUTTONCOUNT);
+	return static_cast<unsigned>(sendMessage(TB_BUTTONCOUNT));
 }
 
 int ToolBar::hitTest(const ScreenCoordinate& pt) {
 	POINT point = ClientCoordinate(pt, this).getPoint();
-	return sendMessage(TB_HITTEST, 0, reinterpret_cast<LPARAM>(&point));
+	return static_cast<int>(sendMessage(TB_HITTEST, 0, reinterpret_cast<LPARAM>(&point)));
 }
 
 void ToolBar::removeButton(unsigned index) {

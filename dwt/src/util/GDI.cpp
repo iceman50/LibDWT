@@ -58,7 +58,7 @@ IconPtr merge(const ImageList& icons) {
 }
 
 const float& dpiFactor() {
-	static const float factor = static_cast<float>(UpdateCanvas(reinterpret_cast<HWND>(0)).getDeviceCaps(LOGPIXELSX)) / 96.0;
+  static const float factor = static_cast<float>(UpdateCanvas(reinterpret_cast<HWND>(0)).getDeviceCaps(LOGPIXELSX)) / 96.0f;
 	return factor;
 }
 

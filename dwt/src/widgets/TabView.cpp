@@ -587,7 +587,7 @@ void TabView::removeIcon(unsigned index) {
 
 LRESULT TabView::handleToolTip(LPARAM lParam) {
 	LPNMTTDISPINFO ttdi = reinterpret_cast<LPNMTTDISPINFO>(lParam);
-	TabInfo* ti = getTabInfo(ttdi->hdr.idFrom); // here idFrom corresponds to the index of the tab
+	TabInfo* ti = getTabInfo(static_cast<int>(ttdi->hdr.idFrom)); // here idFrom corresponds to the index of the tab
 	if(ti) {
 		tipText = highlightClose ? Texts::get(Texts::close) : ti->w->getText();
 		ttdi->lpszText = const_cast<LPTSTR>(tipText.c_str());

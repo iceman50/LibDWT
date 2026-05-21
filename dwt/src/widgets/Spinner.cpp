@@ -74,11 +74,11 @@ Control* Spinner::getBuddy() const {
 }
 
 int Spinner::getValue() {
-	return sendMessage(UDM_GETPOS32);
+	return static_cast<int>(sendMessage(UDM_GETPOS32));
 }
 
 int Spinner::setValue(int v) {
-	return sendMessage(UDM_SETPOS32, 0, v);
+	return static_cast<int>(sendMessage(UDM_SETPOS32, 0, v));
 }
 
 void Spinner::onUpdate(UpdateF f) {

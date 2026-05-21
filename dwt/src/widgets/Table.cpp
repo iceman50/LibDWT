@@ -339,7 +339,7 @@ std::vector<int> Table::getColumnOrderImpl() const {
 std::vector<int> Table::getColumnWidthsImpl() const {
 	std::vector<int> ret(getColumnCount());
 	for(size_t i = 0; i < ret.size(); ++i) {
-		ret[i] = ::SendMessage(handle(), LVM_GETCOLUMNWIDTH, static_cast<WPARAM>(i), 0);
+		ret[i] = static_cast<int>(::SendMessage(handle(), LVM_GETCOLUMNWIDTH, static_cast<WPARAM>(i), 0));
 	}
 	return ret;
 }
@@ -423,7 +423,7 @@ void Table::initGroupSupport() {
 					Brush brush { 0xFFFFFF - bgColor };
 
 					Rectangle rect;
-					if(!getGroupRect(data.nmcd.dwItemSpec, rect))
+					if(!getGroupRect(static_cast<unsigned>(data.nmcd.dwItemSpec), rect))
 						rect = Rectangle(data.rcText);
 
 					LONG iconPos = 0;
@@ -457,12 +457,12 @@ void Table::initGroupSupport() {
 		case CDDS_POSTPAINT:
 			{
 				if(data.nmcd.lItemlParam) {
-					LONG iconPos = data.nmcd.lItemlParam - 1;
+					LONG iconPos = static_cast<LONG>(data.nmcd.lItemlParam - 1);
 
 					FreeCanvas canvas { data.nmcd.hdc };
 
 					Rectangle rect;
-					if(!getGroupRect(data.nmcd.dwItemSpec, rect))
+					if(!getGroupRect(static_cast<unsigned>(data.nmcd.dwItemSpec), rect))
 						rect = Rectangle(data.rcText);
 
 					if(iconPos > 0) {

@@ -95,7 +95,7 @@ bool Rebar::empty() const {
 }
 
 unsigned Rebar::size() const {
-	return sendMessage(RB_GETBANDCOUNT);
+	return static_cast<unsigned>(sendMessage(RB_GETBANDCOUNT));
 }
 
 }

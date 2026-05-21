@@ -197,14 +197,14 @@ inline void ProgressBar::setStep( unsigned stepsize )
 
 inline unsigned int ProgressBar::getStep( void )
 {
-	unsigned int stepsize = this->sendMessage(PBM_SETSTEP, static_cast< WPARAM >( 1 ) );
+	unsigned int stepsize = static_cast<unsigned int>(this->sendMessage(PBM_SETSTEP, static_cast< WPARAM >( 1 ) ));
 	this->sendMessage(PBM_SETSTEP, static_cast< WPARAM >( stepsize ) );
 	return stepsize;
 }
 
 inline int ProgressBar::getPosition()
 {
-	return this->sendMessage(PBM_GETPOS );
+	return static_cast<int>(this->sendMessage(PBM_GETPOS ));
 }
 
 inline ProgressBar::ProgressBar( dwt::Widget * parent ) :
