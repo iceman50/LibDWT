@@ -34,8 +34,6 @@
 
 #include <vector>
 
-#include <boost/range/algorithm/for_each.hpp>
-
 #include "../forward.h"
 #include "../widgets/Column.h"
 
@@ -176,4 +174,4 @@ inline void Columns<WidgetType>::setColumnWidth( unsigned column, int width ) {
 
 } }
 
-#endif /* DWT_ASPECTCHILD_H_ */
+#endif /* DWT_ASPECTCOLUMNS_H_ */

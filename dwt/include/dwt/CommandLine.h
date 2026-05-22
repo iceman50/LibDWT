@@ -36,7 +36,6 @@
 #ifndef DWT_CommandLine_h
 #define DWT_CommandLine_h
 
-#include <boost/noncopyable.hpp>
 #include <vector>
 #include "tstring.h"
 
@@ -49,7 +48,7 @@ class Application;
   * parameters which are being sent into the WinMain/main function. <br>
   * If you need to retrieve the Command line parameters use this class.
   */
-class CommandLine : public boost::noncopyable
+class CommandLine
 {
 	friend class Application;
 public:
@@ -63,6 +62,9 @@ public:
 	  */
 	const tstring& getParamsRaw() const;
 private:
+  CommandLine(const CommandLine&) = delete;
+  CommandLine& operator=(const CommandLine&) = delete;
+
 	// Only Application which is friend can instantiate an object of this type!!
 	CommandLine( ) { }
 

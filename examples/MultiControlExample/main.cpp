@@ -106,7 +106,7 @@ int dwtMain(dwt::Application& app) {
 	auto* spinner = WidgetCreator<Spinner>::create(window, Spinner::Seed(0, 100));
 	auto* slider = WidgetCreator<Slider>::create(window, Slider::Seed());
 	auto* progress = WidgetCreator<ProgressBar>::create(window, ProgressBar::Seed());
-	auto* link = WidgetCreator<Link>::create(window, Link::Seed(_T("https://github.com"), true));
+	auto* link = WidgetCreator<Link>::create(window, Link::Seed(_T("https://dcplusplus.com"), true));
 	auto* richText = WidgetCreator<RichTextBox>::create(window, RichTextBox::Seed());
 
 	auto* header = WidgetCreator<Header>::create(window, Header::Seed());

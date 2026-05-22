@@ -152,12 +152,15 @@ private:
   * </ul>
   */
 
-class Canvas : private boost::noncopyable
+class Canvas
 {
-	class Selector : boost::noncopyable {
+	class Selector {
 	public:
 		template<typename T>
 		Selector(Canvas& canvas_, T& t) : canvas(&canvas_), h(::SelectObject(canvas->handle(), t.handle())) { }
+
+		Selector(const Selector&) = delete;
+		Selector& operator=(const Selector&) = delete;
 
 		Selector(Selector &&rhs) : canvas(rhs.canvas), h(rhs.h) { rhs.canvas = nullptr; }
 		Selector& operator=(Selector &&rhs) { if(&rhs != this) { canvas = rhs.canvas; h = rhs.h; rhs.canvas = nullptr; } return *this; }
@@ -169,9 +172,12 @@ class Canvas : private boost::noncopyable
 		HGDIOBJ h;
 	};
 
-	class BkMode : boost::noncopyable {
+	class BkMode {
 	public:
 		BkMode(Canvas& canvas_, int mode);
+
+		BkMode(const BkMode&) = delete;
+		BkMode& operator=(const BkMode&) = delete;
 
 		BkMode(BkMode &&rhs) : canvas(rhs.canvas), prevMode(rhs.prevMode) { rhs.canvas = nullptr; }
 		BkMode& operator=(BkMode &&rhs) { if(&rhs != this) { canvas = rhs.canvas; prevMode = rhs.prevMode; rhs.canvas = nullptr; } return *this; }
@@ -184,6 +190,9 @@ class Canvas : private boost::noncopyable
 	};
 
 public:
+	Canvas(const Canvas&) = delete;
+	Canvas& operator=(const Canvas&) = delete;
+
 	/** select a new resource (brush / font / pen / etc).
 	* @return object that restores the previous resource when destroyed.
 	*/
@@ -300,7 +309,6 @@ public:
 	  */
 	COLORREF getPixel( const Point & coord );
 
-#ifndef WINCE
 	/// Fills an area starting at (x,y) with the current brush.
 	/// crColor specifies when to stop or what to fill depending on the filltype
 	/// parameter.
@@ -312,7 +320,6 @@ public:
 	  * it'll return false.
 	  */
 	bool extFloodFill( int x, int y, COLORREF color, bool fillTilColorFound );
-#endif //!WINCE
 
 	/// invert the colors in the specified region; see the InvertRgn doc for more information.
 	void invert(const Region& region);

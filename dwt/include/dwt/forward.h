@@ -34,10 +34,9 @@
 #define DWT_FORWARD_H_
 
 #include "WindowsHeaders.h"
+#include "util/IntrusivePtr.h"
 
-namespace boost {
-template<class T> class intrusive_ptr;
-}
+#include <functional>
 
 namespace dwt {
 
@@ -45,10 +44,10 @@ template< class WidgetType >
 class WidgetCreator;
 
 class Bitmap;
-typedef boost::intrusive_ptr<Bitmap> BitmapPtr;
+typedef util::intrusive_ptr<Bitmap> BitmapPtr;
 
 class Brush;
-typedef boost::intrusive_ptr<Brush> BrushPtr;
+typedef util::intrusive_ptr<Brush> BrushPtr;
 
 class Button;
 typedef Button* ButtonPtr;
@@ -76,7 +75,7 @@ typedef DateTime* DateTimePtr;
 class FolderDialog;
 
 class Font;
-typedef boost::intrusive_ptr<Font> FontPtr;
+typedef util::intrusive_ptr<Font> FontPtr;
 
 class FontDialog;
 
@@ -94,10 +93,10 @@ class Header;
 typedef Header* HeaderPtr;
 
 class Icon;
-typedef boost::intrusive_ptr<Icon> IconPtr;
+typedef util::intrusive_ptr<Icon> IconPtr;
 
 class ImageList;
-typedef boost::intrusive_ptr<ImageList> ImageListPtr;
+typedef util::intrusive_ptr<ImageList> ImageListPtr;
 
 class Label;
 typedef Label* LabelPtr;
@@ -126,7 +125,7 @@ class Notification;
 typedef std::unique_ptr<Notification> NotificationPtr;
 
 class Pen;
-typedef boost::intrusive_ptr<Pen> PenPtr;
+typedef util::intrusive_ptr<Pen> PenPtr;
 
 struct Point;
 
@@ -142,7 +141,7 @@ typedef Rebar* RebarPtr;
 struct Rectangle;
 
 class Region;
-typedef boost::intrusive_ptr<Region> RegionPtr;
+typedef util::intrusive_ptr<Region> RegionPtr;
 
 class RichTextBox;
 typedef RichTextBox* RichTextBoxPtr;

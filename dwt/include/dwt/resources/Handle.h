@@ -32,7 +32,6 @@
 #ifndef DWT_RESOURCE_H_
 #define DWT_RESOURCE_H_
 
-#include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/core/noncopyable.hpp>
 
 namespace dwt {

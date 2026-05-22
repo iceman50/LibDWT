@@ -34,11 +34,11 @@
 #define DWT_ASPECTS_CHILDREN_H
 
 #include <utility>
+#include <iterator>
+#include <cstddef>
 
 #include "../forward.h"
 #include "../WidgetCreator.h"
-
-#include <boost/iterator/iterator_facade.hpp>
 
 namespace dwt { namespace aspects {
 
@@ -49,28 +49,40 @@ class Children {
 
 public:
 	template<typename ChildWidget>
-	class ChildIterator : public boost::iterator_facade<ChildIterator<ChildWidget>, ChildWidget*, boost::forward_traversal_tag, ChildWidget*> {
+	class ChildIterator {
 	public:
+		typedef std::forward_iterator_tag iterator_category;
 		typedef ChildWidget* value_type;
+		typedef std::ptrdiff_t difference_type;
+		typedef value_type* pointer;
+		typedef value_type reference;
 
-		ChildIterator() : cur(0) { }
+		ChildIterator() : cur(nullptr) { }
 		explicit ChildIterator(Widget* start) : cur(start) { }
-		static ChildIterator first(Widget *parent) { return ChildIterator(next(parent, 0)); }
+		static ChildIterator first(Widget *parent) { return ChildIterator(next(parent, nullptr)); }
+
+		reference operator*() const { return static_cast<value_type>(cur); }
+
+		ChildIterator& operator++() {
+			if(cur) {
+				cur = next(cur->getParent(), cur);
+			}
+			return *this;
+		}
+
+		ChildIterator operator++(int) {
+			auto old = *this;
+			++(*this);
+			return old;
+		}
+
+		bool operator==(const ChildIterator& other) const { return cur == other.cur; }
+		bool operator!=(const ChildIterator& other) const { return !(*this == other); }
 
 	private:
-		friend class boost::iterator_core_access;
-
-		void increment() { cur = next(cur->getParent(), cur); }
-
-	    bool equal(const ChildIterator& other) const {
-	        return this->cur == other.cur;
-	    }
-
-	    value_type dereference() const { return static_cast<value_type>(cur); }
-
 	    static Widget* next(Widget *parent, Widget *child) {
 	    	do {
-				child = hwnd_cast<Widget*>(::FindWindowEx(parent->handle(), child ? child->handle() : NULL, NULL, NULL));
+				child = hwnd_cast<Widget*>(::FindWindowEx(parent->handle(), child ? child->handle() : nullptr, nullptr, nullptr));
 			} while(child && !dynamic_cast<ChildWidget*>(child));
 
 	    	return child;

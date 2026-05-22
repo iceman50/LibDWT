@@ -44,9 +44,12 @@ namespace dwt {
 /** Use getCursor and store the returned object until you wish to change back to the
  * previous cursor
  */
-class Cursor : boost::noncopyable
+class Cursor
 {
 	explicit Cursor(HCURSOR old) : old(old), owner(true) { }
+
+	Cursor(const Cursor&) = delete;
+	Cursor& operator=(const Cursor&) = delete;
 
 	Cursor(Cursor &&rhs) {*this = std::move(rhs);}
 

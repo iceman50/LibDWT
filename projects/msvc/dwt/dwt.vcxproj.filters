@@ -450,6 +450,9 @@
     <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\TimeSpan.h">
       <Filter>Header Files\\util</Filter>
     </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\IntrusivePtr.h">
+      <Filter>Header Files\\util</Filter>
+    </ClInclude>
     <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\util\tstream.h">
       <Filter>Header Files\\util</Filter>
     </ClInclude>
