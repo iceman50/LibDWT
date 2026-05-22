@@ -50,9 +50,12 @@ namespace dwt {
 * Window. <br>
 * Note for Desktop version only! <br>
 */
-class Menu : private boost::noncopyable
+class Menu
 {
 	friend class WidgetCreator<Menu>;
+
+	Menu(const Menu&) = delete;
+	Menu& operator=(const Menu&) = delete;
 
 	typedef Dispatchers::VoidVoid<> Dispatcher;
 

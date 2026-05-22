@@ -32,8 +32,6 @@
 #ifndef DWT_RESOURCE_H_
 #define DWT_RESOURCE_H_
 
-#include <boost/core/noncopyable.hpp>
-
 namespace dwt {
 
 /** Policy for all handles that have null as NULL_HANDLE */
@@ -59,7 +57,7 @@ class Handle;
  * Ref-counted base class for resources - nothing stops you from using this one the stack as well
  */
 template<typename Policy>
-class Handle : protected Policy, boost::noncopyable {
+class Handle : protected Policy {
 public:
 	typedef typename Policy::HandleType HandleType;
 
@@ -69,6 +67,9 @@ public:
 protected:
 	Handle() : Handle(Policy::NULL_HANDLE, false) { }
 	Handle(HandleType h, bool owned = true) : h(h), owned(owned), ref(0) { }
+
+  Handle(const Handle&) = delete;
+  Handle& operator=(const Handle&) = delete;
 
 	void init(HandleType h_, bool owned_) {
 		h = h_;

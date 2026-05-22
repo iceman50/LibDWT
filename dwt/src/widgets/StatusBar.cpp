@@ -66,7 +66,11 @@ tipPart(0)
 }
 
 void StatusBar::create(const Seed& cs) {
-	parts.resize(cs.parts);
+	parts.clear();
+	parts.reserve(cs.parts);
+	for(unsigned i = 0; i < cs.parts; ++i) {
+		parts.emplace_back(new PartBase());
+	}
 	fill = cs.fill;
 
 	BaseType::create(cs);
@@ -79,7 +83,7 @@ void StatusBar::create(const Seed& cs) {
 
 void StatusBar::setSize(unsigned part, unsigned size) {
 	dwtassert(part < parts.size(), "Invalid part number");
-	parts[part].desiredSize = size;
+	parts[part]->desiredSize = size;
 }
 
 void StatusBar::setText(unsigned part, const tstring& text, bool alwaysResize) {
@@ -126,10 +130,10 @@ void StatusBar::setHelpId(unsigned part, unsigned id) {
 
 void StatusBar::setWidget(unsigned part, Control* widget, const Rectangle& padding) {
 	dwtassert(part < parts.size(), "Invalid part number");
-	auto p = new WidgetPart(widget, padding);
+	std::unique_ptr<WidgetPart> p(new WidgetPart(widget, padding));
 	p->desiredSize = widget->getPreferredSize().x;
 	p->helpId = widget->getHelpId();
-	parts.insert(parts.erase(parts.begin() + part), p);
+	parts[part] = std::move(p);
 }
 
 void StatusBar::onClicked(unsigned part, const F& f) {
@@ -205,11 +209,12 @@ void StatusBar::WidgetPart::layout(POINT* offset) {
 }
 
 StatusBar::Part& StatusBar::getPart(unsigned part) {
-	auto& ret = parts[part];
+	auto& ret = *parts[part];
 	if(!dynamic_cast<Part*>(&ret)) {
-		auto p = new Part();
-		parts.insert(parts.erase(parts.begin() + part), p);
-		return *p;
+		std::unique_ptr<Part> p(new Part());
+		Part& ref = *p;
+		parts[part] = std::move(p);
+		return ref;
 	}
 	return static_cast<Part&>(ret);
 }
@@ -221,7 +226,7 @@ void StatusBar::layoutSections() {
 void StatusBar::layoutSections(const Point& sz) {
 	std::vector<unsigned> sizes(parts.size());
 	for(size_t i = 0, n = sizes.size(); i < n; ++i)
-		sizes[i] = parts[i].desiredSize;
+		sizes[i] = parts[i]->desiredSize;
 
 	sizes[fill] = 0;
 
@@ -229,9 +234,9 @@ void StatusBar::layoutSections(const Point& sz) {
 	if(total + fillMin < static_cast<unsigned>(sz.x)) {
 		// cool, there's enough room to fit all the parts.
 		for(auto& part: parts) {
-			part.actualSize = part.desiredSize;
+			part->actualSize = part->desiredSize;
 		}
-		parts[fill].actualSize = sizes[fill] = sz.x - total;
+		parts[fill]->actualSize = sizes[fill] = sz.x - total;
 
 		// transform sizes into offsets
 		unsigned offset = 0;
@@ -242,19 +247,19 @@ void StatusBar::layoutSections(const Point& sz) {
 
 	} else {
 		// only show the "fill" part if the status bar is too narrow.
-		for(auto& part: parts) { part.actualSize = 0; }
+		for(auto& part: parts) { part->actualSize = 0; }
 		for(auto& size: sizes) { size = 0; }
-		parts[fill].actualSize = sizes[fill] = sz.x;
+		parts[fill]->actualSize = sizes[fill] = sz.x;
 	}
 
 	sendMessage(SB_SETPARTS, sizes.size(), reinterpret_cast<LPARAM>(sizes.data()));
 
 	// reposition embedded widgets.
 	for(auto i = parts.begin(); i != parts.end(); ++i) {
-		auto wp = dynamic_cast<WidgetPart*>(&*i);
+		auto wp = dynamic_cast<WidgetPart*>(i->get());
 		if(wp) {
 			POINT p[2];
-			sendMessage(SB_GETRECT, i - parts.begin(), reinterpret_cast<LPARAM>(p));
+			sendMessage(SB_GETRECT, std::distance(parts.begin(), i), reinterpret_cast<LPARAM>(p));
 			::MapWindowPoints(handle(), getParent()->handle(), p, 2);
 			wp->layout(p);
 		}
@@ -265,9 +270,9 @@ StatusBar::Part* StatusBar::getClickedPart() {
 	unsigned x = ClientCoordinate(ScreenCoordinate(Point::fromLParam(::GetMessagePos())), this).x();
 	unsigned total = 0;
 	for(auto& i: parts) {
-		total += i.actualSize;
+		total += i->actualSize;
 		if(total > x)
-			return dynamic_cast<Part*>(&i);
+			return dynamic_cast<Part*>(i.get());
 	}
 
 	return 0;

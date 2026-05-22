@@ -71,7 +71,10 @@ protected:
 private:
 	/* info about each item; similar to TVINSERTSTRUCT / TVITEMEX. a pointer to this structure is
 	given to callers of a VirtualTree as an HTREEITEM; they can then manipulate it as usual. */
-	struct Item : boost::noncopyable {
+	struct Item {
+		Item(const Item&) = delete;
+		Item& operator=(const Item&) = delete;
+
 		HTREEITEM handle; /* the handle in the actual tree control when this item is visible, which
 						  is different from the fake handle given to callers of a VirtualTree. */
 		Item* parent;

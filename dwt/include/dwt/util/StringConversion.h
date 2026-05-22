@@ -37,7 +37,7 @@
 #define DWT_StringConversion_h
 
 #include <string>
-#include <boost/scoped_array.hpp>
+#include <memory>
 #include "../WindowsHeaders.h"
 #include "xCeptionSmartUtilities.h"
 
@@ -126,7 +126,7 @@ public:
 
 		// First we must check how big buffer we need
 		int size = ::WideCharToMultiByte( ( unsigned int ) codepage, 0, input, - 1, 0, 0, 0, 0 );
-		boost::scoped_array< char > buffer( new char[ size ] );
+		std::unique_ptr<char[]> buffer(new char[size]);
 
 		// Then we can do the actual conversion
 		::WideCharToMultiByte( ( unsigned int ) codepage, 0, input, - 1, buffer.get(), size, 0, 0 );
@@ -246,7 +246,7 @@ public:
 			}
 			throw xCeptionSmartUtilities( "Couldn't translate string into codepage" );
 		}
-		boost::scoped_array< wchar_t > buffer( new wchar_t[ size ] );
+		std::unique_ptr<wchar_t[]> buffer(new wchar_t[size]);
 
 		// Now doing the conversion
 		size = ::MultiByteToWideChar( ( unsigned int ) codepage, MB_ERR_INVALID_CHARS, input, - 1, buffer.get(), size );

@@ -39,8 +39,6 @@
 #include "WindowsHeaders.h"
 #include "tstring.h"
 
-#include <boost/noncopyable.hpp>
-
 namespace dwt {
 
 /// Class for helping loading of libraries or dlls
@@ -65,7 +63,7 @@ namespace dwt {
   * EXACT SAME arguments! <br>
   * See example usage in RichTextBox.h
   */
-class LibraryLoader : private boost::noncopyable {
+class LibraryLoader {
 public:
 	/// Constructor loading the given library
 	/** Constructor loading the given library unless library is loaded from before.
@@ -113,6 +111,9 @@ public:
 	  * unload library until LAST object with same argument is being destroyed!
 	  */
 	~LibraryLoader();
+
+  LibraryLoader(const LibraryLoader&) = delete;
+  LibraryLoader& operator=(const LibraryLoader&) = delete;
 
 private:
 	HMODULE itsHMod;

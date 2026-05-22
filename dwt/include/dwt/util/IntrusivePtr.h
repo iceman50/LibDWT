@@ -39,10 +39,7 @@
 
 namespace dwt { namespace util {
 
-//Replace boost::intrusive_ptr with our own implementation to remove the boost dependency. 
-//The new implementation will be similar to boost::intrusive_ptr, but it will be simplified and tailored to our specific needs.
-//Let us pray it all works O=)
-//pretty much a copy of boost::intrusive_ptr, but without the boost dependency and with some simplifications.
+// Intrusive smart pointer implementation tailored for DWT.
 
 template<class T>
 class intrusive_ptr {

@@ -158,10 +158,9 @@ public:
 	/// Adds a waitable event HANDLE and the according signal
 	/** You can feed in here HANDLEs of thread handles, console inputs, mutexes,
 	  * processes, semaphores etc. (see Win32-API on MsgWaitForMultipleObjects) you
-	  * acquired in your program, together with an according boost::signal. The
+	  * acquired in your program, together with an according callback signal. The
 	  * signal contains the callback functions in your code which are invoked when
-	  * Windows signals the HANDLE. (Since boost::signal is noncopyable we actually
-	  * need here a smart pointer to the signal.)
+	  * Windows signals the HANDLE.
 	  */
 	bool addWaitEvent( HANDLE hEvent, const Callback& );
 

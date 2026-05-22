@@ -38,7 +38,8 @@
 
 #include "Control.h"
 
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <memory>
+#include <vector>
 
 namespace dwt {
 
@@ -191,7 +192,7 @@ private:
 		void layout(POINT* offset);
 	};
 
-	boost::ptr_vector<PartBase> parts;
+	std::vector<std::unique_ptr<PartBase>> parts;
 	unsigned fill;
 
 	ToolTipPtr tip;

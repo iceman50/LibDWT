@@ -59,13 +59,14 @@ T hwnd_cast(HWND hwnd);
   * support for. <br>
   * E.g. the handle to the specific Widgets are contained here, plus all the
   * commonalities between Widgets <br>
-  * The Widget class inherits from boost::noncopyable to indicate it's not to be
-  * copied
+	* The Widget class is non-copyable.
   */
 class Widget
-	: public boost::noncopyable
 {
 public:
+	Widget(const Widget&) = delete;
+	Widget& operator=(const Widget&) = delete;
+
 	/// Returns the HWND to the Widget
 	/** Returns the HWND to the inner window of the Widget. <br>
 	  * If you need to do directly manipulation of the window use this function to
