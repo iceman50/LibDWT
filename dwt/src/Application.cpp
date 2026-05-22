@@ -41,11 +41,7 @@
 #include <dwt/widgets/Control.h>
 #include <assert.h>
 
-#include <memory>
-
 namespace dwt {
-
-using std::unique_ptr;
 
 Application* Application::itsInstance = 0;
 HANDLE Application::itsMutex = 0;
@@ -77,7 +73,6 @@ void Application::init() {
 
 Application::Application() :
 	itsCmdShow(0),
-	tasks(1024),
 	quit(false),
 	threadId(::GetCurrentThreadId())
 {
@@ -230,18 +225,28 @@ void Application::setCmdShow(int cmdShow) {
 }
 
 bool Application::dispatchAsync() {
-	unique_ptr<Callback> callback;
-	if(tasks.pop(callback)) {
-		(*callback)();
-		return true;
+	Callback callback;
+	{
+		std::lock_guard<std::mutex> lock(tasksMutex);
+		if(tasks.empty()) {
+			return false;
+		}
+		callback = std::move(tasks.front());
+		tasks.pop();
 	}
-	return false;
+
+	callback();
+	return true;
 }
 
 #ifndef DWT_SHARED
 
 void Application::callAsync(const Callback& callback) {
-	tasks.push(new Callback(callback));
+	//We're going to really need to stress test this and dispatchAsync...
+	{
+		std::lock_guard<std::mutex> lock(tasksMutex);
+		tasks.push(callback);
+	}
 	wake();
 }
 

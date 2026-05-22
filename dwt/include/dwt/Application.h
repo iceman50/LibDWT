@@ -40,8 +40,8 @@
 #include "tstring.h"
 #include "CommandLine.h"
 #include <functional>
-
-#include <boost/lockfree/queue.hpp>
+#include <mutex>
+#include <queue>
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -69,10 +69,9 @@ class Widget;
   * and the getCommandLine functions which in turn loads a bitmap and returns the
   * handle to it, retrieves the path to the physical directory of the exe file and
   * retrieves a vector of command line parameters. <br>
-  * The Application class inherits from boost::noncopyable to indicate it's not to be
-  * copied
+  * The Application class is non-copyable.
   */
-class Application :public boost::noncopyable
+class Application
 {
 #ifndef DWT_SHARED
 	static int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
@@ -191,7 +190,8 @@ private:
 	// The according signals we must raise, go in this vector.
 	std::vector<Callback> itsVSignals;
 
-	boost::lockfree::queue<Callback*> tasks;
+	std::queue<Callback> tasks;
+	std::mutex tasksMutex;
 
 	FilterList filters;
 
@@ -202,6 +202,10 @@ private:
 
 	// Private Constructor to ensure Singleton Implementation
 	Application();
+	Application(const Application&) = delete;
+	Application& operator=(const Application&) = delete;
+	Application(Application&&) = delete;
+	Application& operator=(Application&&) = delete;
 
 	~Application();
 
