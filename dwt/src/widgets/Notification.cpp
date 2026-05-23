@@ -33,7 +33,6 @@
 
 #include <dwt/Application.h>
 #include <dwt/Widget.h>
-#include <dwt/util/win32/Version.h>
 
 namespace dwt {
 
@@ -41,29 +40,16 @@ const UINT Notification::message = ::RegisterWindowMessage(_T("dwt::Notification
 
 static const UINT taskbarMsg = ::RegisterWindowMessage(_T("TaskbarCreated"));
 
-/* the following dance adds the hBalloonIcon member to NOTIFYICONDATA without requiring a global
-switch of WINVER / _WIN32_WINNT / etc to Vista values. */
-typedef NOTIFYICONDATA legacyNOTIFYICONDATA;
-#if(_WIN32_WINNT < 0x600)
-struct NOTIFYICONDATA_ : NOTIFYICONDATA {
-	HICON hBalloonIcon;
-	NOTIFYICONDATA_(const NOTIFYICONDATA& nid) : NOTIFYICONDATA(nid), hBalloonIcon(0) { }
-};
-#define NOTIFYICONDATA NOTIFYICONDATA_
-#define NIF_SHOWTIP 0x80
-#endif
-
-legacyNOTIFYICONDATA Notification::makeNID() const {
-	bool vista = util::win32::ensureVersion(util::win32::VISTA);
-	legacyNOTIFYICONDATA nid = { static_cast<DWORD>(vista ? sizeof(NOTIFYICONDATA) : sizeof(legacyNOTIFYICONDATA)), parent->handle() };
-	if(vista)
-		nid.uFlags |= NIF_SHOWTIP;
+NOTIFYICONDATA Notification::makeNID() const {
+	NOTIFYICONDATA nid = { static_cast<DWORD>(sizeof(NOTIFYICONDATA)), parent->handle() };
+	nid.uFlags |= NIF_SHOWTIP;
 	return nid;
 }
 
 Notification::Notification(Widget* parent) :
 parent(parent),
 visible(false),
+ignoreNextClick(false),
 onlyBalloons(false),
 lastTick(0)
 {
@@ -121,7 +107,7 @@ void Notification::setVisible(bool visible_) {
 
 void Notification::setTooltip(const tstring& tip_) {
 	tip = tip_;
-	lastTick = ::GetTickCount();
+	lastTick = ::GetTickCount64();
 
 	if(visible) {
 		NOTIFYICONDATA nid = makeNID();
@@ -146,7 +132,7 @@ void Notification::addMessage(const tstring& title, const tstring& msg, const Ca
 
 	title.copy(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]) - 1);
 
-	if(balloonIcon && util::win32::ensureVersion(util::win32::VISTA)) {
+	if(balloonIcon) {
 		nid.dwInfoFlags = NIIF_USER;
 		nid.hBalloonIcon = balloonIcon->handle();
 	} else {
@@ -169,8 +155,19 @@ bool Notification::trayHandler(const MSG& msg) {
 
 	case WM_LBUTTONUP:
 		{
-			if(iconClicked) {
+			if(ignoreNextClick) {
+				ignoreNextClick = false;
+			} else if(iconClicked) {
 				iconClicked();
+			}
+			break;
+		}
+
+	case WM_LBUTTONDBLCLK:
+		{
+			if(iconDbClicked) {
+				iconDbClicked();
+				ignoreNextClick = true;
 			}
 			break;
 		}
@@ -189,7 +186,7 @@ bool Notification::trayHandler(const MSG& msg) {
 	case WM_MOUSEMOVE:
 		{
 			if(updateTip) {
-				DWORD now = ::GetTickCount();
+				auto now = ::GetTickCount64();
 				if(now - 1000 > lastTick) {
 					updateTip();
 					lastTick = now;
@@ -205,7 +202,9 @@ bool Notification::trayHandler(const MSG& msg) {
 	case NIN_BALLOONHIDE: // fall through
 	case NIN_BALLOONTIMEOUT:
 		{
-			balloons.pop_front();
+			if(!balloons.empty()) {
+				balloons.pop_front();
+			}
 			if(onlyBalloons && balloons.empty()) {
 				setVisible(false);
 			}

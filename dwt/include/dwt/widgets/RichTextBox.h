@@ -100,6 +100,9 @@ public:
 
 	Point posFromChar(int charOffset);
 
+	/** Declared in TextBoxBase. Override to use EM_EXLINEFROMCHAR instead of EM_LINEFROMCHAR. */
+	int lineFromChar(int c = -1);
+
 	tstring getSelection() const;
 
 	Point getScrollPos() const;
@@ -115,6 +118,7 @@ public:
 	  */
 	void addText( const std::string & txt );
 
+	/** Append text into the box, keeping the scroll position steady. */
 	void addTextSteady(const tstring& txtRaw);
 
 	void findText(tstring const& needle);
@@ -129,6 +133,21 @@ public:
 	COLORREF getBgColor() const { return bgColor; }
 
 	virtual bool handleMessage(const MSG& msg, LRESULT& retVal);
+
+	typedef std::function<void(const tstring&)> Callback;
+ 
+	/// Search string was not found
+	void onSearchStrNotFound(Callback callback) { searchNotFound = callback; } 
+
+	/** Utility structure to surround "scroll-steady" rich text-box operations; when an instance of
+	 * this structure goes out of scope, the scroll position is guaranteed to be kept. */
+	struct HoldScroll  {
+		HoldScroll(RichTextBox* box);
+		~HoldScroll();
+		RichTextBox* box;
+		Point scrollPos;
+		bool scroll;
+	};
 
 protected:
 	tstring currentNeedle;		// search in chat window
@@ -167,6 +186,8 @@ private:
 
 	COLORREF textColor;
 	COLORREF bgColor;
+
+	Callback searchNotFound;
 };
 
 // end namespace dwt

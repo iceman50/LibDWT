@@ -96,7 +96,7 @@ void RichTextBox::create(const Seed& cs) {
 	});
 
 	/* unlike other common controls, Rich Edits ignore WM_PRINTCLIENT messages. as per
-	<http://msdn.microsoft.com/en-us/library/bb787875(VS.85).aspx>, we have to handle the printing
+	<https://msdn.microsoft.com/en-us/library/bb787875(VS.85).aspx>, we have to handle the printing
 	by ourselves. this is crucial for taskbar thumbnails and "Aero Peek" previews. */
 	onPrinting([this](Canvas& canvas) {
 		Rectangle rect { getClientSize() };
@@ -106,7 +106,7 @@ void RichTextBox::create(const Seed& cs) {
 
 		FORMATRANGE format { canvas.handle(), canvas.handle() };
 		format.rc = rect;
-		format.rc.bottom += abs(getFont()->getLogFont().lfHeight); // make room for the last line
+		format.rc.bottom += std::abs(getFont()->getLogFont().lfHeight); // make room for the last line
 		// convert to twips and respect DPI settings.
 		format.rc.right *= 1440 / canvas.getDeviceCaps(LOGPIXELSX);
 		format.rc.bottom *= 1440 / canvas.getDeviceCaps(LOGPIXELSY);
@@ -155,23 +155,30 @@ inline Point RichTextBox::posFromChar(int charOffset)
 }
 
 inline int RichTextBox::lineFromPos(const ScreenCoordinate& pt) {
-	ClientCoordinate cc(pt, this);
-	return static_cast<int>(sendMessage(EM_EXLINEFROMCHAR, 0, charFromPos(pt)));
+	return lineFromChar(charFromPos(pt));
+}
+
+inline int RichTextBox::lineFromChar(int c) {
+	return sendMessage(EM_EXLINEFROMCHAR, 0, c);
 }
 
 tstring RichTextBox::getSelection() const {
 	std::pair<int, int> range = getCaretPosRange();
-	tstring tmp = getText();
 
-	// This is uglier than it has to be because of the
-	// \r\n vs \r handling - note that WINE, for example,
-	// uses consistent line endings between the internal
-	// and external buffer representations, but Windows does
-	// not - so it cannot even assume getText() consistently
-	// is broken.
-	int realS = fixupLineEndings(tmp.begin(), tmp.end(), range.first),
-	    realE = fixupLineEndings(tmp.begin() + realS, tmp.end(), range.second - range.first);
-	return tmp.substr(realS, realE);
+	DWORD size = ((range.second - range.first) * sizeof(TCHAR) * 2) + 1; // Double buf size due to possible CRLFs
+
+	if (size < 2)
+		return tstring();
+
+	auto buf = std::make_unique<TCHAR[]>(size);
+
+	// This gets text with consistent line endigs and without rtf hidden control fields content across
+	// all modern Windows versions. 
+	// Wine doesn't support GT_NOHIDDENTEXT as of 2024.05 but nor does those rtf fields so there's nothing to avoid...
+	GETTEXTEX gte { size, GT_SELECTION | GT_NOHIDDENTEXT | GT_USECRLF, 1200, NULL, NULL };
+	sendMessage(EM_GETTEXTEX, reinterpret_cast< WPARAM >(&gte), reinterpret_cast< LPARAM >(buf.get()));
+
+	return buf.get();
 }
 
 Point RichTextBox::getScrollPos() const {
@@ -202,9 +209,10 @@ tstring RichTextBox::textUnderCursor(const ScreenCoordinate& p, bool includeSpac
 }
 
 int RichTextBox::fixupLineEndings(tstring::const_iterator begin, tstring::const_iterator end, tstring::difference_type ibo) const {
-	// http://rubyforge.org/pipermail/wxruby-users/2006-August/002116.html
+	// https://web.archive.org/web/20140518113109/http://rubyforge.org/pipermail/wxruby-users/2006-August/002116.html
 	// ("TE_RICH2 RichEdit control"). Otherwise charFromPos will be increasingly
 	// off from getText with each new line by one character.
+	// @todo test whether this fixup is still needed for currently supported Windows versions and under Wine.
 	int cur = 0;
 	auto it = std::find_if(begin, end, [&cur, ibo](TCHAR ch) {
 		if (ch != static_cast<TCHAR>('\r')) ++cur;
@@ -237,43 +245,61 @@ void RichTextBox::addText(const std::string & txt) {
 }
 
 void RichTextBox::addTextSteady(const tstring& txtRaw) {
-	Point scrollPos = getScrollPos();
-	bool scroll = scrollIsAtEnd();
+	HoldScroll hold { this };
 
-	{
-		util::HoldRedraw hold { this };
-		std::pair<int, int> cr = getCaretPosRange();
-		std::string txt = escapeUnicode(txtRaw);
+	std::pair<int, int> cr = getCaretPosRange();
+	std::string txt = escapeUnicode(txtRaw);
 
-		unsigned charsRemoved = 0;
-		int multipler = 1;
+	int charsToRemove = 0;
 
-		/* this will include more chars than there actually are because of RTF codes. not a problem
-		here; accuracy isn't necessary since whole lines are getting chopped anyway. */
-		size_t len = txtRaw.size();
-		size_t limit = getTextLimit();
-		if(length() + len > limit) {
-			if(len >= limit) {
-				charsRemoved = static_cast<unsigned>(length());
-			} else {
-				while (charsRemoved < len)
-					charsRemoved = static_cast<unsigned>(lineIndex(lineFromChar(static_cast<int>(multipler++ * limit / 10))));
+	/* this will include more chars than there actually are because of RTF codes. not a problem
+	here; accuracy isn't necessary since whole lines are getting chopped anyway. */
+	size_t prevLen = length();
+	size_t addedLen = txtRaw.size();
+	size_t limit = getTextLimit();
+
+	if(prevLen + addedLen > limit) {
+		/* adding text would overflow the char limit. -> remove some (or all) existing lines. */
+
+		if(addedLen >= limit) {
+			/* adding more text than the box can contain. -> remove all previous lines. */
+			charsToRemove = prevLen;
+			hold.scroll = true;
+
+		} else {
+			/* the text being added fits within the box, but not when appended to current contents.
+			 * -> find out how many lines have to be removed. we try from 10 % to 80 % of the text
+			 *    limit. */
+			for(auto multiplier = 1; multiplier <= 8; ++multiplier) {
+				auto charsToDivLimit = lineIndex(lineFromChar(limit * multiplier / 10));
+				if(charsToDivLimit >= 0 && prevLen + addedLen - charsToDivLimit < limit) {
+					/* good, got enough room for the new text! */
+					charsToRemove = charsToDivLimit;
+					if(!hold.scroll) {
+						/* when not in auto-scroll mode, adjust the scroll pos to stay on the same
+						 * line, despite removing some at the top of the box. adjust based on the
+						 * origin of the box (posFromChar 0) as posFromChar coordinates are
+						 * relative to the current scroll pos (we want coordinates relative to the
+						 * origin of the box). */
+						hold.scrollPos.y -= posFromChar(charsToRemove).y - posFromChar(0).y;
+					}
+					break;
+				}
 			}
-
-			scrollPos.y -= posFromChar(charsRemoved).y;
-			setSelection(0, charsRemoved);
-			replaceSelection(_T(""));
+			if(charsToRemove <= 0) {
+				/* clearing out 80 % of the current text would not be enough. -> remove all
+				 * previous lines. */
+				charsToRemove = prevLen;
+				hold.scroll = true;
+			}
 		}
 
-		addText(txt);
-		setSelection(cr.first-charsRemoved, cr.second-charsRemoved);
-
-		if(scroll)
-			scrollToBottom();
-		else
-			setScrollPos(scrollPos);
+		setSelection(0, charsToRemove);
+		replaceSelection(_T(""));
 	}
-	redraw();
+
+	addText(txt);
+	setSelection(cr.first - charsToRemove, cr.second - charsToRemove);
 }
 
 void RichTextBox::findText(tstring const& needle) {
@@ -439,6 +465,24 @@ bool RichTextBox::handleMessage(const MSG& msg, LRESULT& retVal) {
 	}
 
 	return handled;
+}
+
+RichTextBox::HoldScroll::HoldScroll(RichTextBox* box) : box(box) {
+	scrollPos = box->getScrollPos();
+	scroll = box->scrollIsAtEnd();
+
+	box->sendMessage(WM_SETREDRAW, FALSE);
+}
+
+RichTextBox::HoldScroll::~HoldScroll() {
+	if(scroll) {
+		box->scrollToBottom();
+	} else {
+		box->setScrollPos(scrollPos);
+	}
+
+	box->sendMessage(WM_SETREDRAW, TRUE);
+	box->redraw();
 }
 
 }

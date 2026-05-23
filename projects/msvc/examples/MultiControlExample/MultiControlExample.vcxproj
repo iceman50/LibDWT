@@ -92,7 +92,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;Dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -112,7 +112,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;Dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -134,7 +134,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;Dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -154,7 +154,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Comctl32.lib;Shlwapi.lib;Ole32.lib;OleAut32.lib;Uuid.lib;Shell32.lib;Comdlg32.lib;Advapi32.lib;UxTheme.lib;Dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>

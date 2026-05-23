@@ -58,6 +58,7 @@ CXXFLAGS := -std=gnu++17 -Wall -Wextra -Wno-unknown-pragmas $(CFG_CXXFLAGS)
 LDFLAGS := -mwindows
 LDLIBS := \
 	-lcomctl32 \
+	-ldwmapi \
 	-lshlwapi \
 	-lole32 \
 	-loleaut32 \
