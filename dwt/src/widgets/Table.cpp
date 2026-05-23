@@ -75,7 +75,7 @@ struct LVGROUP_ : LVGROUP {
 #endif
 
 namespace { legacyLVGROUP makeLVGROUP() {
-	legacyLVGROUP lvg = { util::win32::ensureVersion(util::win32::VISTA) ? sizeof(LVGROUP) : sizeof(legacyLVGROUP) };
+	legacyLVGROUP lvg = { static_cast<UINT>(util::win32::ensureVersion(util::win32::VISTA) ? sizeof(LVGROUP) : sizeof(legacyLVGROUP)) };
 	return lvg;
 } }
 
@@ -540,9 +540,10 @@ void Table::setView( int view ) {
 	}
 	//little hack because there is no way to do this with Widget::addRemoveStyle
 	DWORD newStyle = static_cast<DWORD>(::GetWindowLongPtr(handle(), GWL_STYLE));
-	if ( ( newStyle & LVS_TYPEMASK ) != view )
+	const DWORD viewStyle = static_cast<DWORD>(view);
+	if ( ( newStyle & LVS_TYPEMASK ) != viewStyle )
 	{
-		::SetWindowLongPtr(handle(), GWL_STYLE, static_cast<LONG_PTR>(( newStyle & ~LVS_TYPEMASK ) | view));
+		::SetWindowLongPtr(handle(), GWL_STYLE, static_cast<LONG_PTR>(( newStyle & ~LVS_TYPEMASK ) | viewStyle));
 	}
 }
 

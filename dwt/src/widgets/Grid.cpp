@@ -85,15 +85,19 @@ Point Grid::getPreferredSize(size_t row, size_t column) const {
 			ret = i.w->getPreferredSize();
 			// TODO consider fractions...
 			if(i.colSpan > 1) {
-				if(ret.x > i.colSpan*spacing) {
-					ret.x = static_cast<long>((ret.x - i.colSpan*spacing) / i.colSpan);
+				auto spanSpacing = i.colSpan * spacing;
+				auto preferred = ret.x > 0 ? static_cast<size_t>(ret.x) : static_cast<size_t>(0);
+				if(preferred > spanSpacing) {
+					ret.x = static_cast<long>((preferred - spanSpacing) / i.colSpan);
 				} else {
 					ret.x = 0;
 				}
 			}
 			if(i.rowSpan > 1) {
-				if(ret.y > i.rowSpan*spacing) {
-					ret.y = static_cast<long>((ret.y - i.rowSpan*spacing) / i.rowSpan);
+				auto spanSpacing = i.rowSpan * spacing;
+				auto preferred = ret.y > 0 ? static_cast<size_t>(ret.y) : static_cast<size_t>(0);
+				if(preferred > spanSpacing) {
+					ret.y = static_cast<long>((preferred - spanSpacing) / i.rowSpan);
 				} else {
 					ret.y = 0;
 				}

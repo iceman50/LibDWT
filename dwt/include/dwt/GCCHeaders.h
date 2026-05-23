@@ -47,7 +47,7 @@
 // should be in commctrl.h but missing as of 2016-09-18.
 #ifndef Edit_SetCueBannerTextFocused
 #define Edit_SetCueBannerTextFocused(hwnd, lpcwText, fDrawFocused) \
-	(WINBOOL)SNDMSG((hwnd), EM_SETCUEBANNER, (WPARAM)fDrawFocused, (LPARAM)lpcwText)
+  ((void)SNDMSG((hwnd), EM_SETCUEBANNER, (WPARAM)fDrawFocused, (LPARAM)lpcwText))
 #endif
 
 #ifdef max

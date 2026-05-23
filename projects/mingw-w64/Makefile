@@ -56,7 +56,7 @@ COMMON_DEFINES := \
 	-D_CRT_SECURE_NO_WARNINGS
 
 CPPFLAGS := $(INCLUDES) $(COMMON_DEFINES) $(CFG_DEFINES)
-CXXFLAGS := -std=gnu++17 -Wall -Wextra -Wno-unknown-pragmas $(CFG_CXXFLAGS)
+CXXFLAGS := -std=gnu++17 -Wall -Wextra -Wno-unknown-pragmas -Wno-missing-field-initializers -Wno-unused-parameter -Wno-strict-aliasing $(CFG_CXXFLAGS)
 LDFLAGS := -mwindows
 LDLIBS := \
 	-lcomctl32 \

@@ -170,12 +170,14 @@ DateTime operator +( const DateTime & date, const TimeSpan & time )
 {
 	FILETIME file;
 	::SystemTimeToFileTime( & date.itsSysTime, & file );
-	ULONGLONG & tmpVal = reinterpret_cast< ULONGLONG & >( file );
+	ULARGE_INTEGER tmpVal = { file.dwLowDateTime, file.dwHighDateTime };
 #ifndef __GNUC__
-	tmpVal += time.itsNumberOfMilliseconds * 10000i64;
+	tmpVal.QuadPart += time.itsNumberOfMilliseconds * 10000i64;
 #else
-	tmpVal += time.itsNumberOfMilliseconds * 10000;
+	tmpVal.QuadPart += time.itsNumberOfMilliseconds * 10000;
 #endif
+	file.dwLowDateTime = tmpVal.LowPart;
+	file.dwHighDateTime = tmpVal.HighPart;
 	DateTime retVal;
 	::FileTimeToSystemTime( & file, & retVal.itsSysTime );
 	return retVal;
@@ -185,12 +187,14 @@ DateTime operator -( const DateTime & date, const TimeSpan & time )
 {
 	FILETIME file;
 	::SystemTimeToFileTime( & date.itsSysTime, & file );
-	ULONGLONG & tmpVal = reinterpret_cast< ULONGLONG & >( file );
+	ULARGE_INTEGER tmpVal = { file.dwLowDateTime, file.dwHighDateTime };
 #ifndef __GNUC__
-	tmpVal -= time.itsNumberOfMilliseconds * 10000i64;
+	tmpVal.QuadPart -= time.itsNumberOfMilliseconds * 10000i64;
 #else
-	tmpVal -= time.itsNumberOfMilliseconds * 10000;
+	tmpVal.QuadPart -= time.itsNumberOfMilliseconds * 10000;
 #endif
+	file.dwLowDateTime = tmpVal.LowPart;
+	file.dwHighDateTime = tmpVal.HighPart;
 	DateTime retVal;
 	::FileTimeToSystemTime( & file, & retVal.itsSysTime );
 	return retVal;

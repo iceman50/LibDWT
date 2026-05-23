@@ -82,6 +82,7 @@ a drag & drop operation. nothing happens when a drop actually occurs however. */
 class TabView::Dropper : public IDropTarget {
 public:
 	Dropper(TabView* const w) : IDropTarget(), w(w), ref(0), dragging(false) { }
+	virtual ~Dropper() { }
 
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(
 		/* [in] */ REFIID riid,
