@@ -112,3 +112,4 @@ Desktop.ini
 *.swp
 *.bak
 *~
+/dist
