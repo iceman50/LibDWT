@@ -86,7 +86,7 @@ private:
 		bool expanded;
 		Rectangle glyphRect;
 		Item();
-		void switchExp(TableTree& w);
+		void redrawGlyph(TableTree& w);
 	};
 	std::unordered_map<LPARAM, Item> items;
 	std::unordered_map<LPARAM, LPARAM> children; // child -> parent cache
@@ -101,11 +101,7 @@ private:
 	void handleInsert(LVITEM& lv);
 	int handleSort(LPARAM& lhs, LPARAM& rhs);
 
-#ifndef _MSC_VER /// @todo workaround for VS' sucky decltype
-	void eraseChild(decltype(children)::iterator& child);
-#else
-	void eraseChild(std::unordered_map<LPARAM, LPARAM>::iterator& child);
-#endif
+	void eraseChild(decltype(children)::iterator& child, bool deleting);
 
 	LRESULT sendMsg(UINT msg, WPARAM wParam, LPARAM lParam);
 };

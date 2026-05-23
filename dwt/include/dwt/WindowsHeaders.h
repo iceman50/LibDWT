@@ -56,8 +56,9 @@
 #include <tchar.h>
 #include <windowsx.h>
 #include <shellapi.h>
+#include <shlobj.h>
+#include <shobjidl.h>
 #include <shlwapi.h>
-#include "dwt_shlobj.h"
 #include <commctrl.h>
 #include <commdlg.h>
 #include <assert.h>

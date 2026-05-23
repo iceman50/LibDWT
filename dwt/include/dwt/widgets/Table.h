@@ -279,7 +279,6 @@ public:
 	  */
 	void setGridLines( bool value = true );
 
-#ifndef WINCE
 	/// Adds (or removes) the hoover style.
 	/** A grid with hoover style will "flash" the text color in the line the cursor
 	  * is above. <br>
@@ -288,7 +287,6 @@ public:
 	  * If omitted, parameter defaults to true.
 	  */
 	void setHover( bool value = true );
-#endif
 
 	/// Adds (or removes) the header drag drop style.
 	/** A grid with header drag drop style will have the possibility for a user to
@@ -565,12 +563,9 @@ inline void Table::onSortItems(SortFunction f) {
 	fun = f;
 }
 
-#ifndef WINCE
-
 inline void Table::setHover( bool value ) {
 	addRemoveTableExtendedStyle( LVS_EX_TWOCLICKACTIVATE, value );
 }
-#endif
 
 inline void Table::setHeaderDragDrop( bool value ) {
 	addRemoveTableExtendedStyle( LVS_EX_HEADERDRAGDROP, value );

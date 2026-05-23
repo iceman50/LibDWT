@@ -31,6 +31,10 @@
 
 #include <dwt/widgets/TabView.h>
 
+#include <algorithm>
+
+#include <vsstyle.h>
+
 #include <dwt/widgets/Container.h>
 #include <dwt/widgets/ToolTip.h>
 #include <dwt/WidgetCreator.h>
@@ -38,10 +42,7 @@
 #include <dwt/util/win32/Version.h>
 #include <dwt/DWTException.h>
 #include <dwt/resources/Brush.h>
-#include <dwt/dwt_vsstyle.h>
 #include <dwt/Texts.h>
-
-#include <algorithm>
 
 namespace dwt {
 
@@ -170,6 +171,10 @@ void TabView::create(const Seed & cs) {
 	widthConfig = cs.widthConfig;
 	toggleActive = cs.toggleActive;
 
+	if (!TabCtrl_SetItemExtra(handle(), sizeof(TCITEMEXTRADATA))) {
+		throw Win32Exception("Error while trying to set extra tab item data size");
+	}
+
 	if(cs.style & TCS_OWNERDRAWFIXED) {
 		dwtassert(dynamic_cast<Control*>(getParent()), "Owner-drawn tabs must have a parent derived from dwt::Control");
 
@@ -179,8 +184,8 @@ void TabView::create(const Seed & cs) {
 
 		closeIcon = cs.closeIcon;
 
-		if(cs.tabStyle == Seed::WinBrowser && util::win32::ensureVersion(util::win32::VISTA)) {
-			theme.load(L"BrowserTab::" VSCLASS_TAB, this);
+		if(cs.tabStyle == Seed::WinBrowser) {
+			theme.load(std::wstring(L"BrowserTab::") + std::wstring(VSCLASS_TAB), this);
 			if(!theme)
 				theme.load(VSCLASS_TAB, this, false);
 		} else
@@ -228,18 +233,18 @@ void TabView::add(ContainerPtr w, const IconPtr& icon) {
 	const size_t pos = size();
 
 	TabInfo* ti = new TabInfo(this, w, icon);
-	TCITEM item = { TCIF_PARAM };
-	item.lParam = reinterpret_cast<LPARAM>(ti);
-
+	TCITEMEXTRA item = { { TCIF_PARAM } };
+	item.data.tabInfo = ti;
+	
 	if(!hasStyle(TCS_OWNERDRAWFIXED)) {
 		ti->text = formatTitle(w->getText());
-		item.mask |= TCIF_TEXT;
-		item.pszText = const_cast<LPTSTR>(ti->text.c_str());
+		item.tabItem.mask |= TCIF_TEXT;
+		item.tabItem.pszText = const_cast<LPTSTR>(ti->text.c_str());
 	}
 
 	if(icon) {
-		item.mask |= TCIF_IMAGE;
-		item.iImage = addIcon(icon);
+		item.tabItem.mask |= TCIF_IMAGE;
+		item.tabItem.iImage = addIcon(icon);
 	}
 
 	int newIdx = TabCtrl_InsertItem(handle(), pos, &item);
@@ -367,6 +372,22 @@ void TabView::setActive(int i) {
 	handleTabSelected();
 }
 
+bool TabView::activateLeftTab() {
+	if(active > 0) {
+		setActive(active - 1);
+		return true;
+	}
+	return false;
+}
+
+bool TabView::activateRightTab() {
+	if(active < static_cast<int>(size()) - 1) {
+		setActive(active + 1);
+		return true;
+	}
+	return false;
+}
+
 void TabView::swapWidgets(ContainerPtr oldW, ContainerPtr newW) {
 	newW->resize(clientSize);
 	newW->setVisible(true);
@@ -441,9 +462,9 @@ TabView::TabInfo* TabView::getTabInfo(ContainerPtr w) const {
 
 TabView::TabInfo* TabView::getTabInfo(int i) const {
 	if(i != -1) {
-		TCITEM item = { TCIF_PARAM };
+		TCITEMEXTRA item = { { TCIF_PARAM } };
 		if(TabCtrl_GetItem(handle(), i, &item)) {
-			return reinterpret_cast<TabInfo*>(item.lParam);
+			return item.data.tabInfo; 
 		}
 	}
 	return 0;
@@ -721,15 +742,33 @@ bool TabView::handleMiddleMouseUp(const MouseEvent& mouseEvent) {
 
 bool TabView::handleXMouseUp(const MouseEvent& mouseEvent) {
 	switch(mouseEvent.ButtonPressed) {
-	case MouseEvent::X1: next(true); break;
-	case MouseEvent::X2: next(); break;
-	
+	case MouseEvent::X1: next(); break;
+	case MouseEvent::X2: next(true); break;
+
+	// these are only here to satisfy compilers; they will never be called.
 	case MouseEvent::OTHER: break;
 	case MouseEvent::LEFT: break;
 	case MouseEvent::RIGHT: break;
 	case MouseEvent::MIDDLE: break;
 	}
 	return true;
+}
+
+void TabView::handleMouseWheel(int delta) {
+	if(active == -1) {
+		return; // no active tab; ignore.
+	}
+
+	// find out where the mouse is. don't trust the MouseEvent data; it contains garbage when switching windows...
+	auto pt = ClientCoordinate(ScreenCoordinate(Point::fromLParam(::GetMessagePos())), this).getPoint();
+	if(pt.x < 0 || pt.x > clientSize.right() || pt.y < 0 || pt.y > clientSize.top()) {
+		return; // outside of the tab control itself; ignore.
+	}
+
+	// note: we don't handle small increment aggregates (when delta < 120).
+
+	if(delta > 0) { activateLeftTab(); } // go left when scrolling upwards.
+	else if(delta < 0) { activateRightTab(); } // go right when scrolling downwards.
 }
 
 bool TabView::handleMouseMove(const MouseEvent& mouseEvent) {
@@ -930,22 +969,19 @@ bool TabView::filter(const MSG& msg) {
 	if(tip)
 		tip->relayEvent(msg);
 
-	/* handle Alt+Left and Alt+Right here instead of setting up global accelerators in order to be
-	able to allow further dispatching if we can't move more to the left or to the right. */
+	/* handle Ctrl+PageUp, Ctrl+PageDown, Alt+Left, Alt+Right here instead of setting up global
+	 * accelerators in order to be able to allow further dispatching if we can't move more to the
+	 * left or to the right. this is of importance when imbricating TabView widgets. */
+	if(msg.message == WM_KEYDOWN && active != -1) {
+		switch(static_cast<int>(msg.wParam)) {
+		case VK_PRIOR: if(isControlPressed() && activateLeftTab()) { return true; } break;
+		case VK_NEXT: if(isControlPressed() && activateRightTab()) { return true; } break;
+		}
+	}
 	if(msg.message == WM_SYSKEYDOWN && active != -1) {
 		switch(static_cast<int>(msg.wParam)) {
-		case VK_LEFT:
-			if(isAltPressed() && active > 0) {
-				setActive(active - 1);
-				return true;
-			}
-			break;
-		case VK_RIGHT:
-			if(isAltPressed() && active < static_cast<int>(size()) - 1) {
-				setActive(active + 1);
-				return true;
-			}
-			break;
+		case VK_LEFT: if(isAltPressed() && activateLeftTab()) { return true; } break;
+		case VK_RIGHT: if(isAltPressed() && activateRightTab()) { return true; } break;
 		}
 	}
 
@@ -956,6 +992,15 @@ bool TabView::filter(const MSG& msg) {
 		if(ti) {
 			setTop(ti->w);
 		}
+	}
+
+	/* WM_MOUSEWHEEL have a special dispatching mechanism; they start from the window that has
+	 * focus and the caller then handles their forwarding. we catch them all here (assuming the
+	 * main application does call this "filter" method, which it should) and handle them as regular
+	 * messages. */
+	if(msg.message == WM_MOUSEWHEEL) {
+		LRESULT dispachResult = 0;
+		BaseType::handleMessage(msg, dispachResult);
 	}
 
 	return false;

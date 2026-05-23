@@ -62,6 +62,7 @@ class TabView :
 	typedef std::function<void (const tstring&)> TitleChangedFunction;
 	typedef std::function<bool (const ScreenCoordinate&)> ContextMenuFunction;
 
+	using aspects::Caption<TabView>::setText;
 public:
 	/// Class type
 	typedef TabView ThisType;
@@ -131,8 +132,8 @@ public:
 
 	// tab controls only use WM_DRAWITEM
 	static bool handlePainting(DRAWITEMSTRUCT& t) {
-		TabInfo* ti = reinterpret_cast<TabInfo*>(t.itemData);
-		return ti->control->handlePainting(t, ti);
+		TCITEMEXTRADATA* itemData = reinterpret_cast<TCITEMEXTRADATA*>(t.itemData);
+		return itemData->tabInfo->control->handlePainting(t, itemData->tabInfo);
 	}
 	static bool handlePainting(MEASUREITEMSTRUCT) { return false; }
 
@@ -156,6 +157,16 @@ private:
 		TabInfo(TabView* control, ContainerPtr w, IconPtr icon) :
 		control(control), w(w), icon(icon), handleContextMenu(nullptr), marked(false) { }
 	};
+
+	struct TCITEMEXTRADATA {
+		TabInfo* tabInfo;
+		char dummyByte; // needed so the size of the extra data != pointer size, see L#2019492
+	};
+
+	struct TCITEMEXTRA {
+		TCITEMHEADER tabItem;
+		TCITEMEXTRADATA data;
+	}; 
 
 	class Dropper;
 
@@ -190,6 +201,8 @@ private:
 	int findTab(ContainerPtr w) const;
 
 	void setActive(int i);
+	bool activateLeftTab(); /// activate the tab on the left of the selected one.
+	bool activateRightTab(); /// activate the tab on the right of the selected one.
 	TabInfo* getTabInfo(ContainerPtr w) const;
 	TabInfo* getTabInfo(int i) const;
 
@@ -205,6 +218,7 @@ private:
 	bool handleMiddleMouseDown(const MouseEvent& mouseEvent);
 	bool handleMiddleMouseUp(const MouseEvent& mouseEvent);
 	bool handleXMouseUp(const MouseEvent& mouseEvent);
+	void handleMouseWheel(int delta);
 	bool handleMouseMove(const MouseEvent& mouseEvent);
 	void handleMouseLeave();
 	bool handlePainting(DRAWITEMSTRUCT& info, TabInfo* ti);

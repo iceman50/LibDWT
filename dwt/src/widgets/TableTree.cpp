@@ -31,8 +31,9 @@
 
 #include <dwt/widgets/TableTree.h>
 
+#include <vsstyle.h>
+
 #include <dwt/CanvasClasses.h>
-#include <dwt/dwt_vsstyle.h>
 #include <dwt/resources/ImageList.h>
 #include <dwt/resources/Pen.h>
 #include <dwt/util/check.h>
@@ -114,7 +115,7 @@ void TableTree::insertChild(LPARAM parentParam, LPARAM child) {
 void TableTree::eraseChild(LPARAM child) {
 	auto i = children.find(child);
 	if(i != children.end()) {
-		eraseChild(i);
+		eraseChild(i, false);
 	}
 }
 
@@ -129,7 +130,8 @@ void TableTree::collapse(LPARAM parentParam) {
 		sendMsg(LVM_DELETEITEM, pos + 1, 0);
 	}
 
-	items[parentParam].switchExp(*this);
+	items[parentParam].expanded = false;
+	items[parentParam].redrawGlyph(*this);
 
 	// special case, see TableTreeTest
 	if(n == 1 && pos == static_cast<int>(size()) - 1) {
@@ -152,16 +154,15 @@ void TableTree::expand(LPARAM parentParam) {
 
 	resort();
 
-	items[parentParam].switchExp(*this);
+	items[parentParam].expanded = true;
+	items[parentParam].redrawGlyph(*this);
 }
 
 TableTree::Item::Item() : expanded(false)
 {
 }
 
-void TableTree::Item::switchExp(TableTree& w) {
-	expanded = !expanded;
-
+void TableTree::Item::redrawGlyph(TableTree& w) {
 	::RECT rect = glyphRect;
 	::InvalidateRect(w.handle(), &rect, FALSE);
 }
@@ -305,7 +306,9 @@ void TableTree::handleDelete(int pos) {
 
 	auto parentItem = items.find(param);
 	if(parentItem != items.end()) {
-		collapse(param);
+		if(parentItem->second.expanded) {
+			collapse(param);
+		}
 		for(auto child: parentItem->second.children) {
 			children.erase(child);
 		}
@@ -314,7 +317,7 @@ void TableTree::handleDelete(int pos) {
 
 	auto child = children.find(param);
 	if(child != children.end()) {
-		eraseChild(child);
+		eraseChild(child, true);
 	}
 }
 
@@ -359,20 +362,17 @@ int TableTree::handleSort(LPARAM& lhs, LPARAM& rhs) {
 	return 0;
 }
 
-#ifndef _MSC_VER /// @todo workaround for VS' sucky decltype
-void TableTree::eraseChild(decltype(children)::iterator& child) {
-#else
-void TableTree::eraseChild(std::unordered_map<LPARAM, LPARAM>::iterator& child) {
-#endif
+void TableTree::eraseChild(decltype(children)::iterator& child, bool deleting) {
 	auto& item = items[child->second];
 	auto& cont = item.children;
-	if(item.expanded) {
+	if(!deleting && item.expanded) {
 		sendMsg(LVM_DELETEITEM, findData(child->first), 0);
 	}
 	cont.erase(std::remove(cont.begin(), cont.end(), child->first), cont.end());
 	if(cont.empty()) {
+		item.expanded = false;
 		item.glyphRect = Rectangle();
-		item.switchExp(*this);
+		item.redrawGlyph(*this);
 	}
 	children.erase(child);
 }

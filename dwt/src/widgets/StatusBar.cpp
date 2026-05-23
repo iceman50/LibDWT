@@ -69,7 +69,7 @@ void StatusBar::create(const Seed& cs) {
 	parts.clear();
 	parts.reserve(cs.parts);
 	for(unsigned i = 0; i < cs.parts; ++i) {
-		parts.emplace_back(new PartBase());
+		parts.emplace_back(std::make_unique<Part>());
 	}
 	fill = cs.fill;
 
@@ -130,7 +130,7 @@ void StatusBar::setHelpId(unsigned part, unsigned id) {
 
 void StatusBar::setWidget(unsigned part, Control* widget, const Rectangle& padding) {
 	dwtassert(part < parts.size(), "Invalid part number");
-	std::unique_ptr<WidgetPart> p(new WidgetPart(widget, padding));
+	auto p = std::make_unique<WidgetPart>(widget, padding);
 	p->desiredSize = widget->getPreferredSize().x;
 	p->helpId = widget->getHelpId();
 	parts[part] = std::move(p);
@@ -209,14 +209,15 @@ void StatusBar::WidgetPart::layout(POINT* offset) {
 }
 
 StatusBar::Part& StatusBar::getPart(unsigned part) {
-	auto& ret = *parts[part];
-	if(!dynamic_cast<Part*>(&ret)) {
-		std::unique_ptr<Part> p(new Part());
-		Part& ref = *p;
-		parts[part] = std::move(p);
-		return ref;
+	auto& ret = parts[part];
+	if(auto p = dynamic_cast<Part*>(ret.get())) {
+		return *p;
 	}
-	return static_cast<Part&>(ret);
+
+	auto p = std::make_unique<Part>();
+	auto raw = p.get();
+	parts[part] = std::move(p);
+	return *raw;
 }
 
 void StatusBar::layoutSections() {
@@ -259,7 +260,7 @@ void StatusBar::layoutSections(const Point& sz) {
 		auto wp = dynamic_cast<WidgetPart*>(i->get());
 		if(wp) {
 			POINT p[2];
-			sendMessage(SB_GETRECT, std::distance(parts.begin(), i), reinterpret_cast<LPARAM>(p));
+			sendMessage(SB_GETRECT, static_cast<WPARAM>(i - parts.begin()), reinterpret_cast<LPARAM>(p));
 			::MapWindowPoints(handle(), getParent()->handle(), p, 2);
 			wp->layout(p);
 		}
