@@ -97,7 +97,7 @@ void setRichSummary(RichTextBox::ObjectType richText) {
 		"\\red245\\green245\\blue210;"
 		"}"
 		"\\viewkind4\\uc1\\pard\\sa120\\sl280\\slmult1\\f0\\fs20\\cf1 "
-		"\\b DWT MultiControlExample\\b0\\par "
+		"\\b RichTextBox Example\\b0\\par "
 		"\\cf2 Grid-based layout with a broad collection of controls.\\cf1\\par\\par "
 		"\\b Text formatting showcase\\b0\\par "
 		"Regular, \\b bold\\b0, \\i italic\\i0, \\ul underline\\ul0, and \\strike strikeout\\strike0 text.\\par "

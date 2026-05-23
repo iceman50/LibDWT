@@ -115,6 +115,7 @@
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(TargetName).lib</OutputFile>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -158,6 +159,7 @@
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(TargetName).lib</OutputFile>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
