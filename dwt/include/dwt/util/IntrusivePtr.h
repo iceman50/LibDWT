@@ -67,6 +67,11 @@ public:
 		}
 	}
 
+	template<class U, typename std::enable_if<std::is_convertible<U*, T*>::value, int>::type = 0>
+	intrusive_ptr(intrusive_ptr<U>&& rhs) noexcept : px(rhs.px) {
+		rhs.px = nullptr;
+	}
+
 	intrusive_ptr(intrusive_ptr&& rhs) noexcept : px(rhs.px) {
 		rhs.px = nullptr;
 	}
@@ -82,9 +87,15 @@ public:
 		return *this;
 	}
 
-	template<class U>
+	template<class U, typename std::enable_if<std::is_convertible<U*, T*>::value, int>::type = 0>
 	intrusive_ptr& operator=(const intrusive_ptr<U>& rhs) {
 		intrusive_ptr(rhs).swap(*this);
+		return *this;
+	}
+
+	template<class U, typename std::enable_if<std::is_convertible<U*, T*>::value, int>::type = 0>
+	intrusive_ptr& operator=(intrusive_ptr<U>&& rhs) noexcept {
+		intrusive_ptr(static_cast<intrusive_ptr<U>&&>(rhs)).swap(*this);
 		return *this;
 	}
 

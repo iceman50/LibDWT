@@ -32,6 +32,8 @@
 #ifndef DWT_RESOURCE_H_
 #define DWT_RESOURCE_H_
 
+#include <atomic>
+
 namespace dwt {
 
 /** Policy for all handles that have null as NULL_HANDLE */
@@ -82,13 +84,17 @@ protected:
 	}
 
 private:
-	friend void intrusive_ptr_add_ref(Handle<Policy>* p) { ++p->ref; }
-	friend void intrusive_ptr_release(Handle<Policy>* p) { if(--p->ref == 0) { delete p; } }
+  friend void intrusive_ptr_add_ref(Handle<Policy>* p) { p->ref.fetch_add(1, std::memory_order_relaxed); }
+  friend void intrusive_ptr_release(Handle<Policy>* p) {
+    if(p->ref.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+      delete p;
+    }
+  }
 
 	HandleType h;
 	bool owned;
 
-	long ref;
+  std::atomic<long> ref;
 };
 
 }
