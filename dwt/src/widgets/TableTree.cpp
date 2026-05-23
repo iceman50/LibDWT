@@ -56,6 +56,9 @@ void TableTree::create(const Seed& seed) {
 	dwtassert((seed.style & LVS_REPORT) == LVS_REPORT, "TableTree requires LVS_REPORT");
 
 	BaseType::create(seed);
+	if(indent <= 0) {
+		indent = std::max<long>(::GetSystemMetrics(SM_CXSMICON), 16);
+	}
 
 	theme.load(VSCLASS_TREEVIEW, this);
 
@@ -178,6 +181,7 @@ LRESULT TableTree::handleCustomDraw(NMLVCUSTOMDRAW& data) {
 
 	if(data.nmcd.dwDrawStage == (CDDS_ITEMPREPAINT | CDDS_SUBITEM) && data.dwItemType == LVCDI_ITEM && data.iSubItem == 0) {
 		FreeCanvas canvas { data.nmcd.hdc };
+		const long drawIndent = std::max<long>(indent, 16);
 
 		auto rect = getRect(static_cast<int>(data.nmcd.dwItemSpec), 0, LVIR_BOUNDS);
 
@@ -187,18 +191,18 @@ LRESULT TableTree::handleCustomDraw(NMLVCUSTOMDRAW& data) {
 			Pen pen { ::ExtCreatePen(PS_COSMETIC | PS_ALTERNATE, 1, &lb, 0, nullptr) };
 			auto selectPen(canvas.select(pen));
 
-			Point mid { rect.left() + indent / 2, rect.top() + indent / 2 };
+			Point mid { rect.left() + drawIndent / 2, rect.top() + drawIndent / 2 };
 
 			auto lastChild = false;
 			if(children.find(data.nmcd.lItemlParam) != children.end()) {
 				// this is a child item; draw a second vertical line to link surrounding parents.
 				canvas.line(mid.x, rect.top(), mid.x, rect.bottom()); // vertical
-				rect.pos.x += indent;
-				mid.x += indent;
+				rect.pos.x += drawIndent;
+				mid.x += drawIndent;
 				lastChild = children.find(getData(static_cast<int>(data.nmcd.dwItemSpec) + 1)) == children.end();
 			}
 
-			canvas.line(mid, Point(rect.left() + indent, mid.y)); // horizontal
+			canvas.line(mid, Point(rect.left() + drawIndent, mid.y)); // horizontal
 			canvas.line(mid.x, rect.top(), mid.x, lastChild ? mid.y : rect.bottom()); // vertical
 		}
 
@@ -209,15 +213,15 @@ LRESULT TableTree::handleCustomDraw(NMLVCUSTOMDRAW& data) {
 			if(theme) {
 				int part = TVP_GLYPH, state = parentItem->second.expanded ? GLPS_OPENED : GLPS_CLOSED;
 				theme.getPartSize(canvas, part, state, rect.size);
-				rect.pos.x += std::max(indent - rect.size.x, 0L) / 2;
-				rect.pos.y += std::max(indent - rect.size.y, 0L) / 2;
+				rect.pos.x += std::max(drawIndent - rect.size.x, 0L) / 2;
+				rect.pos.y += std::max(drawIndent - rect.size.y, 0L) / 2;
 				theme.drawBackground(canvas, part, state, rect);
 				parentItem->second.glyphRect = rect;
 
 			} else {
 				const long glyphSize = 9, padding = 2;
-				rect.pos.x += std::max(indent - glyphSize, 0L) / 2;
-				rect.pos.y += std::max(indent - glyphSize, 0L) / 2;
+				rect.pos.x += std::max(drawIndent - glyphSize, 0L) / 2;
+				rect.pos.y += std::max(drawIndent - glyphSize, 0L) / 2;
 				rect.size.x = rect.size.y = glyphSize;
 
 				::RECT rc = rect;

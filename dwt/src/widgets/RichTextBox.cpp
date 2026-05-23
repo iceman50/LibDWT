@@ -159,7 +159,7 @@ inline int RichTextBox::lineFromPos(const ScreenCoordinate& pt) {
 }
 
 inline int RichTextBox::lineFromChar(int c) {
-	return sendMessage(EM_EXLINEFROMCHAR, 0, c);
+	return static_cast<int>(sendMessage(EM_EXLINEFROMCHAR, 0, c));
 }
 
 tstring RichTextBox::getSelection() const {
@@ -263,7 +263,7 @@ void RichTextBox::addTextSteady(const tstring& txtRaw) {
 
 		if(addedLen >= limit) {
 			/* adding more text than the box can contain. -> remove all previous lines. */
-			charsToRemove = prevLen;
+			charsToRemove = static_cast<int>(prevLen);
 			hold.scroll = true;
 
 		} else {
@@ -271,7 +271,7 @@ void RichTextBox::addTextSteady(const tstring& txtRaw) {
 			 * -> find out how many lines have to be removed. we try from 10 % to 80 % of the text
 			 *    limit. */
 			for(auto multiplier = 1; multiplier <= 8; ++multiplier) {
-				auto charsToDivLimit = lineIndex(lineFromChar(limit * multiplier / 10));
+				auto charsToDivLimit = lineIndex(lineFromChar(static_cast<int>(limit * multiplier / 10)));
 				if(charsToDivLimit >= 0 && prevLen + addedLen - charsToDivLimit < limit) {
 					/* good, got enough room for the new text! */
 					charsToRemove = charsToDivLimit;
@@ -289,7 +289,7 @@ void RichTextBox::addTextSteady(const tstring& txtRaw) {
 			if(charsToRemove <= 0) {
 				/* clearing out 80 % of the current text would not be enough. -> remove all
 				 * previous lines. */
-				charsToRemove = prevLen;
+				charsToRemove = static_cast<int>(prevLen);
 				hold.scroll = true;
 			}
 		}

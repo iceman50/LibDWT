@@ -37,7 +37,7 @@ const TCHAR Header::windowClass[] = WC_HEADER;
 
 Header::Seed::Seed() :
 	/// @todo add HDS_DRAGDROP when the tree has better support for col ordering
-	BaseType::Seed(WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS)
+	BaseType::Seed(WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | HDS_HORZ)
 {
 }
 

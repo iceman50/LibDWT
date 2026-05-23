@@ -63,7 +63,7 @@ $zipPath = Join-Path $resolvedOutputDir ("{0}-{1}.zip" -f $Name, $timestamp)
 $includePatterns = @(
 	"*.c", "*.cc", "*.cpp", "*.cxx",
 	"*.h", "*.hh", "*.hpp", "*.hxx", "*.inl", "*.ipp",
-	"*.rc", "*.manifest", "*.def",
+	"*.rc", "*.ico", "*.manifest", "*.def",
 	"*.vcxproj", "*.vcproj", "*.sln", "*.filters", "*.props", "*.targets", "*.mk",
 	"Makefile", "makefile", "GNUmakefile"
 )

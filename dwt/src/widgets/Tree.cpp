@@ -354,7 +354,9 @@ LRESULT Tree::prePaintItem(NMTVCUSTOMDRAW& nmcd) {
 	// Clip the default item (column 0) drawing to the column width
 	auto clipRect = nmcd.nmcd.rc;
 	auto w = header->getWidth(Header_OrderToIndex(header->handle(), 0));
-	clipRect.right = clipRect.left + w;
+	const long glyphGutter = 24;
+	clipRect.left = 0;
+	clipRect.right = std::max<long>(w + glyphGutter, glyphGutter);
 
 	Region region { clipRect };
 	POINT pt = { 0 };

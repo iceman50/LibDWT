@@ -1,0 +1,4 @@
+#include <windows.h>
+#include "resource.h"
+
+IDI_MULTI_TRAY ICON "resources\\tray.ico"

@@ -33,6 +33,7 @@
 #ifndef DWT_FORWARD_H_
 #define DWT_FORWARD_H_
 
+#include "Version.h"
 #include "WindowsHeaders.h"
 #include "util/IntrusivePtr.h"
 

@@ -42,6 +42,8 @@ MULTI_EXE := $(BIN_DIR)/MultiControlExample.exe
 RICH_EXE := $(BIN_DIR)/RichTextCapabilities.exe
 MANIFEST_RC := common-controls-v6.rc
 MANIFEST_OBJ := $(OBJ_DIR)/projects/mingw-w64/common-controls-v6.res.o
+MULTI_ICON_RC := $(ROOT)/examples/MultiControlExample/resources.rc
+MULTI_ICON_OBJ := $(OBJ_DIR)/examples/MultiControlExample/resources.res.o
 
 INCLUDES := -I$(ROOT)/dwt/include
 COMMON_DEFINES := \
@@ -110,9 +112,9 @@ $(DWT_LIB): $(DWT_OBJS)
 	$(AR) rcs $@ $^
 	$(RANLIB) $@
 
-$(MULTI_EXE): $(MULTI_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
+$(MULTI_EXE): $(MULTI_OBJ) $(MANIFEST_OBJ) $(MULTI_ICON_OBJ) $(DWT_LIB)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
-	$(CXX) $(LDFLAGS) -o $@ $(MULTI_OBJ) $(MANIFEST_OBJ) $(DWT_LIB) $(LDLIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(MULTI_OBJ) $(MANIFEST_OBJ) $(MULTI_ICON_OBJ) $(DWT_LIB) $(LDLIBS)
 
 $(RICH_EXE): $(RICH_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
@@ -121,6 +123,10 @@ $(RICH_EXE): $(RICH_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 $(MANIFEST_OBJ): $(MANIFEST_RC) common-controls-v6.manifest
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(RC) -O coff -i $(MANIFEST_RC) -o $@
+
+$(MULTI_ICON_OBJ): $(MULTI_ICON_RC) $(ROOT)/examples/MultiControlExample/resources/tray.ico $(ROOT)/examples/MultiControlExample/resource.h
+	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
+	$(RC) -O coff -i $(MULTI_ICON_RC) -o $@
 
 $(OBJ_DIR)/%.o: $(ROOT)/%.cpp
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
