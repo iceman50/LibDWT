@@ -40,6 +40,7 @@ BIN_DIR := $(BUILD_DIR)/bin
 DWT_LIB := $(LIB_DIR)/libdwt.a
 MULTI_EXE := $(BIN_DIR)/MultiControlExample.exe
 RICH_EXE := $(BIN_DIR)/RichTextCapabilities.exe
+CUSTOM_EXE := $(BIN_DIR)/CustomDrawExample.exe
 MANIFEST_RC := common-controls-v6.rc
 MANIFEST_OBJ := $(OBJ_DIR)/projects/mingw-w64/common-controls-v6.res.o
 MULTI_ICON_RC := $(ROOT)/examples/MultiControlExample/resources.rc
@@ -78,16 +79,18 @@ DWT_SOURCES := \
 
 MULTI_SOURCE := $(ROOT)/examples/MultiControlExample/main.cpp
 RICH_SOURCE := $(ROOT)/examples/RichTextCapabilities/main.cpp
+CUSTOM_SOURCE := $(ROOT)/examples/CustomDrawExample/main.cpp
 
 DWT_OBJS := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(DWT_SOURCES))
 MULTI_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(MULTI_SOURCE))
 RICH_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(RICH_SOURCE))
+CUSTOM_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(CUSTOM_SOURCE))
 
 .PHONY: all build x86-debug x86-release x64-debug x64-release clean print-config
 
 all: x86-debug x86-release x64-debug x64-release
 
-build: $(DWT_LIB) $(MULTI_EXE) $(RICH_EXE)
+build: $(DWT_LIB) $(MULTI_EXE) $(RICH_EXE) $(CUSTOM_EXE)
 
 x86-debug:
 	$(MAKE) build ARCH=x86 CONFIG=debug
@@ -119,6 +122,10 @@ $(MULTI_EXE): $(MULTI_OBJ) $(MANIFEST_OBJ) $(MULTI_ICON_OBJ) $(DWT_LIB)
 $(RICH_EXE): $(RICH_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(CXX) $(LDFLAGS) -o $@ $(RICH_OBJ) $(MANIFEST_OBJ) $(DWT_LIB) $(LDLIBS)
+
+$(CUSTOM_EXE): $(CUSTOM_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
+	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
+	$(CXX) $(LDFLAGS) -o $@ $(CUSTOM_OBJ) $(MANIFEST_OBJ) $(DWT_LIB) $(LDLIBS)
 
 $(MANIFEST_OBJ): $(MANIFEST_RC) common-controls-v6.manifest
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
