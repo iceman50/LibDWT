@@ -355,7 +355,7 @@ int dwtMain(dwt::Application& app) {
 	saveDialog.addFilter(_T("All Files"), _T("*.*"));
 
 	toolbar->addButton("msg", -1, _T("Message"), true, 0, [status, &messageBox] {
-		messageBox.show(_T("Toolbar action triggered."), _T("DWT MessageBox"), dwt::MessageBoxW::BOX_OK, dwt::MessageBoxW::BOX_ICONINFORMATION);
+		messageBox.show(_T("Toolbar action triggered."), _T("DWT MessageBox"), dwt::MessageBox::BOX_OK, dwt::MessageBox::BOX_ICONINFORMATION);
 		setStatus(status, _T("MessageBox opened"));
 	});
 	toolbar->addButton("color", -1, _T("Color"), true, 0, [status, &colorDialog, &colorParams] {
