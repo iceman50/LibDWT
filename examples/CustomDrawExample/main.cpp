@@ -147,6 +147,79 @@ void drawHeaderSortArrow(HDC hdc, const RECT& rect, COLORREF color, bool ascendi
 	canvas.polygon(points, 3);
 }
 
+LRESULT drawModeButtonCustomDraw(NMCUSTOMDRAW& data, bool dark) {
+	auto palette = makePalette(dark);
+	if(data.dwDrawStage == CDDS_PREPAINT) {
+		return CDRF_NOTIFYITEMDRAW;
+	}
+	if(data.dwDrawStage != CDDS_ITEMPREPAINT) {
+		return CDRF_DODEFAULT;
+	}
+
+	const bool disabled = (data.uItemState & CDIS_DISABLED) != 0;
+	const bool pressed = (data.uItemState & CDIS_SELECTED) != 0;
+	const bool hot = (data.uItemState & CDIS_HOT) != 0;
+
+	COLORREF face = palette.buttonFace;
+	if(dark) {
+		if(pressed) {
+			face = blendColor(palette.buttonFace, palette.accent, 70);
+		} else if(hot) {
+			face = palette.buttonHot;
+		}
+	} else {
+		if(pressed) {
+			face = blendColor(palette.buttonFace, palette.accent, 24);
+		} else if(hot) {
+			face = palette.buttonHot;
+		}
+	}
+
+	const COLORREF border = dark ? RGB(96, 106, 116) : RGB(170, 178, 188);
+	const COLORREF textColor = disabled ? (dark ? blendColor(palette.text, palette.panelBg, 108) : ::GetSysColor(COLOR_GRAYTEXT)) : palette.text;
+
+	fillRect(data.hdc, data.rc, face);
+
+	RECT top = data.rc;
+	top.bottom = top.top + 1;
+	fillRect(data.hdc, top, border);
+
+	RECT left = data.rc;
+	left.right = left.left + 1;
+	fillRect(data.hdc, left, border);
+
+	RECT right = data.rc;
+	right.left = right.right - 1;
+	fillRect(data.hdc, right, border);
+
+	RECT bottom = data.rc;
+	bottom.top = bottom.bottom - 1;
+	fillRect(data.hdc, bottom, border);
+
+	TCHAR caption[256] = { 0 };
+	::GetWindowText(data.hdr.hwndFrom, caption, 255);
+
+	RECT textRect = data.rc;
+	if(pressed) {
+		::OffsetRect(&textRect, 1, 1);
+	}
+	::InflateRect(&textRect, -8, -4);
+
+	FreeCanvas canvas { data.hdc };
+	auto transparentBk = canvas.setBkMode(true);
+	canvas.setTextColor(textColor);
+	dwt::Rectangle drawRect(textRect);
+	canvas.drawText(caption, drawRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+	if((data.uItemState & CDIS_FOCUS) != 0) {
+		RECT focusRect = data.rc;
+		::InflateRect(&focusRect, -4, -4);
+		::DrawFocusRect(data.hdc, &focusRect);
+	}
+
+	return CDRF_SKIPDEFAULT;
+}
+
 void applyTheme(Label::ObjectType status, Table::ObjectType table, ToolTip::ObjectType toolTip, bool dark) {
 	auto palette = makePalette(dark);
 	table->setColor(palette.text, palette.rowEven);
@@ -193,8 +266,8 @@ int dwtMain(dwt::Application& app) {
 	auto* rebar = WidgetCreator<Rebar>::create(grid, Rebar::Seed());
 	auto* toolBar = WidgetCreator<ToolBar>::create(rebar, ToolBar::Seed());
 	auto* status = WidgetCreator<Label>::create(grid, Label::Seed(_T("Custom draw palette active.")));
-	auto* regularButton = WidgetCreator<Button>::create(grid, Button::Seed(_T("Use Regular Colors")));
-	auto* darkButton = WidgetCreator<Button>::create(grid, Button::Seed(_T("Use Dark Mode Look")));
+	auto* regularButton = WidgetCreator<Button>::create(grid, Button::Seed(_T("Use Regular Colors"), BS_NOTIFY));
+	auto* darkButton = WidgetCreator<Button>::create(grid, Button::Seed(_T("Use Dark Mode Look"), BS_NOTIFY));
 
 	Table::Seed tableSeed;
 	tableSeed.font = uiFont;
@@ -226,6 +299,8 @@ int dwtMain(dwt::Application& app) {
 	table->insert({ _T("Table"), _T("CustomDraw<Table, NMLVCUSTOMDRAW>"), _T("Alternating row colors and text colors are controlled in custom draw.") }, 3);
 	table->insert({ _T("ToolTip"), _T("CustomDraw<ToolTip, NMTTCUSTOMDRAW>"), _T("Tooltip uses native text rendering with custom palette colors.") }, 4);
 	table->setChecked(0, true);
+    //For whatever reason the header will not CustomDraw using the table attached header, so let's make a new one and attach
+    // it with WidgetCreator
 	auto headerHandle = ListView_GetHeader(table->handle());
 	Header* tableHeader = nullptr;
 	if(headerHandle) {
@@ -247,6 +322,16 @@ int dwtMain(dwt::Application& app) {
 	rebar->refresh();
 
 	auto isDark = std::make_shared<bool>(false);
+	const auto buttonDraw = [isDark](WPARAM, LPARAM lParam) -> LRESULT {
+		auto* draw = reinterpret_cast<NMCUSTOMDRAW*>(lParam);
+		if(!draw) {
+			return CDRF_DODEFAULT;
+		}
+		return drawModeButtonCustomDraw(*draw, *isDark);
+	};
+	regularButton->onRaw(buttonDraw, dwt::Message(WM_NOTIFY, NM_CUSTOMDRAW));
+	darkButton->onRaw(buttonDraw, dwt::Message(WM_NOTIFY, NM_CUSTOMDRAW));
+
 	window->addCallback(dwt::Message(WM_ERASEBKGND), [isDark](const MSG& msg, LRESULT& retVal) {
 		auto palette = makePalette(*isDark);
 		RECT rc = {};
@@ -264,10 +349,12 @@ int dwtMain(dwt::Application& app) {
 		return true;
 	});
 
-	auto refreshAll = [window, rebar, toolBar, table] {
+	auto refreshAll = [window, rebar, toolBar, regularButton, darkButton, table] {
 		::InvalidateRect(window->handle(), nullptr, TRUE);
 		::InvalidateRect(rebar->handle(), nullptr, TRUE);
 		::InvalidateRect(toolBar->handle(), nullptr, TRUE);
+		::InvalidateRect(regularButton->handle(), nullptr, TRUE);
+		::InvalidateRect(darkButton->handle(), nullptr, TRUE);
 		::InvalidateRect(table->handle(), nullptr, TRUE);
 		HWND header = ListView_GetHeader(table->handle());
 		if(header) {

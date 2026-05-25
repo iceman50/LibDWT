@@ -7,6 +7,23 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Get-DwtVersionString {
+	param([string]$RepoRoot)
+
+	$versionHeaderPath = Join-Path $RepoRoot "dwt\include\dwt\Version.h"
+	if (-not (Test-Path -LiteralPath $versionHeaderPath)) {
+		throw "Version header not found: $versionHeaderPath"
+	}
+
+	$versionHeaderContent = Get-Content -LiteralPath $versionHeaderPath -Raw
+	$versionMatch = [Regex]::Match($versionHeaderContent, '#define\s+DWT_VERSION_STRING\s+"([^"]+)"')
+	if (-not $versionMatch.Success) {
+		throw "Failed to extract DWT version string from: $versionHeaderPath"
+	}
+
+	return $versionMatch.Groups[1].Value
+}
+
 function Remove-PathIfExists {
 	param([string]$Path)
 
@@ -18,6 +35,7 @@ function Remove-PathIfExists {
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $resolvedRepoRoot = (Resolve-Path -LiteralPath $repoRoot).Path
+$dwtVersion = Get-DwtVersionString -RepoRoot $resolvedRepoRoot
 
 $tempDirectories = @(
 	(Join-Path $resolvedRepoRoot "projects\mingw-w64\build")
@@ -58,7 +76,7 @@ if (-not (Test-Path -LiteralPath $resolvedOutputDir)) {
 }
 
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$zipPath = Join-Path $resolvedOutputDir ("{0}-{1}.zip" -f $Name, $timestamp)
+$zipPath = Join-Path $resolvedOutputDir ("{0}-{1}-{2}.zip" -f $Name, $dwtVersion, $timestamp)
 
 $includePatterns = @(
 	"*.c", "*.cc", "*.cpp", "*.cxx",
@@ -68,7 +86,7 @@ $includePatterns = @(
 	"Makefile", "makefile", "GNUmakefile"
 )
 
-$excludeRootNames = @(".vs", ".vscode", "projects\mingw-w64\build", "projects\mingw-w64\dist")
+$excludeRootNames = @(".vs", ".vscode", "projects\mingw-w64\build", "projects\mingw-w64\dist", "dist")
 if (-not $IncludeGit) {
 	$excludeRootNames += ".git"
 }
