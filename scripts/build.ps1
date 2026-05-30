@@ -82,20 +82,30 @@ if ($PlatformToolset) {
 }
 Write-Host "Build target: $target"
 
-foreach ($configuration in $Configurations) {
-    foreach ($platform in $Platforms) {
-        foreach ($project in $projects) {
-            Write-Host "Building $project ($configuration|$platform)"
-            $properties = "/p:Configuration=$configuration;Platform=$platform"
-            if ($PlatformToolset) {
-                $properties = "$properties;DwtPlatformToolset=$PlatformToolset"
-            }
-            & $msbuild $project "/m" "/nologo" "/verbosity:minimal" "/t:$target" $properties
-            if ($LASTEXITCODE -ne 0) {
-                throw "Build failed for $project ($configuration|$platform)."
+$buildStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+try {
+    foreach ($configuration in $Configurations) {
+        foreach ($platform in $Platforms) {
+            foreach ($project in $projects) {
+                Write-Host "Building $project ($configuration|$platform)"
+                $properties = "/p:Configuration=$configuration;Platform=$platform"
+                if ($PlatformToolset) {
+                    $properties = "$properties;DwtPlatformToolset=$PlatformToolset"
+                }
+                & $msbuild $project "/m" "/nologo" "/verbosity:minimal" "/t:$target" $properties
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Build failed for $project ($configuration|$platform)."
+                }
             }
         }
     }
-}
 
-Write-Host "All requested builds completed successfully."
+    Write-Host "All requested builds completed successfully."
+}
+finally {
+    $buildStopwatch.Stop()
+    $elapsed = $buildStopwatch.Elapsed
+    $formattedElapsed = "{0:00}:{1:00}:{2:00}.{3:000}" -f $elapsed.Hours, $elapsed.Minutes, $elapsed.Seconds, $elapsed.Milliseconds
+    Write-Host "Total build time: $formattedElapsed"
+}

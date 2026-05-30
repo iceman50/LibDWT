@@ -1,7 +1,7 @@
 /*
   DC++ Widget Toolkit
 
-  Copyright (c) 2007-2013, Jacek Sieka
+  Copyright (c) 2007-2022, Jacek Sieka
 
   All rights reserved.
 
@@ -31,15 +31,14 @@
 
 #include <dwt/widgets/Link.h>
 
-#include <dwt/util/win32/Version.h>
-
 namespace dwt {
 
 const TCHAR Link::windowClass[] = WC_LINK;
 
-Link::Seed::Seed(const tstring& caption, bool link) :
+Link::Seed::Seed(const tstring& caption, bool link, std::function<bool (const tstring&, bool)> linkManager) :
 	BaseType::Seed(WS_CHILD | WS_TABSTOP, 0, link ? _T("<a href=\"") + caption + _T("\">") + caption + _T("</a>") : caption),
-	font(0)
+	font(0),
+	fpLinkManager(linkManager)
 {
 }
 
@@ -52,8 +51,12 @@ void Link::create(const Seed& seed) {
 	BaseType::create(seed);
 	setFont(seed.font);
 
-	auto openLink = [](WPARAM, LPARAM lParam) -> LRESULT {
-		::ShellExecute(0, 0, reinterpret_cast<NMLINK*>(lParam)->item.szUrl, 0, 0, SW_SHOWNORMAL);
+	auto openLink = [seed](WPARAM, LPARAM lParam) -> LRESULT {
+		if(seed.fpLinkManager) {
+			seed.fpLinkManager(reinterpret_cast<NMLINK*>(lParam)->item.szUrl, true);
+		} else {
+			::ShellExecute(0, 0, reinterpret_cast<NMLINK*>(lParam)->item.szUrl, 0, 0, SW_SHOWNORMAL);
+		}
 		return 0;
 	};
 	onRaw(openLink, Message(WM_NOTIFY, NM_CLICK));
@@ -67,24 +70,9 @@ void Link::setLink(const tstring& link, size_t index) {
 }
 
 Point Link::getPreferredSize() {
-	if(util::win32::ensureVersion(util::win32::VISTA)) {
-		SIZE size = { 0 };
-		sendMessage(LM_GETIDEALSIZE, getRoot()->getClientSize().x, reinterpret_cast<LPARAM>(&size));
-		return Point(size.cx, size.cy);
-	}
-
-	// no LM_GETIDEALSIZE on XP; do it by hand...
-	auto text = getText();
-	size_t start, end, closing, closingEnd;
-	while((start = text.find(_T("<a"))) != tstring::npos &&
-		(end = text.find(_T(">"), start)) != tstring::npos &&
-		(closing = text.find(_T("</a"), end)) != tstring::npos &&
-		(closingEnd = text.find(_T(">"), closing)) != tstring::npos)
-	{
-		text.erase(closing, closingEnd - closing + 1);
-		text.erase(start, end - start + 1);
-	}
-	return getTextSize(text);
+	SIZE size = { 0 };
+	sendMessage(LM_GETIDEALSIZE, getRoot()->getClientSize().x, reinterpret_cast<LPARAM>(&size));
+	return Point(size.cx, size.cy);
 }
 
 }
