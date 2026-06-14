@@ -175,6 +175,14 @@ void Tree::setStateImageList( ImageListPtr imageList ) {
 	  TreeView_SetImageList(treeHandle(), imageList->getImageList(), TVSIL_STATE);
 }
 
+bool Tree::getChecked(HTREEITEM item) const {
+	return TreeView_GetCheckState(treeHandle(), item) != FALSE;
+}
+
+void Tree::setChecked(HTREEITEM item, bool checked) {
+	TreeView_SetCheckState(treeHandle(), item, checked ? TRUE : FALSE);
+}
+
 LPARAM Tree::getDataImpl(HTREEITEM item) {
 	TVITEM tvitem = { TVIF_PARAM | TVIF_HANDLE, item };
 	if(!TreeView_GetItem(treeHandle(), &tvitem)) {
