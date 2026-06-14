@@ -52,13 +52,13 @@ COMMON_DEFINES := \
 	-D_UNICODE \
 	-DWINVER=0x0601 \
 	-D_WIN32_WINNT=0x0601 \
-	-D_WIN32_IE=0x0600 \
+	-D_WIN32_IE=0x0A00 \
 	-DNOMINMAX \
 	-D_CRT_SECURE_NO_WARNINGS
 
 CPPFLAGS := $(INCLUDES) $(COMMON_DEFINES) $(CFG_DEFINES)
 CXXFLAGS := -std=gnu++17 -Wall -Wextra -Wno-unknown-pragmas -Wno-missing-field-initializers -Wno-unused-parameter -Wno-strict-aliasing $(CFG_CXXFLAGS)
-LDFLAGS := -mwindows
+LDFLAGS := -mwindows -Wl,--major-subsystem-version,6,--minor-subsystem-version,1
 LDLIBS := \
 	-lcomctl32 \
 	-ldwmapi \

@@ -182,10 +182,13 @@ int dwtMain(dwt::Application& app) {
 
 	Tree::Seed treeSeed;
 	treeSeed.font = uiFont;
+	treeSeed.checkBoxes = true;
 	auto* tree = WidgetCreator<Tree>::create(grid, treeSeed);
 
 	auto* tableTree = WidgetCreator<TableTree>::create(grid, TableTree::Seed(tableSeed));
-	auto* virtualTree = WidgetCreator<VirtualTree>::create(grid, VirtualTree::Seed(treeSeed));
+	Tree::Seed virtualTreeSeed;
+	virtualTreeSeed.font = uiFont;
+	auto* virtualTree = WidgetCreator<VirtualTree>::create(grid, VirtualTree::Seed(virtualTreeSeed));
 
 	auto* richText = WidgetCreator<RichTextBox>::create(grid, RichTextBox::Seed());
 
@@ -265,9 +268,10 @@ int dwtMain(dwt::Application& app) {
 	tree->addColumn(_T("Node"), 240);
 	tree->addColumn(_T("Detail"), 180);
 	auto treeRoot = tree->insert(_T("Widgets"), TVI_ROOT, TVI_LAST, 0, true);
-	tree->insert(_T("Input Controls"), treeRoot, TVI_LAST, 0, false);
+	auto treeInput = tree->insert(_T("Input Controls"), treeRoot, TVI_LAST, 0, false);
 	tree->insert(_T("Data Views"), treeRoot, TVI_LAST, 0, false);
 	tree->insert(_T("Dialogs and Notifications"), treeRoot, TVI_LAST, 0, false);
+	tree->setChecked(treeInput);
 	tree->expand(treeRoot);
 
 	tableTree->addColumn(_T("Item"), 220);
@@ -348,6 +352,12 @@ int dwtMain(dwt::Application& app) {
 
 	tree->onSelectionChanged([status] {
 		setStatus(status, _T("Tree selection changed"));
+	});
+	tree->onClicked([tree, status] {
+		auto item = tree->getSelected();
+		if(item) {
+			setStatus(status, tree->getChecked(item) ? _T("Tree item checked") : _T("Tree item unchecked"));
+		}
 	});
 
 	loadDialog.addFilter(_T("All Files"), _T("*.*"));

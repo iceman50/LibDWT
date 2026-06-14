@@ -76,7 +76,7 @@ public:
 		enum {
 			WinDefault, /// use the default Windows style.
 
-			WinBrowser /// use the "Browser" Windows style, only available on Win >= Vista.
+			WinBrowser /// use the "Browser" Windows style.
 		} tabStyle;
 
 		FontPtr font;

@@ -70,7 +70,7 @@ public:
 
 	/** show a balloon popup.
 	@param callback callback called when the balloon has been clicked.
-	@param balloonIcon icon shown next to the title, only available on >= Vista. */
+	@param balloonIcon icon shown next to the title. */
 	void addMessage(const tstring& title, const tstring& message, const Callback& callback, const IconPtr& balloonIcon = 0);
 
 	void onContextMenu(Callback callback) { contextMenu = callback; }

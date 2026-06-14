@@ -78,7 +78,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0600;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN32;WIN32;_DEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0A00;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\dwt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -102,7 +102,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_WIN32;WIN32;NDEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0600;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN32;WIN32;NDEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0A00;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\dwt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -122,7 +122,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_WIN64;_DEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0600;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;_DEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0A00;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\dwt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -146,7 +146,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_WIN64;NDEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0600;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN64;NDEBUG;UNICODE;_UNICODE;WINVER=0x0601;_WIN32_WINNT=0x0601;_WIN32_IE=0x0A00;NOMINMAX;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\dwt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

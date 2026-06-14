@@ -106,6 +106,7 @@ public:
 		typedef ThisType WidgetType;
 
 		FontPtr font;
+		bool checkBoxes;
 
 		/// Fills with default parameters
 		Seed();
@@ -207,8 +208,19 @@ public:
 	  * for the item states.
 	  */
 	void setStateImageList( ImageListPtr stateImageList );
+
+	/// Enables checkboxes for tree items.
+	/** This must be called before inserting items. Once enabled, the native tree-view
+	  * checkbox style cannot be removed.
+	  */
+	void setCheckBoxes(bool value = true);
+
+	/// Returns whether the given item's checkbox is checked.
 	bool getChecked(HTREEITEM item) const;
-	void setChecked(HTREEITEM item, bool checked);
+
+	/// Sets the checked state of the given item.
+	void setChecked(HTREEITEM item, bool checked = true);
+
 	/// Returns the text of the current selected node
 	/** Returns the text of the current selected node in the tree view.
 	  */

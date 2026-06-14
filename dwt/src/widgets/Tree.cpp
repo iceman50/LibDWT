@@ -33,6 +33,7 @@
 
 #include <algorithm>
 
+#include <dwt/DWTException.h>
 #include <dwt/widgets/Header.h>
 #include <dwt/WidgetCreator.h>
 
@@ -49,16 +50,24 @@ bool Tree::TreeView::handleMessage(const MSG& msg, LRESULT &retVal) {
 
 Tree::Seed::Seed() :
 	BaseType::Seed(WS_CHILD | WS_TABSTOP | TVS_DISABLEDRAGDROP | TVS_HASLINES | TVS_NONEVENHEIGHT | TVS_SHOWSELALWAYS),
-	font(0)
+	font(0),
+	checkBoxes(false)
 {
 }
 
 void Tree::create( const Seed & cs )
 {
 	Control::Seed mySeed(WS_CHILD, WS_EX_CONTROLPARENT);
+	Seed treeSeed = cs;
+	const bool checkBoxes = treeSeed.checkBoxes || (treeSeed.style & TVS_CHECKBOXES) != 0;
+	treeSeed.style &= ~TVS_CHECKBOXES;
 
 	BaseType::create(mySeed);
-	tree = WidgetCreator<TreeView>::create(this, cs);
+	tree = WidgetCreator<TreeView>::create(this, treeSeed);
+
+	if(checkBoxes) {
+		setCheckBoxes();
+	}
 
 	onSized([this](const SizedEvent& e) { layout(); });
 
@@ -175,8 +184,32 @@ void Tree::setStateImageList( ImageListPtr imageList ) {
 	  TreeView_SetImageList(treeHandle(), imageList->getImageList(), TVSIL_STATE);
 }
 
+void Tree::setCheckBoxes(bool value) {
+	const bool enabled = tree->hasStyle(TVS_CHECKBOXES);
+	if(!value) {
+		if(enabled) {
+			throw DWTException("Tree checkbox style cannot be removed after it has been enabled");
+		}
+		return;
+	}
+
+	if(enabled) {
+		return;
+	}
+	if(size() != 0) {
+		throw DWTException("Tree checkboxes must be enabled before inserting items");
+	}
+
+	tree->addRemoveStyle(TVS_CHECKBOXES, true);
+
+	HIMAGELIST checkBoxes = TreeView_GetImageList(treeHandle(), TVSIL_STATE);
+	if(checkBoxes) {
+		itsStateImageList = ImageListPtr(new ImageList(checkBoxes));
+	}
+}
+
 bool Tree::getChecked(HTREEITEM item) const {
-	return TreeView_GetCheckState(treeHandle(), item) != FALSE;
+	return TreeView_GetItemState(treeHandle(), item, TVIS_STATEIMAGEMASK) == INDEXTOSTATEIMAGEMASK(2);
 }
 
 void Tree::setChecked(HTREEITEM item, bool checked) {

@@ -225,7 +225,7 @@ public:
 
 	bool isGrouped() const { return grouped; }
 
-	/** Get the rectangle of the specified group's header. Only available on >= Vista. */
+	/** Get the rectangle of the specified group's header. */
 	bool getGroupRect(unsigned groupId, Rectangle& rect) const;
 
 	/// Returns the checked state of the given row
@@ -345,7 +345,7 @@ public:
 	  */
 	void setStateImageList(ImageListPtr imageList);
 
-	/** Set the image list to find icons from when adding groups. Only available on >= Vista. */
+	/** Set the image list to find icons from when adding groups. */
 	void setGroupImageList(ImageListPtr imageList);
 
 	/// Change the view for the Data Grid.

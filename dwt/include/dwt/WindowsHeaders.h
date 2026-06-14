@@ -40,28 +40,24 @@
 #ifndef DWT_WindowsHeaders_h
 #define DWT_WindowsHeaders_h
 
-//TEMP TEMP TEMP
-// My stupid IDE likes to make a mess even though these are defined...
-// so we will default to Win 7 because realistically, nobody with an older WinVer is likely to use this...
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x601
+#define _WIN32_WINNT 0x0601
 #endif
 
 #ifndef WINVER
-#define WINVER 0x601
+#define WINVER 0x0601
 #endif
 
 #ifndef _WIN32_IE
-#define _WIN32_IE 0x0600
-#endif
-// TEMP TEMP TEMP
-
-#if _WIN32_WINNT < 0x502 || WINVER < 0x502
-#error _WIN32_WINNT / WINVER must require Windows XP SP2 (0x502)
+#define _WIN32_IE 0x0A00
 #endif
 
-#if _WIN32_IE < 0x600
-#error _WIN32_IE must require Common Controls 6 (0x600)
+#if _WIN32_WINNT < 0x0601 || WINVER < 0x0601
+#error _WIN32_WINNT / WINVER must require Windows 7 (0x0601)
+#endif
+
+#if _WIN32_IE < 0x0A00
+#error _WIN32_IE must be at least 0x0A00
 #endif
 
 #include <cstdint>
@@ -96,7 +92,7 @@
 
 // Other quirks
 
-// LM_GETIDEALSIZE is a >=Vista message; we check the OS version before using it.
+// Some MinGW headers omit this Windows SDK alias.
 #ifndef LM_GETIDEALSIZE
 #define LM_GETIDEALSIZE LM_GETIDEALHEIGHT
 #endif
