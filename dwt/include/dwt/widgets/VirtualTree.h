@@ -121,6 +121,7 @@ private:
 	bool handleSelect(WPARAM code, Item* item);
 	void handleSelected(Item* item);
 	bool handleSetItem(TVITEMEX& tv);
+	bool handleSortChildren(Item* item, bool recursive);
 
 	void addRoot();
 	bool validate(Item* item) const;

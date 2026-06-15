@@ -51,7 +51,8 @@ bool Tree::TreeView::handleMessage(const MSG& msg, LRESULT &retVal) {
 Tree::Seed::Seed() :
 	BaseType::Seed(WS_CHILD | WS_TABSTOP | TVS_DISABLEDRAGDROP | TVS_HASLINES | TVS_NONEVENHEIGHT | TVS_SHOWSELALWAYS),
 	font(0),
-	checkBoxes(false)
+	checkBoxes(false),
+	tvExStyle(0)
 {
 }
 
@@ -65,6 +66,9 @@ void Tree::create( const Seed & cs )
 	BaseType::create(mySeed);
 	tree = WidgetCreator<TreeView>::create(this, treeSeed);
 
+	if(treeSeed.tvExStyle) {
+		setExtendedStyle(treeSeed.tvExStyle, treeSeed.tvExStyle);
+	}
 	if(checkBoxes) {
 		setCheckBoxes();
 	}
@@ -219,11 +223,41 @@ void Tree::setCheckBoxes(bool value) {
 }
 
 bool Tree::getChecked(HTREEITEM item) const {
-	return TreeView_GetItemState(treeHandle(), item, TVIS_STATEIMAGEMASK) == INDEXTOSTATEIMAGEMASK(2);
+	return getCheckState(item) == Checked;
 }
 
 void Tree::setChecked(HTREEITEM item, bool checked) {
-	TreeView_SetCheckState(treeHandle(), item, checked ? TRUE : FALSE);
+	setCheckState(item, checked ? Checked : Unchecked);
+}
+
+Tree::CheckState Tree::getCheckState(HTREEITEM item) const {
+	auto state = TreeView_GetItemState(treeHandle(), item, TVIS_STATEIMAGEMASK);
+	return static_cast<CheckState>(state >> 12);
+}
+
+void Tree::setCheckState(HTREEITEM item, CheckState state) {
+	TVITEM value = { TVIF_HANDLE | TVIF_STATE, item };
+	value.stateMask = TVIS_STATEIMAGEMASK;
+	value.state = INDEXTOSTATEIMAGEMASK(static_cast<UINT>(state));
+	TreeView_SetItem(treeHandle(), &value);
+}
+
+void Tree::setExtendedCheckBoxes(bool partial, bool exclusion, bool dimmed) {
+	DWORD styles = 0;
+	if(partial) {
+		styles |= TVS_EX_PARTIALCHECKBOXES;
+	}
+	if(exclusion) {
+		styles |= TVS_EX_EXCLUSIONCHECKBOXES;
+	}
+	if(dimmed) {
+		styles |= TVS_EX_DIMMEDCHECKBOXES;
+	}
+	setExtendedStyle(styles, TVS_EX_PARTIALCHECKBOXES |
+		TVS_EX_EXCLUSIONCHECKBOXES | TVS_EX_DIMMEDCHECKBOXES);
+	if(styles) {
+		setCheckBoxes();
+	}
 }
 
 void Tree::setExtendedStyle(DWORD styles, DWORD mask) {
@@ -266,6 +300,136 @@ void Tree::onItemChanging(std::function<bool (const NMTVITEMCHANGE&)> f) {
 	});
 }
 
+void Tree::onGetInfoTip(std::function<tstring (HTREEITEM, LPARAM)> f) {
+	tree->addRemoveStyle(TVS_INFOTIP, true);
+	addCallback(Message(WM_NOTIFY, TVN_GETINFOTIP),
+		[f](const MSG& msg, LRESULT&) -> bool {
+			auto& tip = *reinterpret_cast<NMTVGETINFOTIP*>(msg.lParam);
+			auto text = f(tip.hItem, tip.lParam);
+			if(tip.cchTextMax > 0) {
+				_tcsncpy_s(tip.pszText, tip.cchTextMax, text.c_str(),
+					_TRUNCATE);
+			}
+			return true;
+		});
+}
+
+void Tree::onBeginLabelEdit(std::function<bool (const NMTVDISPINFO&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_BEGINLABELEDIT),
+		[f](const MSG& msg, LRESULT& result) -> bool {
+			result = f(*reinterpret_cast<const NMTVDISPINFO*>(msg.lParam)) ?
+				FALSE : TRUE;
+			return true;
+		});
+}
+
+void Tree::onEndLabelEdit(std::function<bool (const NMTVDISPINFO&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_ENDLABELEDIT),
+		[f](const MSG& msg, LRESULT& result) -> bool {
+			result = f(*reinterpret_cast<const NMTVDISPINFO*>(msg.lParam)) ?
+				TRUE : FALSE;
+			return true;
+		});
+}
+
+void Tree::onBeginDrag(std::function<void (const NMTREEVIEW&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_BEGINDRAG),
+		[f](const MSG& msg, LRESULT&) -> bool {
+			f(*reinterpret_cast<const NMTREEVIEW*>(msg.lParam));
+			return true;
+		});
+}
+
+void Tree::onBeginRightDrag(std::function<void (const NMTREEVIEW&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_BEGINRDRAG),
+		[f](const MSG& msg, LRESULT&) -> bool {
+			f(*reinterpret_cast<const NMTREEVIEW*>(msg.lParam));
+			return true;
+		});
+}
+
+void Tree::onAsyncDraw(std::function<void (NMTVASYNCDRAW&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_ASYNCDRAW),
+		[f](const MSG& msg, LRESULT&) -> bool {
+			f(*reinterpret_cast<NMTVASYNCDRAW*>(msg.lParam));
+			return true;
+		});
+}
+
+void Tree::onTreeKeyDown(std::function<void (const NMTVKEYDOWN&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_KEYDOWN),
+		[f](const MSG& msg, LRESULT&) -> bool {
+			f(*reinterpret_cast<const NMTVKEYDOWN*>(msg.lParam));
+			return true;
+		});
+}
+
+ImageListPtr Tree::createDragImage(HTREEITEM item) const {
+	auto imageList = TreeView_CreateDragImage(treeHandle(), item);
+	return imageList ? ImageListPtr(new ImageList(imageList)) : ImageListPtr();
+}
+
+void Tree::setInsertMark(HTREEITEM item, bool after) {
+	TreeView_SetInsertMark(treeHandle(), item, after ? TRUE : FALSE);
+}
+
+unsigned Tree::getIndent() const {
+	return static_cast<unsigned>(TreeView_GetIndent(treeHandle()));
+}
+
+void Tree::setIndent(unsigned indent) {
+	TreeView_SetIndent(treeHandle(), indent);
+}
+
+UINT Tree::getScrollTime() const {
+	return TreeView_GetScrollTime(treeHandle());
+}
+
+void Tree::setScrollTime(UINT milliseconds) {
+	TreeView_SetScrollTime(treeHandle(), milliseconds);
+}
+
+void Tree::setAutoScrollInfo(UINT pixelsPerSecond, UINT updateTime) {
+	::SendMessage(treeHandle(), TVM_SETAUTOSCROLLINFO, pixelsPerSecond,
+		updateTime);
+}
+
+COLORREF Tree::getLineColor() const {
+	return TreeView_GetLineColor(treeHandle());
+}
+
+COLORREF Tree::setLineColor(COLORREF color) {
+	return TreeView_SetLineColor(treeHandle(), color);
+}
+
+COLORREF Tree::getInsertMarkColor() const {
+	return TreeView_GetInsertMarkColor(treeHandle());
+}
+
+COLORREF Tree::setInsertMarkColor(COLORREF color) {
+	return TreeView_SetInsertMarkColor(treeHandle(), color);
+}
+
+HWND Tree::getToolTips() const {
+	return TreeView_GetToolTips(treeHandle());
+}
+
+void Tree::setToolTips(HWND toolTips) {
+	TreeView_SetToolTips(treeHandle(), toolTips);
+}
+
+bool Tree::sortChildren(HTREEITEM item, bool recursive) {
+	return TreeView_SortChildren(treeHandle(), item, recursive ? TRUE : FALSE) != FALSE;
+}
+
+UINT Tree::mapItemToAccessibilityId(HTREEITEM item) const {
+	return TreeView_MapHTREEITEMToAccID(treeHandle(), item);
+}
+
+HTREEITEM Tree::mapAccessibilityIdToItem(UINT id) const {
+	return TreeView_MapAccIDToHTREEITEM(treeHandle(), id);
+}
+
 LPARAM Tree::getDataImpl(HTREEITEM item) {
 	TVITEM tvitem = { TVIF_PARAM | TVIF_HANDLE, item };
 	if(!TreeView_GetItem(treeHandle(), &tvitem)) {
@@ -306,10 +470,22 @@ void Tree::select(const ScreenCoordinate& pt) {
 	}
 }
 
-Rectangle Tree::getItemRect(HTREEITEM item) {
-	RECT rc;
-	TreeView_GetItemRect(treeHandle(), item, &rc, TRUE);
+Rectangle Tree::getItemRect(HTREEITEM item, bool textOnly) {
+	RECT rc = { 0 };
+	TreeView_GetItemRect(treeHandle(), item, &rc, textOnly ? TRUE : FALSE);
 	return Rectangle(rc);
+}
+
+bool Tree::getItemPartRect(HTREEITEM item, TVITEMPART part,
+	Rectangle& rect) const {
+	RECT value = { 0 };
+	TVGETITEMPARTRECTINFO info = { item, &value, part };
+	if(!::SendMessage(treeHandle(), TVM_GETITEMPARTRECT, 0,
+		reinterpret_cast<LPARAM>(&info))) {
+		return false;
+	}
+	rect = Rectangle(value);
+	return true;
 }
 
 HeaderPtr Tree::getHeader() {

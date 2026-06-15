@@ -44,8 +44,8 @@ Items without an explicit status marker remain unimplemented.
 | Pointer/input | **Partial** | Typed `WM_POINTER` down, update, up, enter, leave, and capture-changed events with pointer ID, type, position, and flags | `WM_TOUCH`, `WM_GESTURE`, pointer history, pressure/pen details, explicit capture helpers, and cancellation |
 | Button | **Partial** | Command-link styles through seeds, note get/set, elevation shield, aligned image lists, split configuration, and `BCN_DROPDOWN` | Image-list getter, text-margin getter, explicit dropdown-state helpers, and hot/focus notifications |
 | ProgressBar | **Added** | Marquee mode/speed, normal/error/paused states, colors, and non-mutating cached step retrieval | No remaining item from the original P1 audit |
-| Table/ListView | **Partial** | View get/set, tile setters, empty markup, generic group info operations, footer rectangle, `LVITEMINDEX` state/iteration, insertion marks, top/page/edit accessors, and drag/activate/key/item-changing events | Tile readback, footer contents/events, remaining group metrics and focus/selection operations, work areas, hot/hover/color/background geometry APIs, complete columns/image lists, and label-edit events |
-| Tree/VirtualTree | **Partial** | Checkboxes, generic extended styles, multiselect and selected-item enumeration, double buffering, and item-changing/item-changed events | Correct multiselect count integration, extended checkbox states, info-tip/label-edit/async-draw/drag events, drag images, insertion marks, timing/scroll/tooltips/sort/part rectangles, accessibility item IDs, and full `VirtualTree` parity |
+| Table/ListView | **Added** | View and tile get/set, empty markup, footer information/items/rectangles/link events, complete group info/metrics/state/focus operations, `LVITEMINDEX` state/iteration/rectangles, insertion marks and colors, work areas, hot item/cursor, hover time, outline color, selected column, background image, geometry, image-list getters, and drag/activate/key/change/label-edit events | No remaining item from the original P1 audit |
+| Tree/VirtualTree | **Partial** | Native Tree extended styles and checkbox states, multiselect enumeration/counting, item-change/info-tip/label-edit/async-draw/drag/key events, drag images, insertion marks/colors, indentation, scroll/autoscroll settings, tooltips, sorting, item/part rectangles and accessibility IDs; VirtualTree translates applicable states, geometry, sorting, IDs and events | VirtualTree still needs true multiselect storage/enumeration and live behavioral tests |
 | Taskbar | **Partial** | Progress state and value | Thumbnail toolbar buttons/updates, thumbnail tooltip/clipping, tab properties, AppUserModelID, and Jump Lists |
 | Notification | **Partial** | `NOTIFYICON_VERSION_4`, keyboard selection, `Shell_NotifyIconGetRect`, `NIM_SETFOCUS`, popup lifecycle events, and basic Explorer recreation handling | GUID identity, real-time/quiet-time/large-icon/sound flags, balloon-show events, and stronger restoration/error handling |
 | ToolTip | **Partial** | Title/icon, margins, colors, pop/update, window theme, and `TTN_LINKCLICK` | Balloon/close styles, tracking APIs, current-tool/enumeration/bubble sizing/rectangle adjustment, and per-tool flags |
@@ -120,9 +120,9 @@ Items without an explicit status marker remain unimplemented.
 ### P1 - High-Value Control and Shell Coverage
 
 1. **Partial:** Pointer events added; touch, gesture, and richer pen data remain.
-2. **Partial:** A substantial ListView/Table v6 subset is added.
-3. **Partial:** Tree extended styles, multiselection, and item-change events are
-   added; extended states and specialist events remain.
+2. **Added:** The audited ListView/Table v6 P1 surface is covered.
+3. **Partial:** Native Tree P1 coverage is complete; true VirtualTree
+   multiselection and live behavior tests remain.
 4. **Partial:** Taskbar progress is added; thumbnail-toolbar support remains.
 5. **Added:** Notification icons now use `NOTIFYICON_VERSION_4`; related tray
    options remain.
@@ -282,23 +282,20 @@ not require runtime fallback paths:
 
 **Priority: P1**
 
-- **Partial:** View get/set and tile-view setters are added; complete tile
-  readback remains.
+- **Added:** View and tile-view get/set APIs.
 - **Added:** Empty-text/empty-markup callback support.
-- **Partial:** Footer rectangle retrieval; footer information, items, and link
-  events remain.
-- **Partial:** Generic group info get/set, rectangle, count, move, and removal
-  are added. Dedicated group metrics, selection, and focus APIs remain; generic
-  `LVGROUP` supports subtitle, task text, descriptions, subset text, state, and
-  alignment.
+- **Added:** Footer information, item and rectangle retrieval plus link events.
+- **Added:** Generic group info, rectangle, count, move/removal, metrics,
+  state, selection, and focus APIs.
 - **Added:** `LVITEMINDEX` iteration and state APIs for owner-data lists
-  combined with grouping.
-- **Partial:** Insert marks, top index, count-per-page, and edit-control access
-  are added. Work areas, hot cursor/item, hover time, outline color, selected
-  column, background image, view rectangle, and origin remain.
-- **Remaining:** Complete column and image-list accessors.
-- **Partial:** Begin-drag, item-activation, key, and item-changing events are
-  added. Label-edit and item-changed convenience events remain.
+  combined with grouping, including item-index rectangles.
+- **Added:** Insert marks/colors, work areas, hot cursor/item, hover time,
+  outline color, selected column, background image, view rectangle, origin,
+  visibility, top index, count-per-page, and edit-control access.
+- **Added:** Complete column support through the existing Columns aspect and
+  owned image-list getters.
+- **Added:** Begin-drag, item-activation, key, item-changing/item-changed,
+  label-edit, and footer-link events.
 
 ### Tree and VirtualTree
 
@@ -308,17 +305,19 @@ not require runtime fallback paths:
   double-buffering helpers. Auto-horizontal scrolling, fade expandos, rich
   tooltips, asynchronous image drawing, no-single-collapse, and no-indent-state
   can be selected through the generic style API.
-- **Remaining:** Extended checkbox variants: partial, exclusion, and dimmed states.
-- **Partial:** Selected-item enumeration is added, so callers can obtain a count
-  from the returned collection. The inherited `countSelected()` implementation
-  still needs multiselect-aware integration.
-- **Partial:** Item-changing/item-changed events are added. Info-tip, label-edit
-  validation, async-draw, and drag notifications remain.
-- **Remaining:** Drag images, insertion marks, colors, indent, scroll timing,
-  autoscroll info, tooltips, sorting, item rectangles/parts, and accessibility
-  item-ID mapping.
-- **Remaining:** `VirtualTree` must explicitly mirror and test applicable
-  item-state and selection additions.
+- **Added:** Partial, exclusion, and dimmed checkbox styles and item states,
+  configurable through `Tree::Seed` or at runtime.
+- **Added:** Multiselect-aware selected-item enumeration and counts for native
+  Tree controls.
+- **Added:** Item-changing/item-changed, info-tip, label-edit, async-draw, drag,
+  right-drag, and key notifications.
+- **Added:** Drag images, insertion marks/colors, line colors, indentation,
+  scroll timing, autoscroll settings, tooltips, sorting, full item and part
+  rectangles, and accessibility item-ID mapping.
+- **Partial:** `VirtualTree` translates applicable item states, geometry, drag
+  images, insertion marks, sorting, accessibility IDs, and notifications to
+  stable virtual handles. True native-style multiselect storage and enumeration
+  remain.
 
 ### ProgressBar
 
@@ -543,7 +542,9 @@ accessibility, shell-dialog, Table, or Tree work.
    live updates.
 4. **Partial:** Basic pointer events are added. Continue with touch, gestures,
    pen details, history, capture, and cancellation.
-5. **In progress:** Continue Table and Tree common-controls v6 completion.
+5. **Partial:** Native Table and Tree common-controls v6 coverage is complete
+   against the original P1 audit. Continue with VirtualTree multiselect and live
+   behavior tests.
 6. **Partial:** Taskbar progress, tray v4, ProgressBar, Button, and ToolTip work
    is added. Continue thumbnail buttons and the remaining tray/Button/ToolTip
    items.
@@ -557,9 +558,9 @@ accessibility, shell-dialog, Table, or Tree work.
 
 The highest-value remaining sequence after this update is:
 
-1. Finish Table footer/group/geometry APIs and Tree specialist events/states.
-2. Add live UIA client and multi-monitor DPI transition tests, then complete
+1. Add live UIA client and multi-monitor DPI transition tests, then complete
    visual high-contrast and text-scaling audits.
+2. Add true VirtualTree multiselect storage, enumeration, and tests.
 3. Add `IFileDialogEvents`, shell-item results, and customization.
 4. Add taskbar thumbnail buttons and complete tray identity/options.
 5. Finish pointer/touch/gesture/pen input.

@@ -208,11 +208,15 @@ int dwtMain(dwt::Application& app) {
 	Tree::Seed treeSeed;
 	treeSeed.font = uiFont;
 	treeSeed.checkBoxes = true;
+	treeSeed.tvExStyle = TVS_EX_PARTIALCHECKBOXES |
+		TVS_EX_EXCLUSIONCHECKBOXES | TVS_EX_DIMMEDCHECKBOXES;
 	auto* tree = WidgetCreator<Tree>::create(grid, treeSeed);
 
 	auto* tableTree = WidgetCreator<TableTree>::create(grid, TableTree::Seed(tableSeed));
 	Tree::Seed virtualTreeSeed;
 	virtualTreeSeed.font = uiFont;
+	virtualTreeSeed.checkBoxes = true;
+	virtualTreeSeed.tvExStyle = treeSeed.tvExStyle;
 	auto* virtualTree = WidgetCreator<VirtualTree>::create(grid, VirtualTree::Seed(virtualTreeSeed));
 
 	auto* richText = WidgetCreator<RichTextBox>::create(grid, RichTextBox::Seed());
@@ -327,6 +331,8 @@ int dwtMain(dwt::Application& app) {
 	table->setCheckBoxes(true);
 	table->setReadOnly(true);
 	table->setView(LV_VIEW_DETAILS);
+	table->setHoverTime(350);
+	table->setOutlineColor(RGB(0, 102, 204));
 	table->insert({ _T("Grid"), _T("9x4"), _T("Main responsive layout") }, 101);
 	table->insert({ _T("Rebar/Toolbar"), _T("Top row"), _T("Dialog and notify actions") }, 102);
 	table->insert({ _T("TableTree"), _T("Hierarchy"), _T("Parent-child list entries") }, 103);
@@ -337,9 +343,11 @@ int dwtMain(dwt::Application& app) {
 	tree->addColumn(_T("Detail"), 180);
 	auto treeRoot = tree->insert(_T("Widgets"), TVI_ROOT, TVI_LAST, 0, true);
 	auto treeInput = tree->insert(_T("Input Controls"), treeRoot, TVI_LAST, 0, false);
-	tree->insert(_T("Data Views"), treeRoot, TVI_LAST, 0, false);
-	tree->insert(_T("Dialogs and Notifications"), treeRoot, TVI_LAST, 0, false);
+	auto treeData = tree->insert(_T("Data Views"), treeRoot, TVI_LAST, 0, false);
+	auto treeDialogs = tree->insert(_T("Dialogs and Notifications"), treeRoot, TVI_LAST, 0, false);
 	tree->setChecked(treeInput);
+	tree->setCheckState(treeData, Tree::PartiallyChecked);
+	tree->setCheckState(treeDialogs, Tree::Excluded);
 	tree->setDoubleBuffered();
 	tree->setMultiSelect();
 	tree->expand(treeRoot);
@@ -365,6 +373,7 @@ int dwtMain(dwt::Application& app) {
 			virtualTree->insert(_T("Item ") + std::to_wstring(i + 1) + _T(".") + std::to_wstring(j + 1), section, TVI_LAST, 700 + (i * 10) + j, false);
 		}
 	}
+	virtualTree->setCheckState(virtualRoot, Tree::Dimmed);
 	virtualTree->expand(virtualRoot);
 
 	setRichSummary(richText);
@@ -506,6 +515,12 @@ int dwtMain(dwt::Application& app) {
 	table->onBeginDrag([status](const NMLISTVIEW& item) {
 		setStatus(status, _T("Table drag started: ") + std::to_wstring(item.iItem));
 	});
+	table->onItemChanged([status](const NMLISTVIEW& item) {
+		if(item.uChanged & LVIF_STATE) {
+			setStatus(status, _T("Table item state changed: ") +
+				std::to_wstring(item.iItem));
+		}
+	});
 	table->onListKeyDown([status](const NMLVKEYDOWN& key) {
 		setStatus(status, _T("Table key: ") + std::to_wstring(key.wVKey));
 	});
@@ -517,10 +532,17 @@ int dwtMain(dwt::Application& app) {
 	tree->onItemChanged([status](const NMTVITEMCHANGE&) {
 		setStatus(status, _T("Tree item state changed"));
 	});
+	tree->onBeginDrag([status](const NMTREEVIEW&) {
+		setStatus(status, _T("Tree drag started"));
+	});
+	tree->onGetInfoTip([tree](HTREEITEM item, LPARAM) {
+		return _T("Tree item: ") + tree->getText(item);
+	});
 	tree->onClicked([tree, status] {
 		auto item = tree->getSelected();
 		if(item) {
-			setStatus(status, tree->getChecked(item) ? _T("Tree item checked") : _T("Tree item unchecked"));
+			setStatus(status, _T("Tree checkbox state: ") +
+				std::to_wstring(tree->getCheckState(item)));
 		}
 	});
 

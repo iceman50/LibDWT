@@ -107,9 +107,19 @@ public:
 
 		FontPtr font;
 		bool checkBoxes;
+		DWORD tvExStyle;
 
 		/// Fills with default parameters
 		Seed();
+	};
+
+	enum CheckState {
+		NoCheckBox = 0,
+		Unchecked = 1,
+		Checked = 2,
+		PartiallyChecked = 3,
+		Excluded = 4,
+		Dimmed = 5
 	};
 
 	/** Inserts a node into the tree control.
@@ -145,7 +155,8 @@ public:
 
 	HTREEITEM hitTest(const ScreenCoordinate& pt);
 
-	Rectangle getItemRect(HTREEITEM item);
+	Rectangle getItemRect(HTREEITEM item, bool textOnly = true);
+	bool getItemPartRect(HTREEITEM item, TVITEMPART part, Rectangle& rect) const;
 	/// Deletes just the children of a "node" from the TreeView< br >
 	/** Cycles through all the children of node, and deletes them. <br>
 	  * The node itself is preserved.
@@ -220,6 +231,10 @@ public:
 
 	/// Sets the checked state of the given item.
 	void setChecked(HTREEITEM item, bool checked = true);
+	CheckState getCheckState(HTREEITEM item) const;
+	void setCheckState(HTREEITEM item, CheckState state);
+	void setExtendedCheckBoxes(bool partial = true, bool exclusion = true,
+		bool dimmed = true);
 
 	void setExtendedStyle(DWORD styles, DWORD mask);
 	DWORD getExtendedStyle() const;
@@ -228,6 +243,30 @@ public:
 	std::vector<HTREEITEM> getSelectedItems() const;
 	void onItemChanged(std::function<void (const NMTVITEMCHANGE&)> f);
 	void onItemChanging(std::function<bool (const NMTVITEMCHANGE&)> f);
+	void onGetInfoTip(std::function<tstring (HTREEITEM, LPARAM)> f);
+	void onBeginLabelEdit(std::function<bool (const NMTVDISPINFO&)> f);
+	void onEndLabelEdit(std::function<bool (const NMTVDISPINFO&)> f);
+	void onBeginDrag(std::function<void (const NMTREEVIEW&)> f);
+	void onBeginRightDrag(std::function<void (const NMTREEVIEW&)> f);
+	void onAsyncDraw(std::function<void (NMTVASYNCDRAW&)> f);
+	void onTreeKeyDown(std::function<void (const NMTVKEYDOWN&)> f);
+
+	ImageListPtr createDragImage(HTREEITEM item) const;
+	void setInsertMark(HTREEITEM item, bool after = false);
+	unsigned getIndent() const;
+	void setIndent(unsigned indent);
+	UINT getScrollTime() const;
+	void setScrollTime(UINT milliseconds);
+	void setAutoScrollInfo(UINT pixelsPerSecond, UINT updateTime);
+	COLORREF getLineColor() const;
+	COLORREF setLineColor(COLORREF color);
+	COLORREF getInsertMarkColor() const;
+	COLORREF setInsertMarkColor(COLORREF color);
+	HWND getToolTips() const;
+	void setToolTips(HWND toolTips);
+	bool sortChildren(HTREEITEM item, bool recursive = false);
+	UINT mapItemToAccessibilityId(HTREEITEM item) const;
+	HTREEITEM mapAccessibilityIdToItem(UINT id) const;
 
 	/// Returns the text of the current selected node
 	/** Returns the text of the current selected node in the tree view.
@@ -435,7 +474,7 @@ inline void Tree::setSelectedImpl(HTREEITEM item) {
 }
 
 inline size_t Tree::countSelectedImpl() const {
-	return getSelected() == NULL ? 0 : 1;
+	return static_cast<size_t>(TreeView_GetSelectedCount(treeHandle()));
 }
 
 inline Tree::Tree( Widget * parent )

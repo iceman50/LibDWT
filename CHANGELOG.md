@@ -49,6 +49,17 @@ All notable changes to LibDWT are documented in this file.
   item-changing notifications.
 - Added ListView view/tile, empty-markup, group, item-index, insertion-mark, and
   activation/drag/change APIs to `Table`.
+- Completed the audited Table/ListView P1 surface with tile readback, footer
+  information and link events, group metrics/state/focus, work areas, hot-item
+  and hover settings, geometry, background images, image-list getters, and
+  label-edit callbacks.
+- Completed the audited native Tree P1 surface with partial, exclusion, and
+  dimmed checkbox states, multiselect-aware counts, info-tip and label-edit
+  callbacks, drag and asynchronous-draw events, drag images, insertion marks,
+  colors, indentation, scroll settings, sorting, item-part rectangles, and
+  accessibility-ID mapping.
+- Added VirtualTree translation for the new item states, geometry, drag images,
+  insertion marks, sorting, accessibility IDs, and notification payloads.
 - Added taskbar progress state and value APIs.
 - Added notification icon version 4, focus, icon rectangle, keyboard selection,
   and popup lifecycle support.
@@ -58,7 +69,8 @@ All notable changes to LibDWT are documented in this file.
 - Expanded `MultiControlExample` to demonstrate task dialogs, command-link
   buttons, modern file dialogs, progress states and marquee mode, nullable date
   values, tooltip styling, pointer and DPI events, accessibility metadata, and
-  richer Table, Tree, and notification callbacks.
+  richer Table, Tree, and notification callbacks, including extended Tree and
+  VirtualTree checkbox states.
 
 ### Changed
 

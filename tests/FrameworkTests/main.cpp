@@ -3,6 +3,8 @@
 #include <dwt/Events.h>
 #include <dwt/Widget.h>
 #include <dwt/util/win32/Dpi.h>
+#include <dwt/widgets/Table.h>
+#include <dwt/widgets/Tree.h>
 
 #include <iostream>
 #include <string>
@@ -113,6 +115,20 @@ void testAccessibilityContract() {
 		"logical item expansion state");
 }
 
+void testControlContracts() {
+	using namespace dwt;
+
+	check(Tree::NoCheckBox == 0 && Tree::Unchecked == 1 &&
+		Tree::Checked == 2 && Tree::PartiallyChecked == 3 &&
+		Tree::Excluded == 4 && Tree::Dimmed == 5,
+		"tree checkbox state image indexes");
+
+	Table::FooterInfo footer { _T("Footer"), 2 };
+	Table::FooterItem item { 1, _T("Item"), LVFIS_FOCUSED };
+	check(footer.itemCount == 2 && item.index == 1 &&
+		(item.state & LVFIS_FOCUSED), "table footer value contracts");
+}
+
 }
 
 int dwtMain(dwt::Application&) {
@@ -123,6 +139,7 @@ int main() {
 	testDpiMath();
 	testSystemSettings();
 	testAccessibilityContract();
+	testControlContracts();
 
 	if(failures) {
 		std::cerr << failures << " framework test(s) failed\n";
