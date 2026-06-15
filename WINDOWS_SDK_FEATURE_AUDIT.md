@@ -32,8 +32,8 @@ Items without an explicit status marker remain unimplemented.
 
 | Area | Status | Added | Remaining |
 | --- | --- | --- | --- |
-| Per-monitor DPI | **Partial** | Per-Monitor V2 manifests, runtime and scoped thread awareness, per-widget DPI queries and scaling, DPI-aware metrics/system parameters/window adjustment, suggested bounds, typed DPI events, child after-parent handling, pre-layout resource callbacks, automatic font recreation, icon/image-list resize helpers, and automatic image-list policies for Button/Table/Tree/ToolBar/TabView | Remaining owner-drawn caches and direct bitmap/icon policies, plus DPI transition tests |
-| UI Automation | **Partial** | `IRawElementProviderSimple` plus fragment/root and logical-item navigation, native child-provider bridging, properties/events/structure notifications, `Splitter` RangeValue, `ScrolledContainer` Scroll, and TableTree/VirtualTree/TabView selection, expansion, invocation, focus, bounds, and hit-testing | Additional semantic patterns and accessibility behavior audits |
+| Per-monitor DPI | **Partial** | Per-Monitor V2 manifests, runtime and scoped thread awareness, per-widget DPI queries and scaling, DPI-aware metrics/system parameters/window adjustment, suggested bounds, typed DPI events, child after-parent handling, pre-layout resource callbacks, automatic font recreation, icon/image-list resize helpers, automatic image-list policies for Button/Table/Tree/ToolBar/TabView, and headless DPI contract tests | Remaining owner-drawn caches and direct bitmap/icon policies, plus live multi-monitor transition tests |
+| UI Automation | **Partial** | `IRawElementProviderSimple` plus fragment/root and logical-item navigation, native child-provider bridging, properties/events/structure notifications, `Splitter` RangeValue, `ScrolledContainer` Scroll, TableTree/VirtualTree/TabView selection, expansion, invocation, focus, bounds and hit-testing, and logical-item contract tests | Additional semantic patterns, live UIA client validation, text-scaling checks, and visual high-contrast audits |
 | Modern file dialogs | **Partial** | `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and folder selection; filters, filesystem paths, long paths, custom places, client GUIDs, options, and `FOS_PICKFOLDERS` | Public `IShellItem` and multi-result APIs, virtual-folder results, `IFileDialogEvents`, and `IFileDialogCustomize` |
 | Task dialogs | **Added** | `TaskDialogIndirect` wrapper with common/custom buttons, command links, radio buttons, verification, expanded/footer text, icons, progress modes, callbacks, and callback-based live updates | Convenience APIs for hyperlinks and typed live progress/text updates |
 
@@ -68,8 +68,9 @@ Items without an explicit status marker remain unimplemented.
    - **Added:** Wrap `GetDpiForWindow`, `GetSystemMetricsForDpi`,
      `SystemParametersInfoForDpi`, and `AdjustWindowRectExForDpi`.
    - **Added:** Scoped thread DPI-awareness helpers.
-   - **Remaining:** Focused DPI transition tests and policies for remaining
-     direct bitmap/icon and owner-drawn caches.
+   - **Added:** Headless DPI scaling, event, and system-parameter tests.
+   - **Remaining:** Live multi-monitor transition tests and policies for
+     remaining direct bitmap/icon and owner-drawn caches.
    - Earliest relevant versions: Windows 8.1 for per-monitor DPI and Windows 10
      for the complete Per-Monitor V2 API.
 
@@ -87,9 +88,14 @@ Items without an explicit status marker remain unimplemented.
    - **Added:** Logical item providers for `TableTree`, `VirtualTree`, and
      `TabView`, including Selection, SelectionItem, ExpandCollapse, Invoke,
      focus, bounds, hit-testing, and item events.
+   - **Added:** Headless logical-item provider contract tests.
+   - **Added:** Typed theme, system-color, and system-settings notifications,
+     including current high-contrast and client-area-animation state.
+   - **Added:** Keyboard audit and missing keyboard scrolling support for
+     `ScrolledContainer`.
    - **Remaining:** Additional control-specific semantic patterns.
-   - **Remaining:** Audit high-contrast, text scaling, keyboard-only operation, and
-     `WM_THEMECHANGED`/`WM_SETTINGCHANGE` behavior.
+   - **Remaining:** Live UIA client validation, text-scaling support, and visual
+     high-contrast behavior audits for custom-drawn controls.
    - Available at the Windows 7 minimum.
 
 3. **Modern file and folder dialogs - Partial**
@@ -185,8 +191,10 @@ not require runtime fallback paths:
   and resized-copy helpers.
 - **Partial:** Basic typed pointer events are added. Touch, gesture, detailed
   pen data, capture helpers, history, and cancellation remain.
-- **Remaining:** Theme, high-contrast, system-color, text-scale, and accessibility change
-  notifications.
+- **Partial:** Typed theme, system-color, and system-settings notifications are
+  added, including high-contrast and client-area-animation state. Dedicated
+  text-scale values and more specific accessibility-setting classifications
+  remain.
 - **Partial:** UI Automation fragment and logical-item infrastructure,
   Splitter `RangeValue`, ScrolledContainer `Scroll`, and
   TableTree/VirtualTree/TabView item patterns are added; additional specialist
@@ -467,8 +475,12 @@ UI Automation rather than missing SDK messages.
   patterns.
 - **Added:** Item-level Selection/SelectionItem, ExpandCollapse, and Invoke
   patterns for `TableTree`, `VirtualTree`, and `TabView`.
-- **Remaining:** Keyboard, high-contrast, text-scaling, and theme-change
-  audits, plus specialist patterns.
+- **Added:** Keyboard behavior was audited and `ScrolledContainer` now supports
+  focusable arrow, page, home, and end scrolling.
+- **Partial:** Theme, system-color, and settings changes trigger typed callbacks,
+  relayout, and repaint with high-contrast state available to controls.
+- **Remaining:** Visual high-contrast and text-scaling audits, live UIA client
+  validation, and specialist patterns.
 
 ### ModalDialog and ModelessDialog
 
@@ -519,10 +531,13 @@ accessibility, shell-dialog, Table, or Tree work.
 
 1. **Partial:** Per-Monitor V2 foundation, manifests, thread contexts, system
    parameters, automatic fonts/image lists, and general resource hooks are
-   added. Continue with remaining direct-resource policies and DPI tests.
+   added, with headless DPI contract tests. Continue with remaining
+   direct-resource policies and live multi-monitor transition tests.
 2. **Partial:** UI Automation fragments, logical item providers, structure
    events, Selection, ExpandCollapse, Invoke, RangeValue, and Scroll are added.
-   Continue with accessibility behavior audits and specialist patterns.
+   Logical-item contracts, keyboard behavior, and typed appearance/settings
+   notifications are covered. Continue with live client validation,
+   text-scaling and visual high-contrast audits, and specialist patterns.
 3. **Partial:** `IFileDialog` and `TaskDialog` wrappers are added. Continue with
    shell-item results, file-dialog events/customization, and typed task-dialog
    live updates.
@@ -542,14 +557,14 @@ accessibility, shell-dialog, Table, or Tree work.
 
 The highest-value remaining sequence after this update is:
 
-1. Add focused UI Automation and multi-monitor DPI transition tests, then
-   audit keyboard, high-contrast, text scaling, and theme changes.
-2. Finish Table footer/group/geometry APIs and Tree specialist events/states.
+1. Finish Table footer/group/geometry APIs and Tree specialist events/states.
+2. Add live UIA client and multi-monitor DPI transition tests, then complete
+   visual high-contrast and text-scaling audits.
 3. Add `IFileDialogEvents`, shell-item results, and customization.
 4. Add taskbar thumbnail buttons and complete tray identity/options.
 5. Finish pointer/touch/gesture/pen input.
 6. Add standalone `MonthCalendar`, then Slider and Header coverage.
-8. Add guarded Windows 11 DWM appearance APIs.
+7. Add guarded Windows 11 DWM appearance APIs.
 
 ## Primary References
 

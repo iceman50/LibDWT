@@ -155,6 +155,9 @@ void Widget::callAsync(const Application::Callback& f) {
 bool Widget::handleMessage(const MSG &msg, LRESULT &retVal) {
 	const bool dpiChanged = msg.message == WM_DPICHANGED ||
 		msg.message == WM_DPICHANGED_AFTERPARENT;
+	const bool appearanceChanged = msg.message == WM_THEMECHANGED ||
+		msg.message == WM_SYSCOLORCHANGE ||
+		msg.message == WM_SETTINGCHANGE;
 	if(dpiChanged) {
 		previousDpi = dpi;
 		dpi = msg.message == WM_DPICHANGED ?
@@ -197,6 +200,10 @@ bool Widget::handleMessage(const MSG &msg, LRESULT &retVal) {
 	if(dpiChanged) {
 		layout();
 	}
+	if(appearanceChanged && hwnd && ::IsWindow(hwnd)) {
+		layout();
+		::InvalidateRect(hwnd, nullptr, TRUE);
+	}
 	return handled;
 }
 
@@ -225,6 +232,13 @@ bool Widget::getSystemParameters(UINT action, UINT param, void* value,
 {
 	return util::win32::systemParametersInfoForDpi(
 		action, param, value, flags, getDpi());
+}
+
+bool Widget::isHighContrast() {
+	HIGHCONTRAST value = { sizeof(HIGHCONTRAST) };
+	return ::SystemParametersInfo(SPI_GETHIGHCONTRAST,
+		sizeof(value), &value, 0) &&
+		(value.dwFlags & HCF_HIGHCONTRASTON) != 0;
 }
 
 bool Widget::adjustWindowRect(RECT& rect, bool hasMenu) const {

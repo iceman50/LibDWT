@@ -42,6 +42,23 @@ DpiChangedEvent::DpiChangedEvent(unsigned oldDpi_, const MSG& msg) :
 {
 }
 
+SystemSettingsEvent::SystemSettingsEvent(const MSG& msg) :
+	action(static_cast<UINT>(msg.wParam)),
+	section(msg.lParam ? reinterpret_cast<const TCHAR*>(msg.lParam) : _T("")),
+	highContrast(false),
+	clientAreaAnimation(true)
+{
+	HIGHCONTRAST value = { sizeof(HIGHCONTRAST) };
+	if(::SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(value), &value, 0)) {
+		highContrast = (value.dwFlags & HCF_HIGHCONTRASTON) != 0;
+	}
+
+	BOOL animation = TRUE;
+	if(::SystemParametersInfo(SPI_GETCLIENTAREAANIMATION, 0, &animation, 0)) {
+		clientAreaAnimation = animation != FALSE;
+	}
+}
+
 SizedEvent::SizedEvent( const MSG& msg ) :
 	size(Point::fromLParam(msg.lParam)),
 	isMaximized(msg.wParam == SIZE_MAXIMIZED),

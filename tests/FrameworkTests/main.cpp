@@ -1,0 +1,133 @@
+#include <dwt/Accessibility.h>
+#include <dwt/Application.h>
+#include <dwt/Events.h>
+#include <dwt/Widget.h>
+#include <dwt/util/win32/Dpi.h>
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+namespace {
+
+int failures = 0;
+
+void check(bool condition, const char* message) {
+	if(!condition) {
+		std::cerr << "FAIL: " << message << '\n';
+		++failures;
+	}
+}
+
+void testDpiMath() {
+	using namespace dwt;
+	using namespace dwt::util::win32;
+
+	check(scale(100, 144) == 150, "144 DPI integer scaling");
+	check(scale(-10, 192) == -20, "negative DPI scaling");
+	check(scale(Point(10, 20), 144) == Point(15, 30),
+		"point DPI scaling");
+	check(scale(dwt::Rectangle(1, 2, 10, 20), 192) ==
+		dwt::Rectangle(2, 4, 20, 40), "rectangle DPI scaling");
+
+	DpiResourceEvent resource(96, 144);
+	check(resource.scale(20) == 30, "DPI resource integer scaling");
+	check(resource.scale(Point(8, 12)) == Point(12, 18),
+		"DPI resource point scaling");
+
+	RECT suggested = { 10, 20, 210, 120 };
+	MSG message = { };
+	message.message = WM_DPICHANGED;
+	message.wParam = MAKEWPARAM(144, 144);
+	message.lParam = reinterpret_cast<LPARAM>(&suggested);
+	DpiChangedEvent changed(96, message);
+	check(changed.oldDpi == 96 && changed.newDpi == 144,
+		"DPI changed values");
+	check(changed.suggestedBounds == dwt::Rectangle(suggested),
+		"DPI suggested bounds");
+}
+
+void testSystemSettings() {
+	using namespace dwt;
+	using namespace dwt::util::win32;
+
+	const TCHAR section[] = _T("Accessibility");
+	MSG message = { };
+	message.message = WM_SETTINGCHANGE;
+	message.wParam = SPI_SETHIGHCONTRAST;
+	message.lParam = reinterpret_cast<LPARAM>(section);
+	SystemSettingsEvent event(message);
+	check(event.action == SPI_SETHIGHCONTRAST,
+		"settings action decoding");
+	check(event.section == section, "settings section decoding");
+	check(event.accessibilityChanged(),
+		"accessibility settings classification");
+	check(event.highContrast == Widget::isHighContrast(),
+		"high contrast state consistency");
+
+	NONCLIENTMETRICS metrics = { sizeof(NONCLIENTMETRICS) };
+	check(systemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS,
+		sizeof(metrics), &metrics, 0, defaultDpi),
+		"DPI-aware system parameter query");
+
+	ScopedThreadDpiAwareness scope(
+		ThreadDpiAwareness::PerMonitorAwareV2);
+	(void)scope.changed();
+}
+
+void testAccessibilityContract() {
+	using namespace dwt;
+
+	std::vector<accessibility::ItemId> selected;
+	accessibility::ItemProvider provider;
+	provider.exists = [](accessibility::ItemId item) {
+		return item == 1 || item == 2;
+	};
+	provider.children = [](accessibility::ItemId parent) {
+		return parent == 0 ?
+			std::vector<accessibility::ItemId> { 1, 2 } :
+			std::vector<accessibility::ItemId>();
+	};
+	provider.name = [](accessibility::ItemId item) {
+		return item == 1 ? tstring(_T("First")) : tstring(_T("Second"));
+	};
+	provider.select = [&selected](accessibility::ItemId item) {
+		selected.assign(1, item);
+	};
+	provider.selection = [&selected] { return selected; };
+	provider.selected = [&selected](accessibility::ItemId item) {
+		return !selected.empty() && selected.front() == item;
+	};
+	provider.expandState = [](accessibility::ItemId item) {
+		return item == 1 ? accessibility::Collapsed :
+			accessibility::LeafNode;
+	};
+
+	check(provider.exists(1), "logical item existence");
+	check(provider.children(0).size() == 2, "logical item hierarchy");
+	check(provider.name(2) == _T("Second"), "logical item name");
+	provider.select(2);
+	check(provider.selected(2) && provider.selection().front() == 2,
+		"logical item selection");
+	check(provider.expandState(1) == accessibility::Collapsed,
+		"logical item expansion state");
+}
+
+}
+
+int dwtMain(dwt::Application&) {
+	return 0;
+}
+
+int main() {
+	testDpiMath();
+	testSystemSettings();
+	testAccessibilityContract();
+
+	if(failures) {
+		std::cerr << failures << " framework test(s) failed\n";
+		return 1;
+	}
+	std::cout << "All framework tests passed\n";
+	return 0;
+}

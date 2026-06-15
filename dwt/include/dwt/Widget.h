@@ -204,6 +204,34 @@ public:
 		});
 	}
 
+	void onThemeChanged(std::function<void ()> f) {
+		addCallback(Message(WM_THEMECHANGED),
+			[f](const MSG&, LRESULT&) -> bool {
+				f();
+				return false;
+			});
+	}
+
+	void onSystemColorsChanged(std::function<void ()> f) {
+		addCallback(Message(WM_SYSCOLORCHANGE),
+			[f](const MSG&, LRESULT&) -> bool {
+				f();
+				return false;
+			});
+	}
+
+	void onSystemSettingsChanged(
+		std::function<void (const SystemSettingsEvent&)> f)
+	{
+		addCallback(Message(WM_SETTINGCHANGE),
+			[f](const MSG& msg, LRESULT&) -> bool {
+				f(SystemSettingsEvent(msg));
+				return false;
+			});
+	}
+
+	static bool isHighContrast();
+
 	/** Return the desktop size of the primary monitor (at coords 0, 0). */
 	static Point getPrimaryDesktopSize();
 	/** Return the desktop size of the monitor closest to this widget. */

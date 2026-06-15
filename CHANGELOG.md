@@ -27,6 +27,14 @@ All notable changes to LibDWT are documented in this file.
   focus, bounds, hit-testing, and item event support.
 - Added scoped thread DPI-awareness contexts and DPI-aware system-parameter
   queries.
+- Added typed theme, system-color, and system-settings change callbacks,
+  including high-contrast and client-area-animation state.
+- Added automatic relayout and repaint handling for theme, system-color, and
+  system-settings changes.
+- Added keyboard scrolling and accessibility focus metadata to
+  `ScrolledContainer`.
+- Added headless framework tests for DPI helpers, system settings, and logical
+  UI Automation item-provider contracts, integrated into MSVC and MinGW builds.
 - Added automatic DPI image-list recreation for Button, Table, Tree, ToolBar,
   and TabView, including TabView owner-draw metrics and close icons.
 - Added modern `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and

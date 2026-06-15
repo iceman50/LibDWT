@@ -2,7 +2,8 @@ param(
     [string[]]$Configurations = @("Release"),
     [string[]]$Platforms = @("x64"),
     [string]$PlatformToolset = "",
-    [switch]$Clean
+    [switch]$Clean,
+    [switch]$SkipTests
 )
 
 $ErrorActionPreference = "Stop"
@@ -66,7 +67,13 @@ if (Test-Path $exampleProjectsRoot) {
     $exampleProjects = Get-ChildItem -Path $exampleProjectsRoot -Recurse -Filter *.vcxproj -File | ForEach-Object { $_.FullName }
 }
 
-$projects = @($dwtProject) + $exampleProjects
+$testProjectsRoot = Join-Path $repoRoot "projects\msvc\tests"
+$testProjects = @()
+if (Test-Path $testProjectsRoot) {
+    $testProjects = Get-ChildItem -Path $testProjectsRoot -Recurse -Filter *.vcxproj -File | ForEach-Object { $_.FullName }
+}
+
+$projects = @($dwtProject) + $exampleProjects + $testProjects
 
 if ($projects.Count -eq 0) {
     throw "No projects found to build."
@@ -96,6 +103,17 @@ try {
                 & $msbuild $project "/m" "/nologo" "/verbosity:minimal" "/t:$target" $properties
                 if ($LASTEXITCODE -ne 0) {
                     throw "Build failed for $project ($configuration|$platform)."
+                }
+            }
+            if (-not $SkipTests) {
+                $testExecutable = Join-Path $testProjectsRoot "FrameworkTests\build\$platform\$configuration\FrameworkTests.exe"
+                if (-not (Test-Path $testExecutable)) {
+                    throw "Test executable not found: $testExecutable"
+                }
+                Write-Host "Running $testExecutable"
+                & $testExecutable
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Tests failed ($configuration|$platform)."
                 }
             }
         }

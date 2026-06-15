@@ -140,6 +140,8 @@ void ScrolledContainer::create(const Seed& cs) {
 	if(getAccessibleName().empty()) {
 		setAccessibleName(_T("Scrollable container"));
 	}
+	setAccessibleKeyboardFocusable(true);
+	onKeyDown([this](int key) { return handleKeyDown(key); });
 
 	accessibility::ScrollProvider provider;
 	provider.scroll = [this](accessibility::ScrollAmount horizontal,
@@ -168,6 +170,43 @@ void ScrolledContainer::create(const Seed& cs) {
 		return isAccessibleScrollable(SB_VERT);
 	};
 	setAccessibleScroll(provider);
+}
+
+bool ScrolledContainer::handleKeyDown(int key) {
+	switch(key) {
+	case VK_LEFT:
+		scrollAccessible(accessibility::SmallDecrement,
+			accessibility::NoAmount);
+		return true;
+	case VK_RIGHT:
+		scrollAccessible(accessibility::SmallIncrement,
+			accessibility::NoAmount);
+		return true;
+	case VK_UP:
+		scrollAccessible(accessibility::NoAmount,
+			accessibility::SmallDecrement);
+		return true;
+	case VK_DOWN:
+		scrollAccessible(accessibility::NoAmount,
+			accessibility::SmallIncrement);
+		return true;
+	case VK_PRIOR:
+		scrollAccessible(accessibility::NoAmount,
+			accessibility::LargeDecrement);
+		return true;
+	case VK_NEXT:
+		scrollAccessible(accessibility::NoAmount,
+			accessibility::LargeIncrement);
+		return true;
+	case VK_HOME:
+		setAccessibleScrollPercent(-1., 0.);
+		return true;
+	case VK_END:
+		setAccessibleScrollPercent(-1., 100.);
+		return true;
+	default:
+		return false;
+	}
 }
 
 void ScrolledContainer::scrollAccessible(accessibility::ScrollAmount horizontal,

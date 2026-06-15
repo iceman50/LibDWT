@@ -41,6 +41,7 @@ DWT_LIB := $(LIB_DIR)/libdwt.a
 MULTI_EXE := $(BIN_DIR)/MultiControlExample.exe
 RICH_EXE := $(BIN_DIR)/RichTextCapabilities.exe
 CUSTOM_EXE := $(BIN_DIR)/CustomDrawExample.exe
+TEST_EXE := $(BIN_DIR)/FrameworkTests.exe
 MANIFEST_RC := common-controls-v6.rc
 MANIFEST_OBJ := $(OBJ_DIR)/projects/mingw-w64/common-controls-v6.res.o
 MULTI_ICON_RC := $(ROOT)/examples/MultiControlExample/resources.rc
@@ -62,6 +63,7 @@ LDFLAGS := -mwindows -Wl,--major-subsystem-version,6,--minor-subsystem-version,1
 LDLIBS := \
 	-lcomctl32 \
 	-ldwmapi \
+	-lgdi32 \
 	-lshlwapi \
 	-lole32 \
 	-loleaut32 \
@@ -80,17 +82,22 @@ DWT_SOURCES := \
 MULTI_SOURCE := $(ROOT)/examples/MultiControlExample/main.cpp
 RICH_SOURCE := $(ROOT)/examples/RichTextCapabilities/main.cpp
 CUSTOM_SOURCE := $(ROOT)/examples/CustomDrawExample/main.cpp
+TEST_SOURCE := $(ROOT)/tests/FrameworkTests/main.cpp
 
 DWT_OBJS := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(DWT_SOURCES))
 MULTI_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(MULTI_SOURCE))
 RICH_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(RICH_SOURCE))
 CUSTOM_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(CUSTOM_SOURCE))
+TEST_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(TEST_SOURCE))
 
-.PHONY: all build x86-debug x86-release x64-debug x64-release clean print-config
+.PHONY: all build test x86-debug x86-release x64-debug x64-release clean print-config
 
 all: x86-debug x86-release x64-debug x64-release
 
-build: $(DWT_LIB) $(MULTI_EXE) $(RICH_EXE) $(CUSTOM_EXE)
+build: $(DWT_LIB) $(MULTI_EXE) $(RICH_EXE) $(CUSTOM_EXE) $(TEST_EXE)
+
+test: $(TEST_EXE)
+	.\$(subst /,\,$(TEST_EXE))
 
 x86-debug:
 	$(MAKE) build ARCH=x86 CONFIG=debug
@@ -126,6 +133,10 @@ $(RICH_EXE): $(RICH_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 $(CUSTOM_EXE): $(CUSTOM_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(CXX) $(LDFLAGS) -o $@ $(CUSTOM_OBJ) $(MANIFEST_OBJ) $(DWT_LIB) $(LDLIBS)
+
+$(TEST_EXE): $(TEST_OBJ) $(DWT_LIB)
+	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
+	$(CXX) -Wl,--major-subsystem-version,6,--minor-subsystem-version,1 -o $@ $(TEST_OBJ) $(DWT_LIB) $(LDLIBS)
 
 $(MANIFEST_OBJ): $(MANIFEST_RC) ../windows-common.manifest
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"

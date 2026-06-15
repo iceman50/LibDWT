@@ -26,6 +26,7 @@
 #define DWT_ACCESSIBILITY_H
 
 #include <dwt/Rectangle.h>
+#include <dwt/tstring.h>
 
 #include <cstdint>
 #include <functional>

@@ -35,6 +35,7 @@
 #include "WindowsHeaders.h"
 #include "Point.h"
 #include "Rectangle.h"
+#include "tstring.h"
 
 namespace dwt {
 
@@ -61,6 +62,20 @@ struct DpiResourceEvent {
 	Point scale(const Point& value) const {
 		return Point(scale(static_cast<int>(value.x)),
 			scale(static_cast<int>(value.y)));
+	}
+};
+
+struct SystemSettingsEvent {
+	explicit SystemSettingsEvent(const MSG& msg);
+
+	UINT action;
+	tstring section;
+	bool highContrast;
+	bool clientAreaAnimation;
+
+	bool accessibilityChanged() const {
+		return section == _T("Accessibility") ||
+			action == SPI_SETHIGHCONTRAST;
 	}
 };
 
