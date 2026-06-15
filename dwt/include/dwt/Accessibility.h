@@ -25,6 +25,8 @@
 #ifndef DWT_ACCESSIBILITY_H
 #define DWT_ACCESSIBILITY_H
 
+#include <functional>
+
 namespace dwt { namespace accessibility {
 
 enum ControlType : long {
@@ -67,6 +69,35 @@ enum ControlType : long {
 	Table = 50036,
 	TitleBar = 50037,
 	Separator = 50038
+};
+
+struct RangeValueProvider {
+	std::function<double ()> getValue;
+	std::function<void (double)> setValue;
+	double minimum = 0;
+	double maximum = 100;
+	double smallChange = 1;
+	double largeChange = 10;
+	bool readOnly = false;
+};
+
+enum ScrollAmount {
+	LargeDecrement = 0,
+	SmallDecrement = 1,
+	NoAmount = 2,
+	LargeIncrement = 3,
+	SmallIncrement = 4
+};
+
+struct ScrollProvider {
+	std::function<void (ScrollAmount, ScrollAmount)> scroll;
+	std::function<void (double, double)> setPercent;
+	std::function<double ()> horizontalPercent;
+	std::function<double ()> verticalPercent;
+	std::function<double ()> horizontalViewSize;
+	std::function<double ()> verticalViewSize;
+	std::function<bool ()> horizontallyScrollable;
+	std::function<bool ()> verticallyScrollable;
 };
 
 } }

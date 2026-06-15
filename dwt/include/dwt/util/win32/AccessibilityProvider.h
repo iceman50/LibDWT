@@ -40,6 +40,7 @@ void releaseAccessibilityProvider(AccessibilityProvider* provider);
 LRESULT returnAccessibilityProvider(AccessibilityProvider* provider,
 	HWND window, WPARAM wParam, LPARAM lParam);
 void raiseAccessibilityEvent(AccessibilityProvider* provider, long eventId);
+void raiseAccessibilityStructureChanged(AccessibilityProvider* provider);
 
 } }
 

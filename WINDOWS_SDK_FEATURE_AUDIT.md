@@ -32,8 +32,8 @@ Items without an explicit status marker remain unimplemented.
 
 | Area | Status | Added | Remaining |
 | --- | --- | --- | --- |
-| Per-monitor DPI | **Partial** | Per-Monitor V2 manifests, runtime awareness negotiation, per-widget DPI queries and scaling, DPI-aware metrics and window adjustment, suggested bounds, and typed `WM_DPICHANGED` events | Thread awareness APIs, DPI-aware system parameters, automatic font/image/icon/cache recreation, and DPI transition tests |
-| UI Automation | **Partial** | Opt-in `IRawElementProviderSimple`, native host provider, names, help text, control type, enabled/focus/offscreen properties, event raising, and initial `Grid`/`ScrolledContainer`/`Splitter` opt-in | Fragment trees, control patterns, child/item providers, semantic selection/value state, structure notifications, and accessibility behavior audits |
+| Per-monitor DPI | **Partial** | Per-Monitor V2 manifests, runtime awareness negotiation, per-widget DPI queries and scaling, DPI-aware Grid/splitter/scroll metrics and window adjustment, suggested bounds, typed DPI events, child after-parent handling, pre-layout resource callbacks, automatic font recreation, and icon/image-list resize helpers | Thread awareness APIs, DPI-aware system parameters, per-widget resource policies beyond fonts, and DPI transition tests |
+| UI Automation | **Partial** | `IRawElementProviderSimple` plus fragment/root navigation, native child-provider bridging, names/help/control/focus/state properties, event and structure notifications, `Splitter` RangeValue, `ScrolledContainer` Scroll, and initial custom-container opt-in | Item-level providers and selection patterns for TableTree/VirtualTree/TabView, additional semantic patterns, and accessibility behavior audits |
 | Modern file dialogs | **Partial** | `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and folder selection; filters, filesystem paths, long paths, custom places, client GUIDs, options, and `FOS_PICKFOLDERS` | Public `IShellItem` and multi-result APIs, virtual-folder results, `IFileDialogEvents`, and `IFileDialogCustomize` |
 | Task dialogs | **Added** | `TaskDialogIndirect` wrapper with common/custom buttons, command links, radio buttons, verification, expanded/footer text, icons, progress modes, callbacks, and callback-based live updates | Convenience APIs for hyperlinks and typed live progress/text updates |
 
@@ -61,8 +61,9 @@ Items without an explicit status marker remain unimplemented.
      rectangle.
    - **Added:** Replace the process-global `LOGPIXELSX` scale cached by
      `util::dpiFactor()` with window/monitor-aware scaling.
-   - **Remaining:** Recreate fonts, image lists, icons, layout metrics, and custom-control
-     caches when DPI changes.
+   - **Partial:** Assigned fonts now recreate automatically; pre-layout resource
+     callbacks and icon/image-list resized copies support owner-managed
+     recreation. Per-widget policies and custom caches remain.
    - **Partial:** Wrap `GetDpiForWindow`, `GetSystemMetricsForDpi`, and
      `AdjustWindowRectExForDpi`; DPI-aware system parameters remain.
    - **Remaining:** Add thread DPI-awareness helpers.
@@ -73,12 +74,16 @@ Items without an explicit status marker remain unimplemented.
    - Native controls receive much of their accessibility behavior from Windows,
      but LibDWT's custom `Grid`, `TableTree`, `VirtualTree`, `TabView`,
      `Splitter`, and `ScrolledContainer` need UI Automation providers.
-   - **Added:** Provider infrastructure, names, help text, control types,
-     enabled/focus/offscreen state, native host providers, and event raising.
-   - **Partial:** `Grid`, `ScrolledContainer`, and `Splitter` opt in to the base
-     provider.
-   - **Remaining:** Control patterns, fragment trees, values, selection state,
-     child bounds, and structure-change notifications.
+   - **Added:** Provider infrastructure, fragment/root navigation, native child
+     bridging, names, help text, control types, enabled/focus/offscreen state,
+     child bounds, event raising, and structure-change notifications.
+   - **Added:** `Grid`, `ScrolledContainer`, `SplitterContainer`, and `Splitter`
+     participate in the fragment tree.
+   - **Added:** `Splitter` exposes `RangeValue`; `ScrolledContainer` exposes
+     `Scroll`.
+   - **Remaining:** Item providers and selection/value patterns for
+     `TableTree`, `VirtualTree`, and `TabView`, plus other control-specific
+     semantics.
    - **Remaining:** Audit high-contrast, text scaling, keyboard-only operation, and
      `WM_THEMECHANGED`/`WM_SETTINGCHANGE` behavior.
    - Available at the Windows 7 minimum.
@@ -171,14 +176,16 @@ not require runtime fallback paths:
 **Priority: P0-P1**
 
 - **Partial:** DPI-awareness configuration, per-window DPI querying,
-  `WM_DPICHANGED`, and DPI-aware geometry are added. Automatic resource
-  recreation remains.
+  `WM_DPICHANGED`, child after-parent handling, and DPI-aware geometry are
+  added. Fonts recreate automatically; other resources have pre-layout hooks
+  and resized-copy helpers.
 - **Partial:** Basic typed pointer events are added. Touch, gesture, detailed
   pen data, capture helpers, history, and cancellation remain.
 - **Remaining:** Theme, high-contrast, system-color, text-scale, and accessibility change
   notifications.
-- **Partial:** UI Automation provider infrastructure is added; semantic
-  providers and patterns remain.
+- **Partial:** UI Automation fragment infrastructure, Splitter `RangeValue`,
+  and ScrolledContainer `Scroll` are added; item-level providers and additional
+  patterns remain.
 - **Remaining:** Typed DWM appearance attributes and composition-change events.
 - **Remaining:** Optional drag/drop modernization with richer `IDataObject` formats and shell
   items.
@@ -448,11 +455,13 @@ These have no direct common-control equivalent. Their principal Windows 7-11
 gaps are per-monitor DPI, pointer input, keyboard operation, high contrast, and
 UI Automation rather than missing SDK messages.
 
-- **Partial:** Framework DPI and basic pointer events are available.
-- **Partial:** `Grid`, `ScrolledContainer`, and `Splitter` opt in to the base UI
-  Automation provider.
-- **Remaining:** Semantic patterns and fragment trees for all custom controls,
-  plus keyboard and high-contrast audits.
+- **Partial:** Framework DPI, child resource callbacks, automatic fonts, and
+  basic pointer events are available.
+- **Partial:** `Grid`, `ScrolledContainer`, `SplitterContainer`, and `Splitter`
+  expose fragment navigation; Splitter and ScrolledContainer expose semantic
+  patterns.
+- **Remaining:** Item-level patterns for `TableTree`, `VirtualTree`, and
+  `TabView`, plus keyboard and high-contrast audits.
 
 ### ModalDialog and ModelessDialog
 
@@ -501,10 +510,11 @@ accessibility, shell-dialog, Table, or Tree work.
 
 ## Recommended Implementation Order
 
-1. **Partial:** Per-Monitor V2 foundation and manifests are added. Continue
-   with resource recreation policies, system parameters, and DPI-change tests.
-2. **Partial:** UI Automation foundation is added. Continue with semantic
-   patterns and fragment trees for custom controls.
+1. **Partial:** Per-Monitor V2 foundation, manifests, automatic fonts, and
+   general resource hooks are added. Continue with per-widget resource
+   policies, system parameters, and DPI-change tests.
+2. **Partial:** UI Automation fragments, structure events, RangeValue, and
+   Scroll are added. Continue with item providers and selection patterns.
 3. **Partial:** `IFileDialog` and `TaskDialog` wrappers are added. Continue with
    shell-item results, file-dialog events/customization, and typed task-dialog
    live updates.
@@ -524,8 +534,10 @@ accessibility, shell-dialog, Table, or Tree work.
 
 The highest-value remaining sequence after this update is:
 
-1. Complete custom-control UI Automation patterns and fragment navigation.
-2. Add DPI resource recreation hooks and focused DPI transition tests.
+1. Add item-level UI Automation providers and selection patterns for
+   `TableTree`, `VirtualTree`, and `TabView`.
+2. Add per-widget icon/image-list/cache recreation policies and focused DPI
+   transition tests.
 3. Finish Table footer/group/geometry APIs and Tree specialist events/states.
 4. Add `IFileDialogEvents`, shell-item results, and customization.
 5. Add taskbar thumbnail buttons and complete tray identity/options.

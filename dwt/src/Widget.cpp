@@ -153,15 +153,25 @@ void Widget::callAsync(const Application::Callback& f) {
 }
 
 bool Widget::handleMessage(const MSG &msg, LRESULT &retVal) {
-	if(msg.message == WM_DPICHANGED) {
+	const bool dpiChanged = msg.message == WM_DPICHANGED ||
+		msg.message == WM_DPICHANGED_AFTERPARENT;
+	if(dpiChanged) {
 		previousDpi = dpi;
-		dpi = LOWORD(msg.wParam);
+		dpi = msg.message == WM_DPICHANGED ?
+			LOWORD(msg.wParam) : util::win32::getDpi(handle());
 
-		if(!getParent() && msg.lParam) {
+		if(msg.message == WM_DPICHANGED && !getParent() && msg.lParam) {
 			const RECT& bounds = *reinterpret_cast<const RECT*>(msg.lParam);
 			::SetWindowPos(handle(), nullptr, bounds.left, bounds.top,
 				bounds.right - bounds.left, bounds.bottom - bounds.top,
 				SWP_NOACTIVATE | SWP_NOZORDER);
+		}
+
+		if(previousDpi != dpi) {
+			DpiResourceEvent event(previousDpi, dpi);
+			for(auto& callback: dpiResourceCallbacks) {
+				callback(event);
+			}
 		}
 	}
 
@@ -184,7 +194,7 @@ bool Widget::handleMessage(const MSG &msg, LRESULT &retVal) {
 			handled |= j(msg, retVal);
 		}
 	}
-	if(msg.message == WM_DPICHANGED) {
+	if(dpiChanged) {
 		layout();
 	}
 	return handled;
@@ -243,6 +253,18 @@ void Widget::setAccessibleKeyboardFocusable(bool value) {
 	accessibleKeyboardFocusable = value;
 }
 
+void Widget::setAccessibleRangeValue(
+	const accessibility::RangeValueProvider& value)
+{
+	enableAccessibility(accessibleControlType);
+	accessibleRangeValue.reset(new accessibility::RangeValueProvider(value));
+}
+
+void Widget::setAccessibleScroll(const accessibility::ScrollProvider& value) {
+	enableAccessibility(accessibleControlType);
+	accessibleScroll.reset(new accessibility::ScrollProvider(value));
+}
+
 tstring Widget::getAccessibleName() const {
 	if(!accessibleName.empty() || !hwnd) {
 		return accessibleName;
@@ -268,8 +290,26 @@ bool Widget::getAccessibleKeyboardFocusable() const {
 	return accessibleKeyboardFocusable;
 }
 
+const accessibility::RangeValueProvider* Widget::getAccessibleRangeValue() const {
+	return accessibleRangeValue.get();
+}
+
+const accessibility::ScrollProvider* Widget::getAccessibleScroll() const {
+	return accessibleScroll.get();
+}
+
 void Widget::raiseAccessibleEvent(long eventId) {
 	util::win32::raiseAccessibilityEvent(accessibilityProvider, eventId);
+}
+
+void Widget::raiseAccessibleStructureChanged() {
+	util::win32::raiseAccessibilityStructureChanged(accessibilityProvider);
+}
+
+void Widget::onDpiResourcesChanged(
+	std::function<void (const DpiResourceEvent&)> callback)
+{
+	dpiResourceCallbacks.push_back(callback);
 }
 
 void Widget::setParent(Widget* widget) {

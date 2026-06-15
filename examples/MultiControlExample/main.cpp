@@ -282,6 +282,12 @@ int dwtMain(dwt::Application& app) {
 	});
 	notification->onPopupOpened([status] { setStatus(status, _T("Tray popup opened")); });
 	notification->onPopupClosed([status] { setStatus(status, _T("Tray popup closed")); });
+	window->onDpiResourcesChanged(
+		[notification, dpiTrayIcon = trayIcon](const dwt::DpiResourceEvent& event) mutable {
+			auto size = event.scale(dpiTrayIcon->getSize());
+			dpiTrayIcon = dpiTrayIcon->resized(size);
+			notification->setIcon(dpiTrayIcon);
+		});
 
 	combo->addValue(_T("First"));
 	combo->addValue(_T("Second"));

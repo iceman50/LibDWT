@@ -46,6 +46,24 @@ struct DpiChangedEvent {
 	Rectangle suggestedBounds;
 };
 
+struct DpiResourceEvent {
+	DpiResourceEvent(unsigned oldDpi_, unsigned newDpi_) :
+		oldDpi(oldDpi_), newDpi(newDpi_) { }
+
+	unsigned oldDpi;
+	unsigned newDpi;
+
+	int scale(int value) const {
+		return oldDpi ? ::MulDiv(value, static_cast<int>(newDpi),
+			static_cast<int>(oldDpi)) : value;
+	}
+
+	Point scale(const Point& value) const {
+		return Point(scale(static_cast<int>(value.x)),
+			scale(static_cast<int>(value.y)));
+	}
+};
+
 struct SizedEvent {
 	SizedEvent(const MSG& msg);
 

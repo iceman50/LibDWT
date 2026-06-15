@@ -170,11 +170,22 @@ public:
 	void setAccessibleHelpText(const tstring& value);
 	void setAccessibleControlType(long value);
 	void setAccessibleKeyboardFocusable(bool value);
+	void setAccessibleRangeValue(const accessibility::RangeValueProvider& value);
+	void setAccessibleScroll(const accessibility::ScrollProvider& value);
 	tstring getAccessibleName() const;
 	const tstring& getAccessibleHelpText() const;
 	long getAccessibleControlType() const;
 	bool getAccessibleKeyboardFocusable() const;
+	const accessibility::RangeValueProvider* getAccessibleRangeValue() const;
+	const accessibility::ScrollProvider* getAccessibleScroll() const;
 	void raiseAccessibleEvent(long eventId);
+	void raiseAccessibleStructureChanged();
+
+	/** Register resource recreation work that must happen before layout after a
+	 * DPI transition. Use this for icons, image lists, and custom drawing caches.
+	 * Widgets using aspects::Fonts recreate their assigned fonts automatically.
+	 */
+	void onDpiResourcesChanged(std::function<void (const DpiResourceEvent&)> f);
 
 	/** Called after Windows reports a monitor DPI transition. Top-level windows
 	 * are moved to the suggested bounds before callbacks run.
@@ -294,6 +305,7 @@ protected:
 
 private:
 	friend class Application;
+	friend class AccessibilityProvider;
 	template<typename T> friend T hwnd_cast(HWND hwnd);
 
 	static Rectangle getDesktopSize(HMONITOR mon);
@@ -318,6 +330,9 @@ private:
 	tstring accessibleHelpText;
 	long accessibleControlType;
 	bool accessibleKeyboardFocusable;
+	std::unique_ptr<accessibility::RangeValueProvider> accessibleRangeValue;
+	std::unique_ptr<accessibility::ScrollProvider> accessibleScroll;
+	std::vector<std::function<void (const DpiResourceEvent&)>> dpiResourceCallbacks;
 };
 
 inline LRESULT Widget::sendMessage( UINT msg, WPARAM wParam, LPARAM lParam) const {

@@ -77,6 +77,13 @@ protected:
 private:
 
 	void setScrollInfo(int type, int page, int max, int pos = 0);
+	void scrollAccessible(accessibility::ScrollAmount horizontal,
+		accessibility::ScrollAmount vertical);
+	void setAccessibleScrollPercent(double horizontal, double vertical);
+	double getAccessibleScrollPercent(int type) const;
+	double getAccessibleViewSize(int type) const;
+	bool isAccessibleScrollable(int type) const;
+	void setAccessibleScrollPosition(int type, int position);
 };
 
 inline ScrolledContainer::Seed::Seed(DWORD style, DWORD exStyle) :

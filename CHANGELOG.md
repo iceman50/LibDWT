@@ -14,7 +14,14 @@ All notable changes to LibDWT are documented in this file.
 - Added Per-Monitor V2 DPI manifests and runtime DPI-awareness negotiation.
 - Added per-widget DPI queries, scaling helpers, DPI-aware system metrics,
   window-rectangle adjustment, and `WM_DPICHANGED` callbacks.
+- Added pre-layout DPI resource callbacks, child
+  `WM_DPICHANGED_AFTERPARENT` handling, automatic assigned-font recreation,
+  resized-copy helpers for icons and image lists, and window-aware Grid,
+  splitter, and scroll metrics.
 - Added an opt-in UI Automation provider foundation for custom HWND controls.
+- Added UI Automation fragment navigation for custom HWND controls, including
+  native child-provider bridging, structure-change notifications, Splitter
+  `RangeValue`, and ScrolledContainer `Scroll` patterns.
 - Added modern `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and
   folder dialogs, including custom places, client GUIDs, and `FOS_*` options.
 - Added a `TaskDialog` wrapper with custom and common buttons, command links,
