@@ -45,6 +45,7 @@ VirtualTree::VirtualTree(Widget* parent) :
 	selected(nullptr)
 {
 	addRoot();
+	configureAccessibility();
 }
 
 bool VirtualTree::handleMessage(const MSG& msg, LRESULT& retVal) {
@@ -255,6 +256,7 @@ bool VirtualTree::handleDelete(LPARAM lParam) {
 		bool ret = sendTreeMsg(TVM_DELETEITEM, 0, lParam);
 		items.clear();
 		addRoot();
+		raiseAccessibleStructureChanged();
 		return ret;
 	}
 
@@ -263,6 +265,7 @@ bool VirtualTree::handleDelete(LPARAM lParam) {
 	if(!validate(item)) { return false; }
 	hide(*item);
 	remove(item);
+	raiseAccessibleStructureChanged();
 	return true;
 }
 
@@ -281,6 +284,8 @@ bool VirtualTree::handleExpand(WPARAM code, Item* item) {
 	}
 	if(item->handle) {
 		sendTreeMsg(TVM_EXPAND, code, reinterpret_cast<LPARAM>(item->handle));
+	} else {
+		raiseAccessibleStructureChanged();
 	}
 	return true;
 }
@@ -307,6 +312,7 @@ void VirtualTree::handleExpanded(NMTREEVIEW& data) {
 		}
 	default: dwtDebugFail("VirtualTree expand code not implemented"); break;
 	}
+	raiseAccessibleStructureChanged();
 }
 
 void VirtualTree::handleExpanding(NMTREEVIEW& data) {
@@ -379,6 +385,7 @@ VirtualTree::Item* VirtualTree::handleInsert(TVINSERTSTRUCT& tvis) {
 	if(item.parent->expanded()) {
 		display(item);
 	}
+	raiseAccessibleStructureChanged();
 	return &item;
 }
 
@@ -390,6 +397,10 @@ bool VirtualTree::handleSelect(WPARAM code, Item* item) {
 
 void VirtualTree::handleSelected(Item* item) {
 	selected = validate(item) ? item : nullptr;
+	if(selected) {
+		raiseAccessibleItemEvent(
+			reinterpret_cast<accessibility::ItemId>(selected), 20012);
+	}
 }
 
 bool VirtualTree::handleSetItem(TVITEMEX& tv) {
@@ -484,6 +495,137 @@ void VirtualTree::updateChildDisplay(Item* item) {
 	TVITEMEX tv = { TVIF_CHILDREN, item->handle };
 	tv.cChildren = item->firstChild ? 1 : 0;
 	sendTreeMsg(TVM_SETITEM, 0, reinterpret_cast<LPARAM>(&tv));
+}
+
+void VirtualTree::configureAccessibility() {
+	setAccessibleControlType(accessibility::Tree);
+	if(getAccessibleName().empty()) {
+		setAccessibleName(_T("Virtual tree"));
+	}
+
+	auto toId = [](Item* item) {
+		return reinterpret_cast<accessibility::ItemId>(item);
+	};
+	auto fromId = [](accessibility::ItemId id) {
+		return reinterpret_cast<Item*>(id);
+	};
+
+	accessibility::ItemProvider provider;
+	provider.exists = [this, fromId](accessibility::ItemId id) {
+		return validate(fromId(id));
+	};
+	provider.children = [this, toId, fromId](accessibility::ItemId parent) {
+		std::vector<accessibility::ItemId> result;
+		auto item = parent ? fromId(parent) : root;
+		if(!validate(item)) {
+			return result;
+		}
+		for(auto child = item->firstChild; child; child = child->next) {
+			result.push_back(toId(child));
+		}
+		return result;
+	};
+	provider.parent = [this, toId, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		return validate(item) && item->parent != root ?
+			toId(item->parent) : accessibility::ItemId();
+	};
+	provider.name = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(!validate(item)) {
+			return tstring();
+		}
+		if(item->text) {
+			return *item->text;
+		}
+		if(item->handle) {
+			TCHAR buffer[1024] = { 0 };
+			TVITEMEX value = { TVIF_TEXT, item->handle };
+			value.pszText = buffer;
+			value.cchTextMax =
+				static_cast<int>(sizeof(buffer) / sizeof(buffer[0]));
+			if(sendTreeMsg(TVM_GETITEM, 0,
+				reinterpret_cast<LPARAM>(&value))) {
+				return tstring(buffer);
+			}
+		}
+		return tstring();
+	};
+	provider.bounds = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(!validate(item) || !item->handle) {
+			return Rectangle();
+		}
+		RECT rect = { 0 };
+		if(!TreeView_GetItemRect(treeHandle(), item->handle, &rect, TRUE)) {
+			return Rectangle();
+		}
+		::MapWindowPoints(treeHandle(), handle(),
+			reinterpret_cast<POINT*>(&rect), 2);
+		return Rectangle(rect);
+	};
+	provider.controlType = [](accessibility::ItemId) {
+		return static_cast<long>(accessibility::TreeItem);
+	};
+	provider.selection = [this, toId] {
+		std::vector<accessibility::ItemId> result;
+		if(selected) {
+			result.push_back(toId(selected));
+		}
+		return result;
+	};
+	provider.selected = [this, fromId](accessibility::ItemId id) {
+		return selected == fromId(id);
+	};
+	provider.select = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(validate(item)) {
+			setSelected(item->ptr());
+		}
+	};
+	provider.selectionRequired = false;
+	provider.expandState = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(!validate(item) || !item->firstChild) {
+			return accessibility::LeafNode;
+		}
+		return item->expanded() ?
+			accessibility::Expanded : accessibility::Collapsed;
+	};
+	provider.expand = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(validate(item)) {
+			expand(item->ptr());
+		}
+	};
+	provider.collapse = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(validate(item)) {
+			collapse(item->ptr());
+		}
+	};
+	provider.invoke = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(!validate(item)) {
+			return;
+		}
+		if(item->firstChild) {
+			item->expanded() ? collapse(item->ptr()) : expand(item->ptr());
+		} else {
+			setSelected(item->ptr());
+		}
+	};
+	provider.focused = [this, toId] {
+		return selected ? toId(selected) : accessibility::ItemId();
+	};
+	provider.setFocus = [this, fromId](accessibility::ItemId id) {
+		auto item = fromId(id);
+		if(validate(item)) {
+			::SetFocus(treeHandle());
+			setSelected(item->ptr());
+		}
+	};
+	setAccessibleItems(provider);
 }
 
 LRESULT VirtualTree::sendTreeMsg(UINT msg, WPARAM wParam, LPARAM lParam) {

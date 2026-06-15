@@ -234,6 +234,8 @@ private:
 	int getImage(unsigned index);
 	void removeIcon(unsigned index);
 	void swapWidgets(ContainerPtr oldW, ContainerPtr newW);
+	void configureAccessibility();
+	void recreateDpiResources(const DpiResourceEvent& event);
 
 	void setText(unsigned idx, const tstring& text);
 	void redraw(unsigned index);

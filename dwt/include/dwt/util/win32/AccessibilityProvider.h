@@ -27,6 +27,8 @@
 
 #include "../../WindowsHeaders.h"
 
+#include <cstdint>
+
 namespace dwt {
 
 class Widget;
@@ -40,6 +42,8 @@ void releaseAccessibilityProvider(AccessibilityProvider* provider);
 LRESULT returnAccessibilityProvider(AccessibilityProvider* provider,
 	HWND window, WPARAM wParam, LPARAM lParam);
 void raiseAccessibilityEvent(AccessibilityProvider* provider, long eventId);
+void raiseAccessibilityItemEvent(AccessibilityProvider* provider,
+	std::uintptr_t item, long eventId);
 void raiseAccessibilityStructureChanged(AccessibilityProvider* provider);
 
 } }

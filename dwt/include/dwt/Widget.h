@@ -158,6 +158,10 @@ public:
 	/// Return a system metric scaled for this widget's current DPI.
 	int getSystemMetric(int index) const;
 
+	/// Query a system parameter for this widget's current DPI.
+	bool getSystemParameters(UINT action, UINT param, void* value,
+		UINT flags = 0) const;
+
 	/// Adjust a client rectangle for this widget's current DPI and window styles.
 	bool adjustWindowRect(RECT& rect, bool hasMenu = false) const;
 
@@ -172,13 +176,16 @@ public:
 	void setAccessibleKeyboardFocusable(bool value);
 	void setAccessibleRangeValue(const accessibility::RangeValueProvider& value);
 	void setAccessibleScroll(const accessibility::ScrollProvider& value);
+	void setAccessibleItems(const accessibility::ItemProvider& value);
 	tstring getAccessibleName() const;
 	const tstring& getAccessibleHelpText() const;
 	long getAccessibleControlType() const;
 	bool getAccessibleKeyboardFocusable() const;
 	const accessibility::RangeValueProvider* getAccessibleRangeValue() const;
 	const accessibility::ScrollProvider* getAccessibleScroll() const;
+	const accessibility::ItemProvider* getAccessibleItems() const;
 	void raiseAccessibleEvent(long eventId);
+	void raiseAccessibleItemEvent(accessibility::ItemId item, long eventId);
 	void raiseAccessibleStructureChanged();
 
 	/** Register resource recreation work that must happen before layout after a
@@ -332,6 +339,7 @@ private:
 	bool accessibleKeyboardFocusable;
 	std::unique_ptr<accessibility::RangeValueProvider> accessibleRangeValue;
 	std::unique_ptr<accessibility::ScrollProvider> accessibleScroll;
+	std::unique_ptr<accessibility::ItemProvider> accessibleItems;
 	std::vector<std::function<void (const DpiResourceEvent&)>> dpiResourceCallbacks;
 };
 

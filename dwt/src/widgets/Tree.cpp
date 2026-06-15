@@ -87,6 +87,16 @@ void Tree::create( const Seed & cs )
 	tree->onCustomDraw([this](NMTVCUSTOMDRAW& x) { return draw(x); });
 
 	setFont(cs.font);
+	onDpiResourcesChanged([this](const DpiResourceEvent& event) {
+		if(itsNormalImageList) {
+			setNormalImageList(itsNormalImageList->resized(
+				event.scale(itsNormalImageList->getImageSize())));
+		}
+		if(itsStateImageList) {
+			setStateImageList(itsStateImageList->resized(
+				event.scale(itsStateImageList->getImageSize())));
+		}
+	});
 	layout();
 }
 

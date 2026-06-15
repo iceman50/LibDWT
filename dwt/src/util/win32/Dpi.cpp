@@ -76,6 +76,31 @@ bool enablePerMonitorDpiAwareness() {
 	return ::SetProcessDPIAware() != FALSE || ::GetLastError() == ERROR_ACCESS_DENIED;
 }
 
+ScopedThreadDpiAwareness::ScopedThreadDpiAwareness(
+	ThreadDpiAwareness awareness) :
+	previous(nullptr)
+{
+	typedef HANDLE (WINAPI *Function)(HANDLE);
+	auto function = getProc<Function>(
+		user32(), "SetThreadDpiAwarenessContext");
+	if(function) {
+		previous = function(reinterpret_cast<HANDLE>(
+			static_cast<std::intptr_t>(awareness)));
+	}
+}
+
+ScopedThreadDpiAwareness::~ScopedThreadDpiAwareness() {
+	if(!previous) {
+		return;
+	}
+	typedef HANDLE (WINAPI *Function)(HANDLE);
+	auto function = getProc<Function>(
+		user32(), "SetThreadDpiAwarenessContext");
+	if(function) {
+		function(previous);
+	}
+}
+
 unsigned getDpi(HWND window) {
 	typedef UINT (WINAPI *GetDpiForWindowFunction)(HWND);
 	auto getWindowDpi = getProc<GetDpiForWindowFunction>(user32(), "GetDpiForWindow");
@@ -116,6 +141,18 @@ int getSystemMetricsForDpi(int index, unsigned dpi) {
 		return getMetric(index, dpi);
 	}
 	return scale(::GetSystemMetrics(index), dpi);
+}
+
+bool systemParametersInfoForDpi(UINT action, UINT param, void* value,
+	UINT flags, unsigned dpi)
+{
+	typedef BOOL (WINAPI *Function)(UINT, UINT, PVOID, UINT, UINT);
+	auto function = getProc<Function>(
+		user32(), "SystemParametersInfoForDpi");
+	if(function) {
+		return function(action, param, value, flags, dpi) != FALSE;
+	}
+	return ::SystemParametersInfo(action, param, value, flags) != FALSE;
 }
 
 bool adjustWindowRectForDpi(RECT& rect, DWORD style, bool hasMenu, DWORD exStyle, unsigned dpi) {

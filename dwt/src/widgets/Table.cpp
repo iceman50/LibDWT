@@ -75,6 +75,24 @@ void Table::create( const Seed & cs )
 	setFont(cs.font);
 	if(cs.lvStyle != 0)
 		setTableStyle(cs.lvStyle);
+	onDpiResourcesChanged([this](const DpiResourceEvent& event) {
+		if(itsNormalImageList) {
+			setNormalImageList(itsNormalImageList->resized(
+				event.scale(itsNormalImageList->getImageSize())));
+		}
+		if(itsSmallImageList) {
+			setSmallImageList(itsSmallImageList->resized(
+				event.scale(itsSmallImageList->getImageSize())));
+		}
+		if(itsStateImageList) {
+			setStateImageList(itsStateImageList->resized(
+				event.scale(itsStateImageList->getImageSize())));
+		}
+		if(groupImageList) {
+			setGroupImageList(groupImageList->resized(
+				event.scale(groupImageList->getImageSize())));
+		}
+	});
 }
 
 Table::Table(dwt::Widget* parent) :

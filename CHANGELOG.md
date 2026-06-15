@@ -22,6 +22,13 @@ All notable changes to LibDWT are documented in this file.
 - Added UI Automation fragment navigation for custom HWND controls, including
   native child-provider bridging, structure-change notifications, Splitter
   `RangeValue`, and ScrolledContainer `Scroll` patterns.
+- Added logical UI Automation item providers for `TableTree`, `VirtualTree`,
+  and `TabView`, with selection, selection-item, expand/collapse, invoke,
+  focus, bounds, hit-testing, and item event support.
+- Added scoped thread DPI-awareness contexts and DPI-aware system-parameter
+  queries.
+- Added automatic DPI image-list recreation for Button, Table, Tree, ToolBar,
+  and TabView, including TabView owner-draw metrics and close icons.
 - Added modern `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and
   folder dialogs, including custom places, client GUIDs, and `FOS_*` options.
 - Added a `TaskDialog` wrapper with custom and common buttons, command links,

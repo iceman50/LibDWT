@@ -50,6 +50,10 @@ static const PROPERTYID isOffscreenProperty = 30022;
 
 static const PATTERNID rangeValuePattern = 10003;
 static const PATTERNID scrollPattern = 10004;
+static const PATTERNID expandCollapsePattern = 10005;
+static const PATTERNID invokePattern = 10000;
+static const PATTERNID selectionPattern = 10001;
+static const PATTERNID selectionItemPattern = 10010;
 static const double noScroll = -1.0;
 
 template<typename T>
@@ -104,11 +108,20 @@ class AccessibilityProvider :
 	public IRawElementProviderFragment,
 	public IRawElementProviderFragmentRoot,
 	public IRangeValueProvider,
-	public IScrollProvider
+	public IScrollProvider,
+	public ISelectionProvider,
+	public ISelectionItemProvider,
+	public IExpandCollapseProvider,
+	public IInvokeProvider
 {
 public:
-	explicit AccessibilityProvider(Widget* widget_) : refs(1), widget(widget_) { }
-	virtual ~AccessibilityProvider() { }
+	explicit AccessibilityProvider(Widget* widget_) :
+		refs(1), widget(widget_), owner(nullptr), item(0) { }
+	virtual ~AccessibilityProvider() {
+		if(owner) {
+			owner->Release();
+		}
+	}
 
 	void detach() {
 		widget = nullptr;
@@ -127,11 +140,24 @@ public:
 			isFragmentRoot()) {
 			*object = static_cast<IRawElementProviderFragmentRoot*>(this);
 		} else if(::IsEqualIID(iid, IID_IRangeValueProvider) &&
-			widget && widget->getAccessibleRangeValue()) {
+			!isItem() && widget && widget->getAccessibleRangeValue()) {
 			*object = static_cast<IRangeValueProvider*>(this);
 		} else if(::IsEqualIID(iid, IID_IScrollProvider) &&
-			widget && widget->getAccessibleScroll()) {
+			!isItem() && widget && widget->getAccessibleScroll()) {
 			*object = static_cast<IScrollProvider*>(this);
+		} else if(::IsEqualIID(iid, IID_ISelectionProvider) &&
+			!isItem() && itemProvider() && itemProvider()->selection) {
+			*object = static_cast<ISelectionProvider*>(this);
+		} else if(::IsEqualIID(iid, IID_ISelectionItemProvider) &&
+			isItem() && itemProvider() && itemProvider()->selected &&
+			itemProvider()->select) {
+			*object = static_cast<ISelectionItemProvider*>(this);
+		} else if(::IsEqualIID(iid, IID_IExpandCollapseProvider) &&
+			isItem() && itemProvider() && itemProvider()->expandState) {
+			*object = static_cast<IExpandCollapseProvider*>(this);
+		} else if(::IsEqualIID(iid, IID_IInvokeProvider) &&
+			isItem() && itemProvider() && itemProvider()->invoke) {
+			*object = static_cast<IInvokeProvider*>(this);
 		} else {
 			*object = nullptr;
 			return E_NOINTERFACE;
@@ -170,10 +196,24 @@ public:
 		if(!available()) {
 			return UIA_E_ELEMENTNOTAVAILABLE;
 		}
-		if(pattern == rangeValuePattern && widget->getAccessibleRangeValue()) {
+		if(pattern == rangeValuePattern && !isItem() &&
+			widget->getAccessibleRangeValue()) {
 			*value = static_cast<IRangeValueProvider*>(this);
-		} else if(pattern == scrollPattern && widget->getAccessibleScroll()) {
+		} else if(pattern == scrollPattern && !isItem() &&
+			widget->getAccessibleScroll()) {
 			*value = static_cast<IScrollProvider*>(this);
+		} else if(pattern == selectionPattern && !isItem() &&
+			itemProvider() && itemProvider()->selection) {
+			*value = static_cast<ISelectionProvider*>(this);
+		} else if(pattern == selectionItemPattern && isItem() &&
+			itemProvider() && itemProvider()->selected && itemProvider()->select) {
+			*value = static_cast<ISelectionItemProvider*>(this);
+		} else if(pattern == expandCollapsePattern && isItem() &&
+			itemProvider() && itemProvider()->expandState) {
+			*value = static_cast<IExpandCollapseProvider*>(this);
+		} else if(pattern == invokePattern && isItem() &&
+			itemProvider() && itemProvider()->invoke) {
+			*value = static_cast<IInvokeProvider*>(this);
 		}
 		if(*value) {
 			AddRef();
@@ -194,17 +234,23 @@ public:
 
 		switch(property) {
 		case nameProperty:
-			setStringVariant(value, widget->getAccessibleName());
+			setStringVariant(value, isItem() && itemProvider()->name ?
+				itemProvider()->name(item) : widget->getAccessibleName());
 			break;
 		case controlTypeProperty:
 			value->vt = VT_I4;
-			value->lVal = widget->getAccessibleControlType();
+			value->lVal = isItem() && itemProvider()->controlType ?
+				itemProvider()->controlType(item) :
+				widget->getAccessibleControlType();
 			break;
 		case hasKeyboardFocusProperty:
-			setBoolVariant(value, ::GetFocus() == widget->handle());
+			setBoolVariant(value, isItem() ? itemHasFocus() :
+				::GetFocus() == widget->handle());
 			break;
 		case isKeyboardFocusableProperty:
-			setBoolVariant(value, widget->getAccessibleKeyboardFocusable());
+			setBoolVariant(value, isItem() ?
+				static_cast<bool>(itemProvider()->setFocus) :
+				widget->getAccessibleKeyboardFocusable());
 			break;
 		case isEnabledProperty:
 			setBoolVariant(value, widget->getEnabled());
@@ -217,12 +263,16 @@ public:
 			setBoolVariant(value, true);
 			break;
 		case nativeWindowHandleProperty:
-			value->vt = VT_I4;
-			value->lVal = static_cast<LONG>(
-				reinterpret_cast<LONG_PTR>(widget->handle()));
+			if(!isItem()) {
+				value->vt = VT_I4;
+				value->lVal = static_cast<LONG>(
+					reinterpret_cast<LONG_PTR>(widget->handle()));
+			}
 			break;
 		case isOffscreenProperty:
-			setBoolVariant(value, !::IsWindowVisible(widget->handle()));
+			setBoolVariant(value, !::IsWindowVisible(widget->handle()) ||
+				(isItem() && (itemBounds().width() <= 0 ||
+					itemBounds().height() <= 0)));
 			break;
 		default:
 			break;
@@ -238,6 +288,12 @@ public:
 				*value = nullptr;
 			}
 			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		if(isItem()) {
+			if(value) {
+				*value = nullptr;
+			}
+			return S_OK;
 		}
 		return hostProvider(widget->handle(), value);
 	}
@@ -255,21 +311,54 @@ public:
 
 		switch(direction) {
 		case NavigateDirection_Parent:
+			if(isItem()) {
+				auto parent = itemProvider()->parent ?
+					itemProvider()->parent(item) : 0;
+				return parent ? itemFragment(parent, value) : rootFragment(value);
+			}
 			if(isFragmentRoot()) {
 				return S_OK;
 			}
 			return fragmentForWindow(::GetParent(widget->handle()), value);
 
 		case NavigateDirection_FirstChild:
+			if(itemProvider()) {
+				auto children = itemProvider()->children ?
+					itemProvider()->children(item) :
+					std::vector<accessibility::ItemId>();
+				if(!children.empty()) {
+					return itemFragment(children.front(), value);
+				}
+				if(isItem()) {
+					return S_OK;
+				}
+			}
 			return childFragment(false, value);
 
 		case NavigateDirection_LastChild:
+			if(itemProvider()) {
+				auto children = itemProvider()->children ?
+					itemProvider()->children(item) :
+					std::vector<accessibility::ItemId>();
+				if(!children.empty()) {
+					return itemFragment(children.back(), value);
+				}
+				if(isItem()) {
+					return S_OK;
+				}
+			}
 			return childFragment(true, value);
 
 		case NavigateDirection_NextSibling:
+			if(isItem()) {
+				return itemSibling(false, value);
+			}
 			return siblingFragment(false, value);
 
 		case NavigateDirection_PreviousSibling:
+			if(isItem()) {
+				return itemSibling(true, value);
+			}
 			return siblingFragment(true, value);
 		}
 		return S_OK;
@@ -283,7 +372,7 @@ public:
 		if(!available()) {
 			return UIA_E_ELEMENTNOTAVAILABLE;
 		}
-		auto array = ::SafeArrayCreateVector(VT_I4, 0, 2);
+		auto array = ::SafeArrayCreateVector(VT_I4, 0, isItem() ? 4 : 2);
 		if(!array) {
 			return E_OUTOFMEMORY;
 		}
@@ -293,6 +382,15 @@ public:
 		index = 1;
 		part = static_cast<int>(reinterpret_cast<INT_PTR>(widget->handle()));
 		::SafeArrayPutElement(array, &index, &part);
+		if(isItem()) {
+			index = 2;
+			part = static_cast<int>(item & 0xffffffffu);
+			::SafeArrayPutElement(array, &index, &part);
+			index = 3;
+			part = static_cast<int>(
+				static_cast<std::uint64_t>(item) >> 32);
+			::SafeArrayPutElement(array, &index, &part);
+		}
 		*value = array;
 		return S_OK;
 	}
@@ -304,8 +402,13 @@ public:
 		if(!available()) {
 			return UIA_E_ELEMENTNOTAVAILABLE;
 		}
-		RECT rect = { 0 };
-		::GetWindowRect(widget->handle(), &rect);
+		RECT rect = isItem() ? static_cast<RECT>(itemBounds()) : RECT { 0 };
+		if(isItem()) {
+			::MapWindowPoints(widget->handle(), nullptr,
+				reinterpret_cast<POINT*>(&rect), 2);
+		} else {
+			::GetWindowRect(widget->handle(), &rect);
+		}
 		value->left = rect.left;
 		value->top = rect.top;
 		value->width = rect.right - rect.left;
@@ -325,6 +428,13 @@ public:
 		if(!available()) {
 			return UIA_E_ELEMENTNOTAVAILABLE;
 		}
+		if(isItem()) {
+			if(!itemProvider()->setFocus) {
+				return UIA_E_NOTSUPPORTED;
+			}
+			itemProvider()->setFocus(item);
+			return itemHasFocus() ? S_OK : E_FAIL;
+		}
 		::SetFocus(widget->handle());
 		return ::GetFocus() == widget->handle() ? S_OK : E_FAIL;
 	}
@@ -336,7 +446,7 @@ public:
 			return E_POINTER;
 		}
 		*value = nullptr;
-		auto root = fragmentRoot();
+		auto root = isItem() ? owner->fragmentRoot() : fragmentRoot();
 		return root ? root->QueryInterface(IID_IRawElementProviderFragmentRoot,
 			reinterpret_cast<void**>(value)) : UIA_E_ELEMENTNOTAVAILABLE;
 	}
@@ -352,10 +462,39 @@ public:
 			return UIA_E_ELEMENTNOTAVAILABLE;
 		}
 		POINT point = { static_cast<LONG>(x), static_cast<LONG>(y) };
+		if(itemProvider()) {
+			auto found = itemFromPoint(0, point);
+			if(found) {
+				return itemFragment(found, value);
+			}
+		}
 		auto target = ::WindowFromPoint(point);
 		if(target && (target == widget->handle() ||
 			::IsChild(widget->handle(), target))) {
+			for(auto ancestor = target; ancestor;
+				ancestor = ::GetParent(ancestor)) {
+				auto candidate = hwnd_cast<Widget*>(ancestor);
+				if(candidate && candidate->accessibilityProvider &&
+					candidate->getAccessibleItems()) {
+					auto provider = candidate->accessibilityProvider;
+					auto found = provider->itemFromPoint(0, point);
+					if(found) {
+						return provider->itemFragment(found, value);
+					}
+				}
+				if(ancestor == widget->handle()) {
+					break;
+				}
+			}
 			while(target && target != widget->handle()) {
+				auto candidate = hwnd_cast<Widget*>(target);
+				if(candidate && candidate->accessibilityProvider) {
+					auto provider = candidate->accessibilityProvider;
+					auto found = provider->itemFromPoint(0, point);
+					if(found) {
+						return provider->itemFragment(found, value);
+					}
+				}
 				auto result = fragmentForWindow(target, value);
 				if(SUCCEEDED(result) && *value) {
 					return S_OK;
@@ -379,6 +518,29 @@ public:
 			return UIA_E_ELEMENTNOTAVAILABLE;
 		}
 		auto focus = ::GetFocus();
+		if(itemProvider() && itemProvider()->focused &&
+			(focus == widget->handle() || ::IsChild(widget->handle(), focus))) {
+			auto focused = itemProvider()->focused();
+			if(focused) {
+				return itemFragment(focused, value);
+			}
+		}
+		for(auto target = focus; target &&
+			(target == widget->handle() || ::IsChild(widget->handle(), target));
+			target = ::GetParent(target)) {
+			auto candidate = hwnd_cast<Widget*>(target);
+			if(!candidate || !candidate->accessibilityProvider) {
+				continue;
+			}
+			auto provider = candidate->accessibilityProvider;
+			auto items = provider->itemProvider();
+			if(items && items->focused) {
+				auto focused = items->focused();
+				if(focused) {
+					return provider->itemFragment(focused, value);
+				}
+			}
+		}
 		if(focus && (focus == widget->handle() ||
 			::IsChild(widget->handle(), focus))) {
 			return fragmentForWindow(focus, value);
@@ -499,12 +661,328 @@ public:
 			&accessibility::ScrollProvider::verticallyScrollable);
 	}
 
+	HRESULT STDMETHODCALLTYPE GetSelection(SAFEARRAY** value) override {
+		if(!value) {
+			return E_POINTER;
+		}
+		*value = nullptr;
+		auto items = available() ? itemProvider() : nullptr;
+		if(isItem() || !items || !items->selection) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		auto selected = items->selection();
+		auto array = ::SafeArrayCreateVector(VT_UNKNOWN, 0,
+			static_cast<ULONG>(selected.size()));
+		if(!array) {
+			return E_OUTOFMEMORY;
+		}
+		for(LONG index = 0; index < static_cast<LONG>(selected.size()); ++index) {
+			IRawElementProviderFragment* provider = nullptr;
+			auto result = itemFragment(selected[index], &provider);
+			if(FAILED(result)) {
+				::SafeArrayDestroy(array);
+				return result;
+			}
+			IUnknown* unknown = provider;
+			::SafeArrayPutElement(array, &index, unknown);
+			if(provider) {
+				provider->Release();
+			}
+		}
+		*value = array;
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE get_CanSelectMultiple(BOOL* value) override {
+		if(!value) {
+			return E_POINTER;
+		}
+		auto items = available() ? itemProvider() : nullptr;
+		if(isItem() || !items) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		*value = items->canSelectMultiple ? TRUE : FALSE;
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE get_IsSelectionRequired(BOOL* value) override {
+		if(!value) {
+			return E_POINTER;
+		}
+		auto items = available() ? itemProvider() : nullptr;
+		if(isItem() || !items) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		*value = items->selectionRequired ? TRUE : FALSE;
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE Select() override {
+		return selectItem(&accessibility::ItemProvider::select);
+	}
+
+	HRESULT STDMETHODCALLTYPE AddToSelection() override {
+		auto items = available() ? itemProvider() : nullptr;
+		if(!items || !isItem()) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		if(!items->canSelectMultiple) {
+			return UIA_E_INVALIDOPERATION;
+		}
+		return selectItem(&accessibility::ItemProvider::addToSelection);
+	}
+
+	HRESULT STDMETHODCALLTYPE RemoveFromSelection() override {
+		auto items = available() ? itemProvider() : nullptr;
+		if(!items || !isItem()) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		if(items->selectionRequired && items->selection &&
+			items->selection().size() <= 1 && items->selected &&
+			items->selected(item)) {
+			return UIA_E_INVALIDOPERATION;
+		}
+		return selectItem(&accessibility::ItemProvider::removeFromSelection);
+	}
+
+	HRESULT STDMETHODCALLTYPE get_IsSelected(BOOL* value) override {
+		if(!value) {
+			return E_POINTER;
+		}
+		auto items = available() ? itemProvider() : nullptr;
+		if(!items || !isItem() || !items->selected) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		*value = items->selected(item) ? TRUE : FALSE;
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE get_SelectionContainer(
+		IRawElementProviderSimple** value) override
+	{
+		if(!value) {
+			return E_POINTER;
+		}
+		*value = nullptr;
+		if(!available() || !isItem() || !owner) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		return owner->QueryInterface(IID_IRawElementProviderSimple,
+			reinterpret_cast<void**>(value));
+	}
+
+	HRESULT STDMETHODCALLTYPE Expand() override {
+		return expandItem(&accessibility::ItemProvider::expand);
+	}
+
+	HRESULT STDMETHODCALLTYPE Collapse() override {
+		return expandItem(&accessibility::ItemProvider::collapse);
+	}
+
+	HRESULT STDMETHODCALLTYPE get_ExpandCollapseState(
+		::ExpandCollapseState* value) override
+	{
+		if(!value) {
+			return E_POINTER;
+		}
+		auto items = available() ? itemProvider() : nullptr;
+		if(!items || !isItem() || !items->expandState) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		*value = static_cast<::ExpandCollapseState>(items->expandState(item));
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE Invoke() override {
+		auto items = available() ? itemProvider() : nullptr;
+		if(!items || !isItem() || !items->invoke) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		items->invoke(item);
+		raiseSelfEvent(20009);
+		return S_OK;
+	}
+
+	void raiseItemEvent(accessibility::ItemId id, long eventId) {
+		IRawElementProviderFragment* fragment = nullptr;
+		if(SUCCEEDED(itemFragment(id, &fragment)) && fragment) {
+			IRawElementProviderSimple* simple = nullptr;
+			if(SUCCEEDED(fragment->QueryInterface(
+				IID_IRawElementProviderSimple,
+				reinterpret_cast<void**>(&simple))) && simple) {
+				typedef HRESULT (WINAPI *Function)(
+					IRawElementProviderSimple*, EVENTID);
+				auto function =
+					getAutomationProc<Function>("UiaRaiseAutomationEvent");
+				if(function) {
+					function(simple, eventId);
+				}
+				simple->Release();
+			}
+			fragment->Release();
+		}
+	}
+
 private:
+	AccessibilityProvider(AccessibilityProvider* owner_,
+		accessibility::ItemId item_) :
+		refs(1), widget(owner_->widget), owner(owner_), item(item_)
+	{
+		owner->AddRef();
+	}
+
 	bool available() const {
-		return widget && widget->handle() && ::IsWindow(widget->handle());
+		auto target = isItem() ? owner->widget : widget;
+		if(!target || !target->handle() || !::IsWindow(target->handle())) {
+			return false;
+		}
+		auto items = itemProvider();
+		return !isItem() || (items && (!items->exists || items->exists(item)));
+	}
+
+	bool isItem() const {
+		return owner != nullptr;
+	}
+
+	const accessibility::ItemProvider* itemProvider() const {
+		auto target = isItem() ? owner->widget : widget;
+		return target ? target->getAccessibleItems() : nullptr;
+	}
+
+	Rectangle itemBounds() const {
+		auto items = itemProvider();
+		return items && items->bounds ? items->bounds(item) : Rectangle();
+	}
+
+	bool itemHasFocus() const {
+		auto items = itemProvider();
+		return items && items->focused && items->focused() == item &&
+			(::GetFocus() == widget->handle() ||
+				::IsChild(widget->handle(), ::GetFocus()));
+	}
+
+	HRESULT rootFragment(IRawElementProviderFragment** value) {
+		if(!owner) {
+			return E_FAIL;
+		}
+		return owner->QueryInterface(IID_IRawElementProviderFragment,
+			reinterpret_cast<void**>(value));
+	}
+
+	HRESULT itemFragment(accessibility::ItemId id,
+		IRawElementProviderFragment** value)
+	{
+		if(!value) {
+			return E_POINTER;
+		}
+		*value = nullptr;
+		auto items = itemProvider();
+		if(!id || !items || (items->exists && !items->exists(id))) {
+			return S_OK;
+		}
+		auto provider = new AccessibilityProvider(isItem() ? owner : this, id);
+		*value = static_cast<IRawElementProviderFragment*>(provider);
+		return S_OK;
+	}
+
+	HRESULT itemSibling(bool previous,
+		IRawElementProviderFragment** value)
+	{
+		auto items = itemProvider();
+		if(!items || !items->children) {
+			return S_OK;
+		}
+		auto parent = items->parent ? items->parent(item) : 0;
+		auto siblings = items->children(parent);
+		auto current = std::find(siblings.begin(), siblings.end(), item);
+		if(current == siblings.end()) {
+			return S_OK;
+		}
+		if(previous) {
+			if(current == siblings.begin()) {
+				return S_OK;
+			}
+			--current;
+		} else {
+			++current;
+			if(current == siblings.end()) {
+				return S_OK;
+			}
+		}
+		return itemFragment(*current, value);
+	}
+
+	accessibility::ItemId itemFromPoint(accessibility::ItemId parent,
+		const POINT& screenPoint)
+	{
+		auto items = itemProvider();
+		if(!items || !items->children || !items->bounds) {
+			return 0;
+		}
+		auto point = screenPoint;
+		::ScreenToClient(widget->handle(), &point);
+		for(auto id: items->children(parent)) {
+			auto child = itemFromPoint(id, screenPoint);
+			if(child) {
+				return child;
+			}
+			if(items->bounds(id).contains(Point(point))) {
+				return id;
+			}
+		}
+		return 0;
+	}
+
+	HRESULT selectItem(
+		std::function<void (accessibility::ItemId)>
+			accessibility::ItemProvider::* member)
+	{
+		auto items = available() ? itemProvider() : nullptr;
+		if(!items || !isItem()) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		auto& callback = items->*member;
+		if(!callback) {
+			return UIA_E_NOTSUPPORTED;
+		}
+		callback(item);
+		if(member == &accessibility::ItemProvider::addToSelection) {
+			raiseSelfEvent(20010);
+		} else if(member == &accessibility::ItemProvider::removeFromSelection) {
+			raiseSelfEvent(20011);
+		}
+		return S_OK;
+	}
+
+	void raiseSelfEvent(long eventId) {
+		if(owner) {
+			owner->raiseItemEvent(item, eventId);
+		}
+	}
+
+	HRESULT expandItem(
+		std::function<void (accessibility::ItemId)>
+			accessibility::ItemProvider::* member)
+	{
+		auto items = available() ? itemProvider() : nullptr;
+		if(!items || !isItem() || !items->expandState) {
+			return UIA_E_ELEMENTNOTAVAILABLE;
+		}
+		if(items->expandState(item) == accessibility::LeafNode) {
+			return UIA_E_INVALIDOPERATION;
+		}
+		auto& callback = items->*member;
+		if(!callback) {
+			return UIA_E_NOTSUPPORTED;
+		}
+		callback(item);
+		return S_OK;
 	}
 
 	bool isFragmentRoot() const {
+		if(isItem()) {
+			return false;
+		}
 		if(!available()) {
 			return false;
 		}
@@ -673,6 +1151,8 @@ private:
 
 	std::atomic<ULONG> refs;
 	Widget* widget;
+	AccessibilityProvider* owner;
+	accessibility::ItemId item;
 };
 
 namespace util { namespace win32 {
@@ -711,6 +1191,14 @@ void raiseAccessibilityEvent(AccessibilityProvider* provider, long eventId) {
 	auto function = getAutomationProc<Function>("UiaRaiseAutomationEvent");
 	if(function) {
 		function(static_cast<IRawElementProviderSimple*>(provider), eventId);
+	}
+}
+
+void raiseAccessibilityItemEvent(AccessibilityProvider* provider,
+	std::uintptr_t item, long eventId)
+{
+	if(provider && item) {
+		provider->raiseItemEvent(item, eventId);
 	}
 }
 

@@ -25,7 +25,11 @@
 #ifndef DWT_ACCESSIBILITY_H
 #define DWT_ACCESSIBILITY_H
 
+#include <dwt/Rectangle.h>
+
+#include <cstdint>
 #include <functional>
+#include <vector>
 
 namespace dwt { namespace accessibility {
 
@@ -98,6 +102,40 @@ struct ScrollProvider {
 	std::function<double ()> verticalViewSize;
 	std::function<bool ()> horizontallyScrollable;
 	std::function<bool ()> verticallyScrollable;
+};
+
+using ItemId = std::uintptr_t;
+
+enum ExpandState {
+	Collapsed = 0,
+	Expanded = 1,
+	PartiallyExpanded = 2,
+	LeafNode = 3
+};
+
+struct ItemProvider {
+	std::function<bool (ItemId)> exists;
+	std::function<std::vector<ItemId> (ItemId)> children;
+	std::function<ItemId (ItemId)> parent;
+	std::function<tstring (ItemId)> name;
+	std::function<Rectangle (ItemId)> bounds;
+	std::function<long (ItemId)> controlType;
+
+	std::function<std::vector<ItemId> ()> selection;
+	std::function<bool (ItemId)> selected;
+	std::function<void (ItemId)> select;
+	std::function<void (ItemId)> addToSelection;
+	std::function<void (ItemId)> removeFromSelection;
+	bool canSelectMultiple = false;
+	bool selectionRequired = false;
+
+	std::function<ExpandState (ItemId)> expandState;
+	std::function<void (ItemId)> expand;
+	std::function<void (ItemId)> collapse;
+	std::function<void (ItemId)> invoke;
+
+	std::function<ItemId ()> focused;
+	std::function<void (ItemId)> setFocus;
 };
 
 } }

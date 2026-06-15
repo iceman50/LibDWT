@@ -54,8 +54,25 @@ void Button::create(const Seed& cs) {
 	BaseType::create(cs);
 	setFont(cs.font);
 
-	::RECT rect = { cs.padding.x, cs.padding.y, cs.padding.x, cs.padding.y };
+	auto padding = scale(cs.padding);
+	::RECT rect = { padding.x, padding.y, padding.x, padding.y };
 	sendMessage(BCM_SETTEXTMARGIN, 0, reinterpret_cast<LPARAM>(&rect));
+
+	onDpiResourcesChanged([this](const DpiResourceEvent& event) {
+		if(!imageList) {
+			return;
+		}
+		BUTTON_IMAGELIST current = { };
+		if(!sendMessage(BCM_GETIMAGELIST, 0,
+			reinterpret_cast<LPARAM>(&current))) {
+			return;
+		}
+		auto resized = imageList->resized(
+			event.scale(imageList->getImageSize()));
+		Rectangle margin(current.margin);
+		setImageList(resized, current.uAlign,
+			Rectangle(event.scale(margin.pos), event.scale(margin.size)));
+	});
 }
 
 void Button::setImage(BitmapPtr bitmap) {

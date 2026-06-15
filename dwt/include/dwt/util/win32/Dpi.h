@@ -29,6 +29,8 @@
 #include "../../Point.h"
 #include "../../Rectangle.h"
 
+#include <cstdint>
+
 namespace dwt { namespace util { namespace win32 {
 
 static const unsigned defaultDpi = 96;
@@ -39,6 +41,28 @@ static const unsigned defaultDpi = 96;
  */
 bool enablePerMonitorDpiAwareness();
 
+enum class ThreadDpiAwareness : std::intptr_t {
+	Unaware = -1,
+	SystemAware = -2,
+	PerMonitorAware = -3,
+	PerMonitorAwareV2 = -4,
+	UnawareGdiScaled = -5
+};
+
+class ScopedThreadDpiAwareness {
+public:
+	explicit ScopedThreadDpiAwareness(ThreadDpiAwareness awareness);
+	~ScopedThreadDpiAwareness();
+
+	ScopedThreadDpiAwareness(const ScopedThreadDpiAwareness&) = delete;
+	ScopedThreadDpiAwareness& operator=(const ScopedThreadDpiAwareness&) = delete;
+
+	bool changed() const { return previous != nullptr; }
+
+private:
+	HANDLE previous;
+};
+
 unsigned getDpi(HWND window);
 
 int scale(int value, unsigned dpi, unsigned sourceDpi = defaultDpi);
@@ -46,6 +70,8 @@ Point scale(const Point& value, unsigned dpi, unsigned sourceDpi = defaultDpi);
 Rectangle scale(const Rectangle& value, unsigned dpi, unsigned sourceDpi = defaultDpi);
 
 int getSystemMetricsForDpi(int index, unsigned dpi);
+bool systemParametersInfoForDpi(UINT action, UINT param, void* value,
+	UINT flags, unsigned dpi);
 
 bool adjustWindowRectForDpi(RECT& rect, DWORD style, bool hasMenu, DWORD exStyle, unsigned dpi);
 

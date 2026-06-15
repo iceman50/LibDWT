@@ -129,6 +129,7 @@ private:
 	void hide(Item& item);
 	void remove(Item* item);
 	void updateChildDisplay(Item* item);
+	void configureAccessibility();
 	LRESULT sendTreeMsg(UINT msg, WPARAM wParam, LPARAM lParam);
 };
 

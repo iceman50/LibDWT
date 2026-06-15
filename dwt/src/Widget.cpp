@@ -220,6 +220,13 @@ int Widget::getSystemMetric(int index) const {
 	return util::win32::getSystemMetricsForDpi(index, getDpi());
 }
 
+bool Widget::getSystemParameters(UINT action, UINT param, void* value,
+	UINT flags) const
+{
+	return util::win32::systemParametersInfoForDpi(
+		action, param, value, flags, getDpi());
+}
+
 bool Widget::adjustWindowRect(RECT& rect, bool hasMenu) const {
 	auto style = static_cast<DWORD>(::GetWindowLongPtr(handle(), GWL_STYLE));
 	auto exStyle = static_cast<DWORD>(::GetWindowLongPtr(handle(), GWL_EXSTYLE));
@@ -265,6 +272,11 @@ void Widget::setAccessibleScroll(const accessibility::ScrollProvider& value) {
 	accessibleScroll.reset(new accessibility::ScrollProvider(value));
 }
 
+void Widget::setAccessibleItems(const accessibility::ItemProvider& value) {
+	enableAccessibility(accessibleControlType);
+	accessibleItems.reset(new accessibility::ItemProvider(value));
+}
+
 tstring Widget::getAccessibleName() const {
 	if(!accessibleName.empty() || !hwnd) {
 		return accessibleName;
@@ -298,8 +310,17 @@ const accessibility::ScrollProvider* Widget::getAccessibleScroll() const {
 	return accessibleScroll.get();
 }
 
+const accessibility::ItemProvider* Widget::getAccessibleItems() const {
+	return accessibleItems.get();
+}
+
 void Widget::raiseAccessibleEvent(long eventId) {
 	util::win32::raiseAccessibilityEvent(accessibilityProvider, eventId);
+}
+
+void Widget::raiseAccessibleItemEvent(accessibility::ItemId item, long eventId) {
+	util::win32::raiseAccessibilityItemEvent(
+		accessibilityProvider, item, eventId);
 }
 
 void Widget::raiseAccessibleStructureChanged() {
