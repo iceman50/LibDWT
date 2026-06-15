@@ -176,6 +176,9 @@
     <ClCompile Include="$(ProjectDir)..\..\..\..\examples\CustomDrawExample\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Manifest Include="$(ProjectDir)..\..\..\windows-common.manifest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="$(ProjectDir)..\..\dwt\dwt.vcxproj">
       <Project>{A1E250D3-8A9F-4AB6-9D8F-C6A79E850001}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

@@ -38,6 +38,8 @@
 #include <dwt/DWTException.h>
 #include <dwt/util/check.h>
 #include <dwt/util/win32/ApiHelpers.h>
+#include <dwt/util/win32/AccessibilityProvider.h>
+#include <dwt/util/win32/Dpi.h>
 
 namespace dwt {
 
@@ -48,7 +50,10 @@ int widgetCount;
 #endif
 
 Widget::Widget(Widget* parent_, Dispatcher& dispatcher_) :
-	hwnd(NULL), parent(parent_), dispatcher(dispatcher_)
+	hwnd(NULL), parent(parent_), dispatcher(dispatcher_),
+	dpi(util::win32::defaultDpi), previousDpi(util::win32::defaultDpi),
+	accessibilityProvider(nullptr), accessibleControlType(accessibility::Custom),
+	accessibleKeyboardFocusable(false)
 {
 #ifdef DWT_DEBUG_WIDGETS
 	++widgetCount;
@@ -57,6 +62,8 @@ Widget::Widget(Widget* parent_, Dispatcher& dispatcher_) :
 }
 
 Widget::~Widget() {
+	util::win32::detachAccessibilityProvider(accessibilityProvider);
+	util::win32::releaseAccessibilityProvider(accessibilityProvider);
 	if(hwnd) {
 		::RemoveProp(hwnd, propAtom);
 	}
@@ -89,6 +96,7 @@ void Widget::setHandle(HWND h) {
 	}
 
 	hwnd = h;
+	dpi = previousDpi = util::win32::getDpi(hwnd);
 
 	::SetProp(hwnd, propAtom, reinterpret_cast<HANDLE>(this));
 
@@ -145,6 +153,27 @@ void Widget::callAsync(const Application::Callback& f) {
 }
 
 bool Widget::handleMessage(const MSG &msg, LRESULT &retVal) {
+	if(msg.message == WM_DPICHANGED) {
+		previousDpi = dpi;
+		dpi = LOWORD(msg.wParam);
+
+		if(!getParent() && msg.lParam) {
+			const RECT& bounds = *reinterpret_cast<const RECT*>(msg.lParam);
+			::SetWindowPos(handle(), nullptr, bounds.left, bounds.top,
+				bounds.right - bounds.left, bounds.bottom - bounds.top,
+				SWP_NOACTIVATE | SWP_NOZORDER);
+		}
+	}
+
+	// UiaRootObjectId is -25 and is kept out of public headers to avoid pulling
+	// the complete UI Automation SDK surface into every widget translation unit.
+	if(msg.message == WM_GETOBJECT && msg.lParam == static_cast<LPARAM>(-25) &&
+		accessibilityProvider) {
+		retVal = util::win32::returnAccessibilityProvider(
+			accessibilityProvider, msg.hwnd, msg.wParam, msg.lParam);
+		return true;
+	}
+
 	// First we must create a "comparable" message...
 	Message msgComparer(msg);
 	auto i = handlers.find(msgComparer);
@@ -155,7 +184,92 @@ bool Widget::handleMessage(const MSG &msg, LRESULT &retVal) {
 			handled |= j(msg, retVal);
 		}
 	}
+	if(msg.message == WM_DPICHANGED) {
+		layout();
+	}
 	return handled;
+}
+
+unsigned Widget::getDpi() const {
+	return hwnd ? util::win32::getDpi(hwnd) : dpi;
+}
+
+int Widget::scale(int value) const {
+	return util::win32::scale(value, getDpi());
+}
+
+Point Widget::scale(const Point& value) const {
+	return util::win32::scale(value, getDpi());
+}
+
+Rectangle Widget::scale(const Rectangle& value) const {
+	return util::win32::scale(value, getDpi());
+}
+
+int Widget::getSystemMetric(int index) const {
+	return util::win32::getSystemMetricsForDpi(index, getDpi());
+}
+
+bool Widget::adjustWindowRect(RECT& rect, bool hasMenu) const {
+	auto style = static_cast<DWORD>(::GetWindowLongPtr(handle(), GWL_STYLE));
+	auto exStyle = static_cast<DWORD>(::GetWindowLongPtr(handle(), GWL_EXSTYLE));
+	return util::win32::adjustWindowRectForDpi(rect, style, hasMenu, exStyle, getDpi());
+}
+
+void Widget::enableAccessibility(long controlType) {
+	accessibleControlType = controlType;
+	if(!accessibilityProvider) {
+		accessibilityProvider = util::win32::createAccessibilityProvider(this);
+	}
+}
+
+bool Widget::accessibilityEnabled() const {
+	return accessibilityProvider != nullptr;
+}
+
+void Widget::setAccessibleName(const tstring& value) {
+	accessibleName = value;
+}
+
+void Widget::setAccessibleHelpText(const tstring& value) {
+	accessibleHelpText = value;
+}
+
+void Widget::setAccessibleControlType(long value) {
+	enableAccessibility(value);
+}
+
+void Widget::setAccessibleKeyboardFocusable(bool value) {
+	accessibleKeyboardFocusable = value;
+}
+
+tstring Widget::getAccessibleName() const {
+	if(!accessibleName.empty() || !hwnd) {
+		return accessibleName;
+	}
+	int length = ::GetWindowTextLength(hwnd);
+	if(!length) {
+		return tstring();
+	}
+	std::vector<TCHAR> text(static_cast<size_t>(length) + 1);
+	::GetWindowText(hwnd, text.data(), static_cast<int>(text.size()));
+	return text.data();
+}
+
+const tstring& Widget::getAccessibleHelpText() const {
+	return accessibleHelpText;
+}
+
+long Widget::getAccessibleControlType() const {
+	return accessibleControlType;
+}
+
+bool Widget::getAccessibleKeyboardFocusable() const {
+	return accessibleKeyboardFocusable;
+}
+
+void Widget::raiseAccessibleEvent(long eventId) {
+	util::win32::raiseAccessibilityEvent(accessibilityProvider, eventId);
 }
 
 void Widget::setParent(Widget* widget) {

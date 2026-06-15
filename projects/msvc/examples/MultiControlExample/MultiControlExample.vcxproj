@@ -177,6 +177,7 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="$(ProjectDir)..\..\..\..\examples\MultiControlExample\resources.rc" />
+    <Manifest Include="$(ProjectDir)..\..\..\windows-common.manifest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(ProjectDir)..\..\dwt\dwt.vcxproj">

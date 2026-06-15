@@ -227,6 +227,11 @@ public:
 
 	/** Get the rectangle of the specified group's header. */
 	bool getGroupRect(unsigned groupId, Rectangle& rect) const;
+	int setGroupInfo(int groupId, const LVGROUP& group);
+	int getGroupInfo(int groupId, LVGROUP& group) const;
+	bool removeGroup(int groupId);
+	int getGroupCount() const;
+	bool moveGroup(int groupId, int index);
 
 	/// Returns the checked state of the given row
 	/** A list view can have checkboxes in each row, if the checkbox for the given
@@ -354,6 +359,23 @@ public:
 	  * The Data Grid uses the report view for default.
 	  */
 	void setView( int view );
+	int getView() const;
+	void setTileViewInfo(const LVTILEVIEWINFO& info);
+	void setTileInfo(const LVTILEINFO& info);
+	void onGetEmptyText(std::function<tstring ()> f, bool centered = true);
+	bool getFooterRect(Rectangle& rect) const;
+	bool getNextItemIndex(LVITEMINDEX& index, int flags) const;
+	bool setItemIndexState(const LVITEMINDEX& index, UINT state, UINT mask);
+	void setInsertMark(const LVINSERTMARK& mark);
+	LVINSERTMARK getInsertMark() const;
+	int getTopIndex() const;
+	int getCountPerPage() const;
+	HWND getEditControl() const;
+
+	void onBeginDrag(std::function<void (const NMLISTVIEW&)> f);
+	void onItemActivate(std::function<void (const NMITEMACTIVATE&)> f);
+	void onListKeyDown(std::function<void (const NMLVKEYDOWN&)> f);
+	void onItemChanging(std::function<bool (const NMLISTVIEW&)> f);
 
 	/// Force redraw of a range of items.
 	/** You may want to call invalidateWidget after the this call to force repaint.

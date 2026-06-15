@@ -11,6 +11,32 @@ All notable changes to LibDWT are documented in this file.
 - Added `Tree::setCheckBoxes()`, with checkbox state available through
   `Tree::getChecked()` and `Tree::setChecked()`.
 - Added a tree checkbox demonstration to `MultiControlExample`.
+- Added Per-Monitor V2 DPI manifests and runtime DPI-awareness negotiation.
+- Added per-widget DPI queries, scaling helpers, DPI-aware system metrics,
+  window-rectangle adjustment, and `WM_DPICHANGED` callbacks.
+- Added an opt-in UI Automation provider foundation for custom HWND controls.
+- Added modern `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and
+  folder dialogs, including custom places, client GUIDs, and `FOS_*` options.
+- Added a `TaskDialog` wrapper with custom and common buttons, command links,
+  radio buttons, verification text, progress modes, icons, and callbacks.
+- Added unified Windows 8+ pointer events to the mouse aspect.
+- Added command-link notes, elevation shields, image lists, split-button
+  configuration, and dropdown events to `Button`.
+- Added marquee, normal/error/paused state, and color APIs to `ProgressBar`.
+- Added Tree extended styles, multiselect enumeration, double buffering, and
+  item-changing notifications.
+- Added ListView view/tile, empty-markup, group, item-index, insertion-mark, and
+  activation/drag/change APIs to `Table`.
+- Added taskbar progress state and value APIs.
+- Added notification icon version 4, focus, icon rectangle, keyboard selection,
+  and popup lifecycle support.
+- Added tooltip titles, margins, colors, themes, links, pop, and update APIs.
+- Added nullable values, ranges, ideal sizing, month-calendar styles, and picker
+  information to `DateTime`.
+- Expanded `MultiControlExample` to demonstrate task dialogs, command-link
+  buttons, modern file dialogs, progress states and marquee mode, nullable date
+  values, tooltip styling, pointer and DPI events, accessibility metadata, and
+  richer Table, Tree, and notification callbacks.
 
 ### Changed
 
@@ -20,6 +46,13 @@ All notable changes to LibDWT are documented in this file.
 - Updated the MSVC projects and MinGW makefile to use the new Windows target
   definitions.
 - Set generated executable subsystem versions to Windows 7 (`6.01`).
+- Shared executable manifests now declare Windows 7 through Windows 11
+  compatibility, Per-Monitor V2 DPI awareness, common-controls v6, and long
+  path awareness.
+- `ProgressBar::getStep()` no longer mutates the native control while querying
+  the configured step.
+- Existing file and folder dialog APIs now use the modern shell dialog
+  implementation without changing their path-based result types.
 
 ### Removed
 

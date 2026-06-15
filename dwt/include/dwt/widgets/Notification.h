@@ -83,6 +83,11 @@ public:
 
 	/// This is sent when the tooltip text should be updated
 	void onUpdateTip(Callback callback) { updateTip = callback; }
+	void onPopupOpened(Callback callback) { popupOpened = callback; }
+	void onPopupClosed(Callback callback) { popupClosed = callback; }
+
+	void setFocus();
+	Rectangle getRect() const;
 
 private:
 	Widget* parent;
@@ -97,6 +102,8 @@ private:
 	Callback iconClicked;
 	Callback iconDbClicked;
 	Callback updateTip;
+	Callback popupOpened;
+	Callback popupClosed;
 
 	std::deque<std::pair<Callback, IconPtr>> balloons; // keep a ref of the icon until the balloon has been shown.
 	bool onlyBalloons; /// the tray icon has been created solely for balloons; it will disappear afterwards.

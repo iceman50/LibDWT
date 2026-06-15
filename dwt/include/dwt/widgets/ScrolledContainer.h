@@ -70,7 +70,9 @@ public:
 protected:
 	friend class WidgetCreator<ScrolledContainer>;
 
-	ScrolledContainer(Widget* parent, Dispatcher& dispatcher = NormalDispatcher::getDefault()) : BaseType(parent, dispatcher) { };
+	ScrolledContainer(Widget* parent, Dispatcher& dispatcher = NormalDispatcher::getDefault()) : BaseType(parent, dispatcher) {
+		enableAccessibility(accessibility::Pane);
+	};
 
 private:
 

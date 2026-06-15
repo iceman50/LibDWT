@@ -221,6 +221,14 @@ public:
 	/// Sets the checked state of the given item.
 	void setChecked(HTREEITEM item, bool checked = true);
 
+	void setExtendedStyle(DWORD styles, DWORD mask);
+	DWORD getExtendedStyle() const;
+	void setMultiSelect(bool value = true);
+	void setDoubleBuffered(bool value = true);
+	std::vector<HTREEITEM> getSelectedItems() const;
+	void onItemChanged(std::function<void (const NMTVITEMCHANGE&)> f);
+	void onItemChanging(std::function<bool (const NMTVITEMCHANGE&)> f);
+
 	/// Returns the text of the current selected node
 	/** Returns the text of the current selected node in the tree view.
 	  */

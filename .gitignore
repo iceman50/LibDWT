@@ -45,6 +45,7 @@ compile_commands.json
 *.idb
 *.ilk
 *.manifest
+!projects/windows-common.manifest
 
 # =========================
 # Object/intermediate files

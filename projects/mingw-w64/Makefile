@@ -127,7 +127,7 @@ $(CUSTOM_EXE): $(CUSTOM_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(CXX) $(LDFLAGS) -o $@ $(CUSTOM_OBJ) $(MANIFEST_OBJ) $(DWT_LIB) $(LDLIBS)
 
-$(MANIFEST_OBJ): $(MANIFEST_RC) common-controls-v6.manifest
+$(MANIFEST_OBJ): $(MANIFEST_RC) ../windows-common.manifest
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(RC) -O coff -i $(MANIFEST_RC) -o $@
 

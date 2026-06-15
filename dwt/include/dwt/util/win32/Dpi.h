@@ -1,7 +1,7 @@
 /*
   DC++ Widget Toolkit
 
-  Copyright (c) 2007-2013, Jacek Sieka
+  Copyright (c) 2007-2026, Jacek Sieka
 
   All rights reserved.
 
@@ -20,27 +20,35 @@
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef DWT_UTIL_GDI_H
-#define DWT_UTIL_GDI_H
+#ifndef DWT_UTIL_WIN32_DPI_H
+#define DWT_UTIL_WIN32_DPI_H
 
-#include <dwt/forward.h>
+#include "../../WindowsHeaders.h"
+#include "../../Point.h"
+#include "../../Rectangle.h"
 
-namespace dwt { namespace util {
+namespace dwt { namespace util { namespace win32 {
 
-IconPtr merge(const ImageList& icons);
+static const unsigned defaultDpi = 96;
 
-/// Conversion factor for the system DPI. Prefer Widget::getDpi/scale for window-aware layout.
-float dpiFactor();
+/**
+ * Request the best DPI-awareness mode supported by the running Windows version.
+ * Application manifests remain the preferred way to configure awareness.
+ */
+bool enablePerMonitorDpiAwareness();
 
-} }
+unsigned getDpi(HWND window);
+
+int scale(int value, unsigned dpi, unsigned sourceDpi = defaultDpi);
+Point scale(const Point& value, unsigned dpi, unsigned sourceDpi = defaultDpi);
+Rectangle scale(const Rectangle& value, unsigned dpi, unsigned sourceDpi = defaultDpi);
+
+int getSystemMetricsForDpi(int index, unsigned dpi);
+
+bool adjustWindowRectForDpi(RECT& rect, DWORD style, bool hasMenu, DWORD exStyle, unsigned dpi);
+
+} } }
 
 #endif

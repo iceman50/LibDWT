@@ -29,8 +29,10 @@
 #include <dwt/widgets/StatusBar.h>
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/TableTree.h>
+#include <dwt/widgets/TaskDialog.h>
 #include <dwt/widgets/TextBox.h>
 #include <dwt/widgets/ToolBar.h>
+#include <dwt/widgets/ToolTip.h>
 #include <dwt/widgets/Tree.h>
 #include <dwt/widgets/VirtualTree.h>
 #include <dwt/widgets/Window.h>
@@ -74,6 +76,7 @@ using dwt::Table;
 using dwt::TableTree;
 using dwt::TextBox;
 using dwt::ToolBar;
+using dwt::ToolTip;
 using dwt::Tree;
 using dwt::VirtualTree;
 using dwt::WidgetCreator;
@@ -82,6 +85,23 @@ using dwt::Window;
 void setStatus(StatusBar::ObjectType status, const dwt::tstring& text) {
 	status->setText(0, text, true);
 	status->setText(1, _T("MultiControlExample"));
+}
+
+dwt::tstring pointerTypeName(dwt::PointerEvent::Type type) {
+	switch(type) {
+	case dwt::PointerEvent::Touch:
+		return _T("touch");
+	case dwt::PointerEvent::Pen:
+		return _T("pen");
+	case dwt::PointerEvent::Mouse:
+		return _T("mouse");
+	case dwt::PointerEvent::Touchpad:
+		return _T("touchpad");
+	case dwt::PointerEvent::Generic:
+		return _T("generic");
+	default:
+		return _T("unknown");
+	}
 }
 
 void setRichSummary(RichTextBox::ObjectType richText) {
@@ -133,7 +153,8 @@ void configureGrid(Grid::ObjectType grid) {
 	grid->row(0).mode = GridInfo::STATIC;
 	grid->row(0).size = 36;
 	grid->row(1).mode = GridInfo::AUTO;
-	grid->row(2).mode = GridInfo::AUTO;
+	grid->row(2).mode = GridInfo::STATIC;
+	grid->row(2).size = 64;
 	grid->row(3).mode = GridInfo::AUTO;
 	grid->row(4).mode = GridInfo::AUTO;
 	grid->row(5).mode = GridInfo::AUTO;
@@ -142,6 +163,7 @@ void configureGrid(Grid::ObjectType grid) {
 	grid->row(7).size = 220;
 	grid->row(3).align = GridInfo::STRETCH;
 	grid->row(4).align = GridInfo::STRETCH;
+	grid->row(2).align = GridInfo::STRETCH;
 	grid->row(6).align = GridInfo::STRETCH;
 	grid->row(7).align = GridInfo::STRETCH;
 }
@@ -162,12 +184,15 @@ int dwtMain(dwt::Application& app) {
 
 	auto* labelInput = WidgetCreator<Label>::create(grid, Label::Seed(_T("Input:")));
 	auto* textInput = WidgetCreator<TextBox>::create(grid, TextBox::Seed(_T("Grid layout with all major controls")));
-	auto* buttonRun = WidgetCreator<Button>::create(grid, Button::Seed(_T("Run Action")));
+	auto* buttonRun = WidgetCreator<Button>::create(grid,
+		Button::Seed(_T("Modern Controls"), BS_COMMANDLINK));
 	auto* checkOption = WidgetCreator<CheckBox>::create(grid, CheckBox::Seed(_T("Enable Option")));
 	auto* radioA = WidgetCreator<RadioButton>::create(grid, RadioButton::Seed(_T("Mode A")));
 	auto* radioB = WidgetCreator<RadioButton>::create(grid, RadioButton::Seed(_T("Mode B")));
 	auto* combo = WidgetCreator<ComboBox>::create(grid, ComboBox::Seed());
-	auto* dateTime = WidgetCreator<DateTime>::create(grid, DateTime::Seed());
+	DateTime::Seed dateTimeSeed;
+	dateTimeSeed.style |= DTS_SHOWNONE;
+	auto* dateTime = WidgetCreator<DateTime>::create(grid, dateTimeSeed);
 	auto* spinner = WidgetCreator<Spinner>::create(grid, Spinner::Seed(0, 100));
 	auto* slider = WidgetCreator<Slider>::create(grid, Slider::Seed());
 	auto* progress = WidgetCreator<ProgressBar>::create(grid, ProgressBar::Seed());
@@ -224,14 +249,39 @@ int dwtMain(dwt::Application& app) {
 	LoadDialog loadDialog(window);
 	SaveDialog saveDialog(window);
 	FolderDialog folderDialog(window);
+	auto* toolTip = WidgetCreator<ToolTip>::create(window, ToolTip::Seed());
+
+	buttonRun->setNote(_T("Task Dialog, progress states, nullable dates, DPI, and pointer events"));
+	buttonRun->setAccessibleName(_T("Open modern controls demonstration"));
+	buttonRun->setAccessibleHelpText(_T("Opens a Windows task dialog and applies its selections to the example."));
+
+	grid->setAccessibleName(_T("Multi-control example content"));
+	grid->setAccessibleHelpText(_T("Demonstrates LibDWT controls and Windows 7 or later APIs."));
+	scrolled->setAccessibleName(_T("Scrollable feature summary"));
+
+	toolTip->setTitle(_T("Windows 7+ control features"), TTI_INFO);
+	toolTip->setMargin(dwt::Rectangle(6, 4, 6, 4));
+	toolTip->setMaxTipWidth(420);
+	toolTip->setWindowTheme(_T("Explorer"));
+	toolTip->setText(buttonRun,
+		_T("Open a Task Dialog and use its radio buttons and verification checkbox to update the controls."));
 
 	auto notification = std::make_shared<Notification>(window);
 	dwt::IconPtr trayIcon(new dwt::Icon(IDI_MULTI_TRAY, dwt::Point(16, 16)));
 	notification->create(Notification::Seed(trayIcon, _T("DWT MultiControlExample notification")));
 	notification->setTooltip(_T("DWT MultiControlExample notification"));
 	notification->setVisible(true);
-	notification->onIconClicked([status] { setStatus(status, _T("Tray icon clicked")); });
-	notification->onContextMenu([status] { setStatus(status, _T("Tray icon context menu requested")); });
+	notification->onIconClicked([status, notification] {
+		auto rect = notification->getRect();
+		setStatus(status, _T("Tray icon at ") + std::to_wstring(rect.x()) +
+			_T(", ") + std::to_wstring(rect.y()));
+	});
+	notification->onContextMenu([status, notification] {
+		setStatus(status, _T("Tray icon context menu requested"));
+		notification->setFocus();
+	});
+	notification->onPopupOpened([status] { setStatus(status, _T("Tray popup opened")); });
+	notification->onPopupClosed([status] { setStatus(status, _T("Tray popup closed")); });
 
 	combo->addValue(_T("First"));
 	combo->addValue(_T("Second"));
@@ -244,7 +294,18 @@ int dwtMain(dwt::Application& app) {
 	slider->setTickFrequency(10);
 	progress->setRange(0, 100);
 	progress->setPosition(25);
+	progress->setState(ProgressBar::Normal);
 	spinner->setValue(25);
+
+	SYSTEMTIME minimumDate = {};
+	minimumDate.wYear = 2020;
+	minimumDate.wMonth = 1;
+	minimumDate.wDay = 1;
+	SYSTEMTIME maximumDate = {};
+	maximumDate.wYear = 2035;
+	maximumDate.wMonth = 12;
+	maximumDate.wDay = 31;
+	dateTime->setRange(&minimumDate, &maximumDate);
 
 	header->insert(_T("Control"), 180);
 	header->insert(_T("Category"), 180);
@@ -259,6 +320,7 @@ int dwtMain(dwt::Application& app) {
 	table->setHeaderDragDrop(true);
 	table->setCheckBoxes(true);
 	table->setReadOnly(true);
+	table->setView(LV_VIEW_DETAILS);
 	table->insert({ _T("Grid"), _T("9x4"), _T("Main responsive layout") }, 101);
 	table->insert({ _T("Rebar/Toolbar"), _T("Top row"), _T("Dialog and notify actions") }, 102);
 	table->insert({ _T("TableTree"), _T("Hierarchy"), _T("Parent-child list entries") }, 103);
@@ -272,6 +334,8 @@ int dwtMain(dwt::Application& app) {
 	tree->insert(_T("Data Views"), treeRoot, TVI_LAST, 0, false);
 	tree->insert(_T("Dialogs and Notifications"), treeRoot, TVI_LAST, 0, false);
 	tree->setChecked(treeInput);
+	tree->setDoubleBuffered();
+	tree->setMultiSelect();
 	tree->expand(treeRoot);
 
 	tableTree->addColumn(_T("Item"), 220);
@@ -300,9 +364,84 @@ int dwtMain(dwt::Application& app) {
 	setRichSummary(richText);
 
 	auto syncingRange = std::make_shared<bool>(false);
+	auto marqueeActive = std::make_shared<bool>(false);
 
-	buttonRun->onClicked([status, textInput] {
-		setStatus(status, _T("Action: ") + textInput->getText());
+	auto showModernControls = [window, status, textInput, slider, progress, dateTime, marqueeActive] {
+		const int applyStateButton = 1001;
+		const int toggleMarqueeButton = 1002;
+		const int normalRadio = 2001;
+		const int pausedRadio = 2002;
+		const int errorRadio = 2003;
+		const int value = slider->getPosition();
+
+		dwt::TaskDialog dialog(window);
+		dialog
+			.setTitle(_T("LibDWT Modern Controls"))
+			.setMainInstruction(_T("Windows 7+ controls are active"))
+			.setContent(textInput->getText())
+			.setFooter(_T("The selected radio button updates the native progress-bar state."))
+			.setExpandedInformation(
+				_T("This dialog also demonstrates command links, custom buttons, radio buttons, ")
+				_T("verification state, standard icons, callbacks, and live progress updates."))
+			.setCollapsedControlText(_T("Show implementation details"))
+			.setExpandedControlText(_T("Hide implementation details"))
+			.setVerificationText(_T("Clear the optional date value"))
+			.setMainIcon(TD_INFORMATION_ICON)
+			.setFooterIcon(TD_SHIELD_ICON)
+			.setCommandLinks()
+			.setProgressBar()
+			.addFlags(TDF_POSITION_RELATIVE_TO_WINDOW)
+			.addButton(applyStateButton,
+				_T("Apply progress state\nUse the selected normal, paused, or error state."))
+			.addButton(toggleMarqueeButton,
+				_T("Toggle marquee mode\nSwitch between determinate and indeterminate progress."))
+			.addRadioButton(normalRadio, _T("Normal"))
+			.addRadioButton(pausedRadio, _T("Paused"))
+			.addRadioButton(errorRadio, _T("Error"))
+			.setDefaultButton(applyStateButton)
+			.setDefaultRadioButton(normalRadio)
+			.setCommonButtons(TDCBF_CANCEL_BUTTON)
+			.onEvent([value](HWND dialogWindow, UINT notification, WPARAM, LPARAM) -> HRESULT {
+				if(notification == TDN_CREATED) {
+					::SendMessage(dialogWindow, TDM_SET_PROGRESS_BAR_RANGE, 0, MAKELPARAM(0, 100));
+					::SendMessage(dialogWindow, TDM_SET_PROGRESS_BAR_POS, value, 0);
+				}
+				return S_OK;
+			});
+
+		auto result = dialog.show();
+		if(result.verificationChecked) {
+			dateTime->setNone();
+		}
+
+		if(result.button == applyStateButton) {
+			*marqueeActive = false;
+			progress->setMarquee(false);
+			auto state = ProgressBar::Normal;
+			dwt::tstring stateName = _T("normal");
+			if(result.radioButton == pausedRadio) {
+				state = ProgressBar::Paused;
+				stateName = _T("paused");
+			} else if(result.radioButton == errorRadio) {
+				state = ProgressBar::Error;
+				stateName = _T("error");
+			}
+			progress->setState(state);
+			progress->setPosition(value);
+			setStatus(status, _T("Progress state: ") + stateName);
+		} else if(result.button == toggleMarqueeButton) {
+			*marqueeActive = !*marqueeActive;
+			progress->setState(ProgressBar::Normal);
+			progress->setMarquee(*marqueeActive, 35);
+			setStatus(status, *marqueeActive ? _T("Progress marquee started") : _T("Progress marquee stopped"));
+		}
+	};
+
+	buttonRun->onClicked(showModernControls);
+	buttonRun->onPointerDown([status](const dwt::PointerEvent& event) {
+		setStatus(status, _T("Pointer ") + pointerTypeName(event.type) +
+			_T(" down, ID ") + std::to_wstring(event.id));
+		return false;
 	});
 
 	checkOption->onClicked([checkOption, status] {
@@ -342,16 +481,35 @@ int dwtMain(dwt::Application& app) {
 		return true;
 	});
 
-	dateTime->onDateTimeChanged([status](const SYSTEMTIME& st) {
-		setStatus(status, _T("Date changed: ") + std::to_wstring(st.wYear) + _T("-") + std::to_wstring(st.wMonth) + _T("-") + std::to_wstring(st.wDay));
+	dateTime->onDateTimeChanged([dateTime, status](const SYSTEMTIME&) {
+		auto value = dateTime->getValue();
+		if(!value) {
+			setStatus(status, _T("Date cleared"));
+			return;
+		}
+		setStatus(status, _T("Date changed: ") + std::to_wstring(value->wYear) +
+			_T("-") + std::to_wstring(value->wMonth) + _T("-") + std::to_wstring(value->wDay));
 	});
 
 	table->onColumnClick([status](int col) {
 		setStatus(status, _T("Table column clicked: ") + std::to_wstring(col));
 	});
+	table->onItemActivate([status](const NMITEMACTIVATE& item) {
+		setStatus(status, _T("Table item activated: ") + std::to_wstring(item.iItem));
+	});
+	table->onBeginDrag([status](const NMLISTVIEW& item) {
+		setStatus(status, _T("Table drag started: ") + std::to_wstring(item.iItem));
+	});
+	table->onListKeyDown([status](const NMLVKEYDOWN& key) {
+		setStatus(status, _T("Table key: ") + std::to_wstring(key.wVKey));
+	});
 
-	tree->onSelectionChanged([status] {
-		setStatus(status, _T("Tree selection changed"));
+	tree->onSelectionChanged([tree, status] {
+		setStatus(status, _T("Tree selected items: ") +
+			std::to_wstring(tree->getSelectedItems().size()));
+	});
+	tree->onItemChanged([status](const NMTVITEMCHANGE&) {
+		setStatus(status, _T("Tree item state changed"));
 	});
 	tree->onClicked([tree, status] {
 		auto item = tree->getSelected();
@@ -360,14 +518,35 @@ int dwtMain(dwt::Application& app) {
 		}
 	});
 
-	loadDialog.addFilter(_T("All Files"), _T("*.*"));
-	saveDialog.addFilter(_T("Text Files"), _T("*.txt"));
-	saveDialog.addFilter(_T("All Files"), _T("*.*"));
+	const GUID loadDialogGuid =
+		{ 0x7de5da90, 0x5a19, 0x48be, { 0xa8, 0x87, 0x5e, 0x1b, 0xe0, 0x20, 0x61, 0x51 } };
+	const GUID saveDialogGuid =
+		{ 0x25bd6f94, 0x8b7f, 0x45b0, { 0xa4, 0x98, 0xb8, 0x8d, 0xc6, 0x5f, 0x52, 0xb2 } };
+	const GUID folderDialogGuid =
+		{ 0x114f332a, 0xc51b, 0x46ec, { 0xb2, 0x2c, 0xb3, 0xc5, 0x4a, 0xc5, 0x8e, 0xa0 } };
+
+	loadDialog
+		.setTitle(_T("Open with IFileOpenDialog"))
+		.setClientGuid(loadDialogGuid)
+		.addOptions(FOS_FORCEFILESYSTEM)
+		.addFilter(_T("All Files"), _T("*.*"));
+	saveDialog
+		.setTitle(_T("Save with IFileSaveDialog"))
+		.setClientGuid(saveDialogGuid)
+		.setDefaultExtension(_T("txt"))
+		.addOptions(FOS_FORCEFILESYSTEM)
+		.addFilter(_T("Text Files"), _T("*.txt"))
+		.addFilter(_T("All Files"), _T("*.*"));
+	folderDialog
+		.setTitle(_T("Choose a folder with IFileOpenDialog"))
+		.setClientGuid(folderDialogGuid)
+		.addOptions(FOS_FORCEFILESYSTEM);
 
 	toolbar->addButton("msg", -1, _T("Message"), true, 0, [status, &messageBox] {
 		messageBox.show(_T("Toolbar action triggered."), _T("DWT MessageBox"), dwt::MessageBox::BOX_OK, dwt::MessageBox::BOX_ICONINFORMATION);
 		setStatus(status, _T("MessageBox opened"));
 	});
+	toolbar->addButton("task", -1, _T("Task Dialog"), true, 0, showModernControls);
 	toolbar->addButton("color", -1, _T("Color"), true, 0, [status, &colorDialog, &colorParams] {
 		if(colorDialog.open(colorParams)) {
 			setStatus(status, _T("Color selected"));
@@ -406,7 +585,7 @@ int dwtMain(dwt::Application& app) {
 		});
 		setStatus(status, _T("Tray notification sent"));
 	});
-	toolbar->setLayout({ "msg", "color", "font", "", "open", "save", "folder", "", "notify" });
+	toolbar->setLayout({ "msg", "task", "color", "font", "", "open", "save", "folder", "", "notify" });
 	toolbar->refresh();
 	rebar->add(toolbar);
 	rebar->refresh();
@@ -466,8 +645,13 @@ int dwtMain(dwt::Application& app) {
 	window->onSized([layout](const dwt::SizedEvent&) {
 		layout();
 	});
+	window->onDpiChanged([status](const dwt::DpiChangedEvent& event) {
+		setStatus(status, _T("DPI changed: ") + std::to_wstring(event.oldDpi) +
+			_T(" -> ") + std::to_wstring(event.newDpi));
+	});
 
-	window->onDestroy([notification] {
+	window->onDestroy([notification, toolTip] {
+		toolTip->close();
 		notification->setVisible(false);
 		::PostQuitMessage(0);
 	});

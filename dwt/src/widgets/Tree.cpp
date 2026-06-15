@@ -216,6 +216,46 @@ void Tree::setChecked(HTREEITEM item, bool checked) {
 	TreeView_SetCheckState(treeHandle(), item, checked ? TRUE : FALSE);
 }
 
+void Tree::setExtendedStyle(DWORD styles, DWORD mask) {
+	TreeView_SetExtendedStyle(treeHandle(), styles, mask);
+}
+
+DWORD Tree::getExtendedStyle() const {
+	return static_cast<DWORD>(TreeView_GetExtendedStyle(treeHandle()));
+}
+
+void Tree::setMultiSelect(bool value) {
+	setExtendedStyle(value ? TVS_EX_MULTISELECT : 0, TVS_EX_MULTISELECT);
+}
+
+void Tree::setDoubleBuffered(bool value) {
+	setExtendedStyle(value ? TVS_EX_DOUBLEBUFFER : 0, TVS_EX_DOUBLEBUFFER);
+}
+
+std::vector<HTREEITEM> Tree::getSelectedItems() const {
+	std::vector<HTREEITEM> items;
+	auto item = TreeView_GetSelection(treeHandle());
+	while(item) {
+		items.push_back(item);
+		item = TreeView_GetNextItem(treeHandle(), item, TVGN_NEXTSELECTED);
+	}
+	return items;
+}
+
+void Tree::onItemChanged(std::function<void (const NMTVITEMCHANGE&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_ITEMCHANGED), [f](const MSG& msg, LRESULT&) -> bool {
+		f(*reinterpret_cast<const NMTVITEMCHANGE*>(msg.lParam));
+		return true;
+	});
+}
+
+void Tree::onItemChanging(std::function<bool (const NMTVITEMCHANGE&)> f) {
+	addCallback(Message(WM_NOTIFY, TVN_ITEMCHANGING), [f](const MSG& msg, LRESULT& result) -> bool {
+		result = f(*reinterpret_cast<const NMTVITEMCHANGE*>(msg.lParam)) ? TRUE : FALSE;
+		return true;
+	});
+}
+
 LPARAM Tree::getDataImpl(HTREEITEM item) {
 	TVITEM tvitem = { TVIF_PARAM | TVIF_HANDLE, item };
 	if(!TreeView_GetItem(treeHandle(), &tvitem)) {

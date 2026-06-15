@@ -34,8 +34,17 @@
 
 #include "WindowsHeaders.h"
 #include "Point.h"
+#include "Rectangle.h"
 
 namespace dwt {
+
+struct DpiChangedEvent {
+	DpiChangedEvent(unsigned oldDpi_, const MSG& msg);
+
+	unsigned oldDpi;
+	unsigned newDpi;
+	Rectangle suggestedBounds;
+};
 
 struct SizedEvent {
 	SizedEvent(const MSG& msg);
@@ -94,6 +103,23 @@ struct MouseEvent {
 	Button ButtonPressed;
 };
 
+struct PointerEvent {
+	enum Type {
+		Unknown = 0,
+		Generic = 1,
+		Touch = 2,
+		Pen = 3,
+		Mouse = 4,
+		Touchpad = 5
+	};
+
+	PointerEvent(const MSG& msg);
+
+	unsigned id;
+	Type type;
+	ScreenCoordinate pos;
+	unsigned flags;
+};
 
 }
 

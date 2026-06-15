@@ -37,17 +37,21 @@
 #define DWT_Widget_h
 
 #include "Application.h"
+#include "Accessibility.h"
 #include "Atom.h"
 #include "forward.h"
 #include "Rectangle.h"
 #include "Point.h"
 #include "Message.h"
 #include "Dispatcher.h"
+#include "Events.h"
 #include <unordered_map>
 
 namespace dwt {
 
 using namespace std::placeholders;
+
+class AccessibilityProvider;
 
 template<typename T>
 T hwnd_cast(HWND hwnd);
@@ -142,6 +146,45 @@ public:
 	Rectangle getWindowRect() const;
 	Point getWindowSize() const;
 	Point getClientSize() const;
+
+	/// Return the effective DPI for this widget.
+	unsigned getDpi() const;
+
+	/// Scale values from 96 DPI to this widget's current DPI.
+	int scale(int value) const;
+	Point scale(const Point& value) const;
+	Rectangle scale(const Rectangle& value) const;
+
+	/// Return a system metric scaled for this widget's current DPI.
+	int getSystemMetric(int index) const;
+
+	/// Adjust a client rectangle for this widget's current DPI and window styles.
+	bool adjustWindowRect(RECT& rect, bool hasMenu = false) const;
+
+	/** Enable a minimal UI Automation provider for custom HWND controls.
+	 * Do not use this for standard controls, which already have native providers.
+	 */
+	void enableAccessibility(long controlType = accessibility::Custom);
+	bool accessibilityEnabled() const;
+	void setAccessibleName(const tstring& value);
+	void setAccessibleHelpText(const tstring& value);
+	void setAccessibleControlType(long value);
+	void setAccessibleKeyboardFocusable(bool value);
+	tstring getAccessibleName() const;
+	const tstring& getAccessibleHelpText() const;
+	long getAccessibleControlType() const;
+	bool getAccessibleKeyboardFocusable() const;
+	void raiseAccessibleEvent(long eventId);
+
+	/** Called after Windows reports a monitor DPI transition. Top-level windows
+	 * are moved to the suggested bounds before callbacks run.
+	 */
+	void onDpiChanged(std::function<void (const DpiChangedEvent&)> f) {
+		addCallback(Message(WM_DPICHANGED), [this, f](const MSG& msg, LRESULT&) -> bool {
+			f(DpiChangedEvent(previousDpi, msg));
+			return false;
+		});
+	}
 
 	/** Return the desktop size of the primary monitor (at coords 0, 0). */
 	static Point getPrimaryDesktopSize();
@@ -266,6 +309,15 @@ private:
 	Widget *parent;
 
 	Dispatcher& dispatcher;
+
+	unsigned dpi;
+	unsigned previousDpi;
+
+	AccessibilityProvider* accessibilityProvider;
+	tstring accessibleName;
+	tstring accessibleHelpText;
+	long accessibleControlType;
+	bool accessibleKeyboardFocusable;
 };
 
 inline LRESULT Widget::sendMessage( UINT msg, WPARAM wParam, LPARAM lParam) const {

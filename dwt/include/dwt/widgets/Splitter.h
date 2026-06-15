@@ -117,6 +117,7 @@ pos(0.5),
 horizontal(false),
 hovering(false)
 {
+	enableAccessibility(accessibility::Thumb);
 }
 
 }

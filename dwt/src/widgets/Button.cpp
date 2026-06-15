@@ -32,6 +32,7 @@
 #include <dwt/widgets/Button.h>
 
 #include <dwt/CanvasClasses.h>
+#include <dwt/resources/ImageList.h>
 
 namespace dwt {
 
@@ -63,6 +64,43 @@ void Button::setImage(BitmapPtr bitmap) {
 
 void Button::setImage(IconPtr icon) {
 	sendMessage(BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(icon->handle()));
+}
+
+void Button::setNote(const tstring& note) {
+	sendMessage(BCM_SETNOTE, 0, reinterpret_cast<LPARAM>(note.c_str()));
+}
+
+tstring Button::getNote() const {
+	auto length = static_cast<size_t>(sendMessage(BCM_GETNOTELENGTH));
+	std::vector<TCHAR> note(length + 1);
+	DWORD size = static_cast<DWORD>(note.size());
+	sendMessage(BCM_GETNOTE, reinterpret_cast<WPARAM>(&size),
+		reinterpret_cast<LPARAM>(note.data()));
+	return note.data();
+}
+
+void Button::setElevationRequired(bool required) {
+	sendMessage(BCM_SETSHIELD, 0, required ? TRUE : FALSE);
+}
+
+void Button::setImageList(const ImageListPtr& images, UINT alignment,
+	const Rectangle& margin)
+{
+	imageList = images;
+	BUTTON_IMAGELIST value = { imageList ? imageList->handle() : nullptr,
+		margin.toRECT(), alignment };
+	sendMessage(BCM_SETIMAGELIST, 0, reinterpret_cast<LPARAM>(&value));
+}
+
+void Button::setSplitInfo(const BUTTON_SPLITINFO& info) {
+	sendMessage(BCM_SETSPLITINFO, 0, reinterpret_cast<LPARAM>(&info));
+}
+
+void Button::onDropDown(std::function<void (const RECT&)> f) {
+	addCallback(Message(WM_NOTIFY, BCN_DROPDOWN), [f](const MSG& msg, LRESULT&) -> bool {
+		f(reinterpret_cast<NMBCDROPDOWN*>(msg.lParam)->rcButton);
+		return true;
+	});
 }
 
 Point Button::getPreferredSize() {
