@@ -1,6 +1,7 @@
 #include <dwt/Accessibility.h>
 #include <dwt/Application.h>
 #include <dwt/Events.h>
+#include <dwt/Message.h>
 #include <dwt/Widget.h>
 #include <dwt/util/win32/Dpi.h>
 #include <dwt/widgets/Table.h>
@@ -129,6 +130,23 @@ void testControlContracts() {
 		(item.state & LVFIS_FOCUSED), "table footer value contracts");
 }
 
+void testMessageContracts() {
+	using namespace dwt;
+
+	MSG menuMessage = { };
+	menuMessage.message = WM_COMMAND;
+	menuMessage.wParam = 1234;
+	check(Message(menuMessage) == Message(WM_COMMAND, 1234),
+		"menu WM_COMMAND matches the command id");
+
+	MSG controlMessage = { };
+	controlMessage.message = WM_COMMAND;
+	controlMessage.wParam = MAKEWPARAM(42, BN_CLICKED);
+	controlMessage.lParam = reinterpret_cast<LPARAM>(HWND(1));
+	check(Message(controlMessage) == Message(WM_COMMAND, BN_CLICKED),
+		"control WM_COMMAND matches the notification code");
+}
+
 }
 
 int dwtMain(dwt::Application&) {
@@ -140,6 +158,7 @@ int main() {
 	testSystemSettings();
 	testAccessibilityContract();
 	testControlContracts();
+	testMessageContracts();
 
 	if(failures) {
 		std::cerr << failures << " framework test(s) failed\n";
