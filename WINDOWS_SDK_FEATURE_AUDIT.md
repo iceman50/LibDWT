@@ -41,7 +41,7 @@ Items without an explicit status marker remain unimplemented.
 
 | Area | Status | Added | Remaining |
 | --- | --- | --- | --- |
-| Pointer/input | **Partial** | Typed `WM_POINTER` down, update, up, enter, leave, and capture-changed events with pointer ID, type, position, and flags | `WM_TOUCH`, `WM_GESTURE`, pointer history, pressure/pen details, explicit capture helpers, and cancellation |
+| Pointer/input | **Added** | Typed `WM_POINTER` down, update, up, enter, leave, wheel, horizontal wheel, capture-changed, and cancellation events with pointer ID, type, position, flags, history, touch details, pen pressure/tilt/rotation, capture helpers, typed `WM_TOUCH`, typed `WM_GESTURE`, and gesture configuration | No remaining item from the original P1 audit |
 | Button | **Partial** | Command-link styles through seeds, note get/set, elevation shield, aligned image lists, split configuration, and `BCN_DROPDOWN` | Image-list getter, text-margin getter, explicit dropdown-state helpers, and hot/focus notifications |
 | ProgressBar | **Added** | Marquee mode/speed, normal/error/paused states, colors, and non-mutating cached step retrieval | No remaining item from the original P1 audit |
 | Table/ListView | **Added** | View and tile get/set, empty markup, footer information/items/rectangles/link events, complete group info/metrics/state/focus operations, `LVITEMINDEX` state/iteration/rectangles, insertion marks and colors, work areas, hot item/cursor, hover time, outline color, selected column, background image, geometry, image-list getters, and drag/activate/key/change/label-edit events | No remaining item from the original P1 audit |
@@ -122,7 +122,8 @@ Items without an explicit status marker remain unimplemented.
 
 ### P1 - High-Value Control and Shell Coverage
 
-1. **Partial:** Pointer events added; touch, gesture, and richer pen data remain.
+1. **Added:** Pointer, touch, gesture, richer pen data, history, and
+   cancellation coverage is added.
 2. **Added:** The audited ListView/Table v6 P1 surface is covered.
 3. **Partial:** Native Tree P1 coverage is complete; VirtualTree has
    model-backed multiselection and framework behavior tests. Live UI and
@@ -193,8 +194,8 @@ not require runtime fallback paths:
   `WM_DPICHANGED`, child after-parent handling, and DPI-aware geometry are
   added. Fonts recreate automatically; other resources have pre-layout hooks
   and resized-copy helpers.
-- **Partial:** Basic typed pointer events are added. Touch, gesture, detailed
-  pen data, capture helpers, history, and cancellation remain.
+- **Added:** Typed pointer, touch, gesture, detailed pen data, capture helpers,
+  history, and cancellation coverage is added.
 - **Partial:** Typed theme, system-color, and system-settings notifications are
   added, including high-contrast and client-area-animation state. Dedicated
   text-scale values and more specific accessibility-setting classifications
@@ -548,8 +549,8 @@ accessibility, shell-dialog, Table, or Tree work.
 3. **Partial:** `IFileDialog` and `TaskDialog` wrappers are added. Continue with
    typed file-dialog custom-control helpers, live virtual-folder validation, and
    typed task-dialog live updates.
-4. **Partial:** Basic pointer events are added. Continue with touch, gestures,
-   pen details, history, capture, and cancellation.
+4. **Added:** Pointer, touch, gesture, pen details, history, capture, and
+   cancellation coverage is complete against the original P1 audit.
 5. **Partial:** Native Table and Tree common-controls v6 coverage is complete
    against the original P1 audit. Continue with live VirtualTree UI and
    accessibility validation.
@@ -571,9 +572,8 @@ The highest-value remaining sequence after this update is:
 2. Add higher-level typed file-dialog custom-control helpers and live
    library/virtual-folder validation.
 3. Add taskbar thumbnail buttons and complete tray identity/options.
-4. Finish pointer/touch/gesture/pen input.
-5. Add standalone `MonthCalendar`, then Slider and Header coverage.
-6. Add guarded Windows 11 DWM appearance APIs.
+4. Add standalone `MonthCalendar`, then Slider and Header coverage.
+5. Add guarded Windows 11 DWM appearance APIs.
 
 ## Primary References
 

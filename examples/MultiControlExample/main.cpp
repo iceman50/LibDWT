@@ -466,6 +466,36 @@ int dwtMain(dwt::Application& app) {
 			_T(" down, ID ") + std::to_wstring(event.id));
 		return false;
 	});
+	buttonRun->onPointerUpdate([status](const dwt::PointerEvent& event) {
+		if(event.penInfoAvailable) {
+			setStatus(status, _T("Pen pressure: ") +
+				std::to_wstring(event.penInfo.pressure));
+		} else if(event.touchInfoAvailable) {
+			setStatus(status, _T("Touch pressure: ") +
+				std::to_wstring(event.touchInfo.pressure));
+		}
+		return false;
+	});
+	buttonRun->onPointerCanceled([status](const dwt::PointerEvent& event) {
+		setStatus(status, _T("Pointer canceled, ID ") + std::to_wstring(event.id));
+		return false;
+	});
+	buttonRun->onTouch([status](const dwt::TouchEvent& event) {
+		setStatus(status, _T("WM_TOUCH contacts: ") +
+			std::to_wstring(event.points.size()));
+		return true;
+	}, TWF_FINETOUCH);
+	buttonRun->setGestureConfig({
+		{ GID_ZOOM, GC_ZOOM, 0 },
+		{ GID_PAN, GC_PAN | GC_PAN_WITH_INERTIA, 0 },
+		{ GID_ROTATE, GC_ROTATE, 0 },
+		{ GID_TWOFINGERTAP, GC_TWOFINGERTAP, 0 },
+		{ GID_PRESSANDTAP, GC_PRESSANDTAP, 0 }
+	});
+	buttonRun->onGesture([status](const dwt::GestureEvent& event) {
+		setStatus(status, _T("Gesture ID: ") + std::to_wstring(event.type));
+		return true;
+	});
 
 	checkOption->onClicked([checkOption, status] {
 		setStatus(status, checkOption->getChecked() ? _T("CheckBox enabled") : _T("CheckBox disabled"));

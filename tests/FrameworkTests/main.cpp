@@ -135,6 +135,36 @@ void testControlContracts() {
 		(item.state & LVFIS_FOCUSED), "table footer value contracts");
 }
 
+void testInputEventContracts() {
+	using namespace dwt;
+
+	MSG pointer = { };
+	pointer.message = WM_POINTERUP;
+	pointer.wParam = MAKEWPARAM(42, POINTER_MESSAGE_FLAG_PRIMARY |
+		POINTER_MESSAGE_FLAG_INCONTACT | POINTER_MESSAGE_FLAG_CANCELED);
+	pointer.lParam = MAKELPARAM(10, 20);
+	PointerEvent pointerEvent(pointer);
+	check(pointerEvent.id == 42, "pointer id decoding");
+	check(pointerEvent.primary && pointerEvent.inContact && pointerEvent.canceled,
+		"pointer flag decoding");
+	check(pointerEvent.pos.x() == 10 && pointerEvent.pos.y() == 20,
+		"pointer position decoding");
+
+	GESTURENOTIFYSTRUCT notify = { sizeof(GESTURENOTIFYSTRUCT) };
+	notify.dwFlags = GF_BEGIN;
+	notify.ptsLocation.x = 30;
+	notify.ptsLocation.y = 40;
+	notify.dwInstanceID = 7;
+	MSG gestureNotify = { };
+	gestureNotify.message = WM_GESTURENOTIFY;
+	gestureNotify.lParam = reinterpret_cast<LPARAM>(&notify);
+	GestureNotifyEvent notifyEvent(gestureNotify);
+	check(notifyEvent.valid && notifyEvent.flags == GF_BEGIN &&
+		notifyEvent.instanceId == 7, "gesture notify decoding");
+	check(notifyEvent.pos.x() == 30 && notifyEvent.pos.y() == 40,
+		"gesture notify position decoding");
+}
+
 void testVirtualTreeSelection() {
 	using namespace dwt;
 
@@ -231,6 +261,7 @@ int main() {
 	testSystemSettings();
 	testAccessibilityContract();
 	testControlContracts();
+	testInputEventContracts();
 	testVirtualTreeSelection();
 	testFileDialogContracts();
 	testMessageContracts();

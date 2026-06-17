@@ -45,6 +45,9 @@ All notable changes to LibDWT are documented in this file.
 - Added a `TaskDialog` wrapper with custom and common buttons, command links,
   radio buttons, verification text, progress modes, icons, and callbacks.
 - Added unified Windows 8+ pointer events to the mouse aspect.
+- Added pointer history, cancellation, wheel callbacks, touch/pen detail
+  readback, capture helpers, typed `WM_TOUCH`, typed `WM_GESTURE`, and gesture
+  configuration helpers to the mouse aspect.
 - Added command-link notes, elevation shields, image lists, split-button
   configuration, and dropdown events to `Button`.
 - Added marquee, normal/error/paused state, and color APIs to `ProgressBar`.

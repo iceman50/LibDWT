@@ -1026,7 +1026,7 @@ void VirtualTree::updateChildDisplay(Item* item) {
 
 void VirtualTree::configureAccessibility() {
 	setAccessibleControlType(accessibility::Tree);
-	if(getAccessibleName().empty()) {
+	if(!handle() || getAccessibleName().empty()) {
 		setAccessibleName(_T("Virtual tree"));
 	}
 
