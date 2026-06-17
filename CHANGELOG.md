@@ -66,6 +66,18 @@ All notable changes to LibDWT are documented in this file.
 - Added tooltip titles, margins, colors, themes, links, pop, and update APIs.
 - Added nullable values, ranges, ideal sizing, month-calendar styles, and picker
   information to `DateTime`.
+- Added a working MDI implementation for `MDIFrame`, `MDIParent`, and
+  `MDIChild`, including native MDI dispatching, system accelerator translation,
+  menu merging support, active child management, cascade, tiling, icon
+  arrangement, next/previous activation, maximize, restore, close, close-all,
+  and minimize-all operations.
+- Added configurable `MDIParent` background painting with solid colors, bitmap
+  images, and icon images, using DWT RAII resource wrappers.
+- Added an `MDIExample` project demonstrating DWT MDI children, native MDI
+  window commands, menu commands through `dwt::Menu`, rich text formatting,
+  standard controls, owner-painted content, a custom bottom tab strip, and
+  configurable MDI background images and colors.
+- Added a generic mouse-wheel callback to the mouse aspect.
 - Expanded `MultiControlExample` to demonstrate task dialogs, command-link
   buttons, modern file dialogs, progress states and marquee mode, nullable date
   values, tooltip styling, pointer and DPI events, accessibility metadata, and
@@ -87,6 +99,16 @@ All notable changes to LibDWT are documented in this file.
   the configured step.
 - Existing file and folder dialog APIs now use the modern shell dialog
   implementation without changing their path-based result types.
+- Menu command dispatch now handles regular `WM_COMMAND` menu items without
+  colliding with accelerator/control command IDs.
+- MDI client background repainting now handles both erase and paint passes so
+  custom backgrounds redraw correctly when child frames move over them.
+- `RichTextBox::findText()` now calls the registered not-found callback when a
+  search wraps and still fails.
+- `RichTextBox::textUnderCursor()` now matches upstream behavior when the
+  cursor is on whitespace or at the end of a line.
+- `TabView` now handles mouse-wheel tab switching through the mouse aspect.
+- `Button::getPreferredSize()` now checks for `BCM_GETIDEALSIZE` failure.
 
 ### Removed
 

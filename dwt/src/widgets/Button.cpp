@@ -33,6 +33,7 @@
 
 #include <dwt/CanvasClasses.h>
 #include <dwt/resources/ImageList.h>
+#include <dwt/util/check.h>
 
 namespace dwt {
 
@@ -122,7 +123,9 @@ void Button::onDropDown(std::function<void (const RECT&)> f) {
 
 Point Button::getPreferredSize() {
 	SIZE size = { 0 };
-	sendMessage(BCM_GETIDEALSIZE, 0, reinterpret_cast<LPARAM>(&size));
+	if(!sendMessage(BCM_GETIDEALSIZE, 0, reinterpret_cast<LPARAM>(&size))) {
+		dwtassert(false, "Button: BCM_GETIDEALSIZE failed");
+	}
 	return Point(size.cx, size.cy);
 }
 

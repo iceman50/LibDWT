@@ -218,6 +218,7 @@ void TabView::create(const Seed & cs) {
 	onMiddleMouseDown([this](const MouseEvent& me) { return handleMiddleMouseDown(me); });
 	onMiddleMouseUp([this](const MouseEvent& me) { return handleMiddleMouseUp(me); });
 	onXMouseUp([this](const MouseEvent& me) { return handleXMouseUp(me); });
+	onMouseWheel([this](const MouseEvent&, int delta) { handleMouseWheel(delta); });
 
 	if(cs.style & TCS_TOOLTIPS) {
 		tip = WidgetCreator<ToolTip>::attach(this, TabCtrl_GetToolTips(handle())); // created and managed by the tab control thanks to the TCS_TOOLTIPS style
