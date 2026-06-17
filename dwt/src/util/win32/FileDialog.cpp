@@ -30,18 +30,86 @@ namespace dwt { namespace util { namespace win32 {
 
 namespace {
 
-template<typename T>
-class ComPtr {
+class FileDialogEventSink : public IFileDialogEvents {
 public:
-	ComPtr() : value(nullptr) { }
-	~ComPtr() { if(value) value->Release(); }
+	explicit FileDialogEventSink(const FileDialogEvents& events) :
+		refCount(1), events(events) { }
 
-	T* get() const { return value; }
-	T** put() { return &value; }
-	T* operator->() const { return value; }
+	HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** object) override {
+		if(!object) {
+			return E_POINTER;
+		}
+		if(::IsEqualIID(riid, IID_IUnknown) || ::IsEqualIID(riid, IID_IFileDialogEvents)) {
+			*object = static_cast<IFileDialogEvents*>(this);
+			AddRef();
+			return S_OK;
+		}
+		*object = nullptr;
+		return E_NOINTERFACE;
+	}
+
+	ULONG STDMETHODCALLTYPE AddRef() override {
+		return ::InterlockedIncrement(&refCount);
+	}
+
+	ULONG STDMETHODCALLTYPE Release() override {
+		auto result = ::InterlockedDecrement(&refCount);
+		if(!result) {
+			delete this;
+		}
+		return result;
+	}
+
+	HRESULT STDMETHODCALLTYPE OnFileOk(IFileDialog* dialog) override {
+		return events.fileOk ? events.fileOk(dialog) : S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE OnFolderChanging(IFileDialog* dialog, IShellItem* folder) override {
+		return events.folderChanging ? events.folderChanging(dialog, folder) : S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE OnFolderChange(IFileDialog* dialog) override {
+		if(events.folderChanged) {
+			events.folderChanged(dialog);
+		}
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE OnSelectionChange(IFileDialog* dialog) override {
+		if(events.selectionChanged) {
+			events.selectionChanged(dialog);
+		}
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE OnShareViolation(IFileDialog* dialog, IShellItem* item,
+		FDE_SHAREVIOLATION_RESPONSE* response) override
+	{
+		if(events.shareViolation && response) {
+			events.shareViolation(dialog, item, *response);
+		}
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE OnTypeChange(IFileDialog* dialog) override {
+		if(events.typeChanged) {
+			events.typeChanged(dialog);
+		}
+		return S_OK;
+	}
+
+	HRESULT STDMETHODCALLTYPE OnOverwrite(IFileDialog* dialog, IShellItem* item,
+		FDE_OVERWRITE_RESPONSE* response) override
+	{
+		if(events.overwrite && response) {
+			events.overwrite(dialog, item, *response);
+		}
+		return S_OK;
+	}
 
 private:
-	T* value;
+	volatile LONG refCount;
+	const FileDialogEvents& events;
 };
 
 void throwDialogError(const char* operation, HRESULT result) {
@@ -77,10 +145,20 @@ bool getPath(IShellItem* item, tstring& path) {
 	return true;
 }
 
+FileDialogResult makeResult(IShellItem* item) {
+	FileDialogResult result;
+	result.item.reset(item);
+	getPath(item, result.path);
+	return result;
+}
+
 void setFolder(IFileDialog* dialog, const FileDialogOptions& options) {
 	ComPtr<IShellItem> item;
 	HRESULT result = E_FAIL;
-	if(options.initialItem) {
+	if(options.initialFolder) {
+		item = options.initialFolder;
+		result = S_OK;
+	} else if(options.initialItem) {
 		result = ::SHCreateItemFromIDList(options.initialItem, IID_PPV_ARGS(item.put()));
 	} else if(!options.initialDirectory.empty()) {
 		result = ::SHCreateItemFromParsingName(options.initialDirectory.c_str(), nullptr,
@@ -91,28 +169,17 @@ void setFolder(IFileDialog* dialog, const FileDialogOptions& options) {
 	}
 }
 
-}
-
-bool showFileDialog(const FileDialogOptions& options, std::vector<tstring>& paths) {
-	ComPtr<IFileDialog> dialog;
+void configureDialog(const FileDialogOptions& options, IFileDialog* dialog) {
 	HRESULT result;
-	if(options.save) {
-		result = ::CoCreateInstance(CLSID_FileSaveDialog, nullptr, CLSCTX_INPROC_SERVER,
-			IID_PPV_ARGS(dialog.put()));
-	} else {
-		result = ::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER,
-			IID_PPV_ARGS(dialog.put()));
-	}
-	if(FAILED(result)) {
-		throwDialogError("CoCreateInstance(IFileDialog)", result);
-	}
-
 	FILEOPENDIALOGOPTIONS dialogOptions = 0;
 	result = dialog->GetOptions(&dialogOptions);
 	if(FAILED(result)) {
 		throwDialogError("IFileDialog::GetOptions", result);
 	}
-	dialogOptions |= FOS_FORCEFILESYSTEM | options.options | mapLegacyFlags(options.legacyFlags);
+	dialogOptions |= options.options | mapLegacyFlags(options.legacyFlags);
+	if(options.forceFilesystem) {
+		dialogOptions |= FOS_FORCEFILESYSTEM;
+	}
 	if(options.pickFolders) dialogOptions |= FOS_PICKFOLDERS | FOS_PATHMUSTEXIST;
 	if(options.allowMultiple) dialogOptions |= FOS_ALLOWMULTISELECT;
 	if(!options.save && !options.pickFolders) {
@@ -134,14 +201,17 @@ bool showFileDialog(const FileDialogOptions& options, std::vector<tstring>& path
 		if(FAILED(result)) {
 			throwDialogError("IFileDialog::SetFileTypes", result);
 		}
-		dialog->SetFileTypeIndex(options.activeFilter + 1);
+		result = dialog->SetFileTypeIndex(options.activeFilter + 1);
+		if(FAILED(result)) {
+			throwDialogError("IFileDialog::SetFileTypeIndex", result);
+		}
 	}
 
 	if(!options.title.empty()) dialog->SetTitle(options.title.c_str());
 	if(!options.defaultExtension.empty()) dialog->SetDefaultExtension(options.defaultExtension.c_str());
 	if(!options.initialFileName.empty()) dialog->SetFileName(options.initialFileName.c_str());
 	if(options.clientGuid) dialog->SetClientGuid(*options.clientGuid);
-	setFolder(dialog.get(), options);
+	setFolder(dialog, options);
 
 	for(const auto& place: options.places) {
 		ComPtr<IShellItem> item;
@@ -151,15 +221,27 @@ bool showFileDialog(const FileDialogOptions& options, std::vector<tstring>& path
 		}
 	}
 
-	result = dialog->Show(options.owner);
-	if(result == HRESULT_FROM_WIN32(ERROR_CANCELLED)) {
-		return false;
-	}
-	if(FAILED(result)) {
-		throwDialogError("IFileDialog::Show", result);
+	for(const auto& place: options.shellPlaces) {
+		if(place.first) {
+			dialog->AddPlace(place.first.get(), place.second);
+		}
 	}
 
-	paths.clear();
+	if(options.customize) {
+		ComPtr<IFileDialogCustomize> customize;
+		result = dialog->QueryInterface(IID_PPV_ARGS(customize.put()));
+		if(FAILED(result)) {
+			throwDialogError("IFileDialogCustomize::QueryInterface", result);
+		}
+		options.customize(*customize.get());
+	}
+}
+
+bool collectDialogResults(const FileDialogOptions& options, IFileDialog* dialog,
+	std::vector<FileDialogResult>& results)
+{
+	results.clear();
+	HRESULT result;
 	if(options.allowMultiple && !options.save) {
 		ComPtr<IFileOpenDialog> openDialog;
 		result = dialog->QueryInterface(IID_PPV_ARGS(openDialog.put()));
@@ -172,14 +254,14 @@ bool showFileDialog(const FileDialogOptions& options, std::vector<tstring>& path
 			throwDialogError("IFileOpenDialog::GetResults", result);
 		}
 		DWORD count = 0;
-		items->GetCount(&count);
+		result = items->GetCount(&count);
+		if(FAILED(result)) {
+			throwDialogError("IShellItemArray::GetCount", result);
+		}
 		for(DWORD i = 0; i < count; ++i) {
 			ComPtr<IShellItem> item;
 			if(SUCCEEDED(items->GetItemAt(i, item.put()))) {
-				tstring path;
-				if(getPath(item.get(), path)) {
-					paths.push_back(path);
-				}
+				results.push_back(makeResult(item.get()));
 			}
 		}
 	} else {
@@ -188,12 +270,82 @@ bool showFileDialog(const FileDialogOptions& options, std::vector<tstring>& path
 		if(FAILED(result)) {
 			throwDialogError("IFileDialog::GetResult", result);
 		}
-		tstring path;
-		if(getPath(item.get(), path)) {
-			paths.push_back(path);
+		results.push_back(makeResult(item.get()));
+	}
+
+	return !results.empty();
+}
+
+}
+
+bool FileDialogResult::getDisplayName(SIGDN sigdn, tstring& value) const {
+	value.clear();
+	if(!item) {
+		return false;
+	}
+
+	PWSTR displayName = nullptr;
+	auto result = item->GetDisplayName(sigdn, &displayName);
+	if(FAILED(result)) {
+		return false;
+	}
+	value = displayName;
+	::CoTaskMemFree(displayName);
+	return true;
+}
+
+bool showFileDialogItems(const FileDialogOptions& options, std::vector<FileDialogResult>& results) {
+	ComPtr<IFileDialog> dialog;
+	HRESULT result;
+	if(options.save) {
+		result = ::CoCreateInstance(CLSID_FileSaveDialog, nullptr, CLSCTX_INPROC_SERVER,
+			IID_PPV_ARGS(dialog.put()));
+	} else {
+		result = ::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER,
+			IID_PPV_ARGS(dialog.put()));
+	}
+	if(FAILED(result)) {
+		throwDialogError("CoCreateInstance(IFileDialog)", result);
+	}
+
+	configureDialog(options, dialog.get());
+
+	DWORD adviseCookie = 0;
+	ComPtr<IFileDialogEvents> sink;
+	if(options.events && !options.events->empty()) {
+		sink.reset(new FileDialogEventSink(*options.events), false);
+		result = dialog->Advise(sink.get(), &adviseCookie);
+		if(FAILED(result)) {
+			throwDialogError("IFileDialog::Advise", result);
 		}
 	}
 
+	result = dialog->Show(options.owner);
+	if(adviseCookie) {
+		dialog->Unadvise(adviseCookie);
+	}
+	if(result == HRESULT_FROM_WIN32(ERROR_CANCELLED)) {
+		return false;
+	}
+	if(FAILED(result)) {
+		throwDialogError("IFileDialog::Show", result);
+	}
+
+	return collectDialogResults(options, dialog.get(), results);
+}
+
+bool showFileDialog(const FileDialogOptions& options, std::vector<tstring>& paths) {
+	std::vector<FileDialogResult> results;
+	if(!showFileDialogItems(options, results)) {
+		return false;
+	}
+
+	paths.clear();
+	for(const auto& item: results) {
+		if(item.hasPath()) {
+			paths.push_back(item.path);
+		}
+	}
 	return !paths.empty();
 }
 

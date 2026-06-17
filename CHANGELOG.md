@@ -39,6 +39,9 @@ All notable changes to LibDWT are documented in this file.
   and TabView, including TabView owner-draw metrics and close icons.
 - Added modern `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and
   folder dialogs, including custom places, client GUIDs, and `FOS_*` options.
+- Added public shell-item result APIs, shell-item places and initial folders,
+  file-dialog event callbacks, and `IFileDialogCustomize` hooks for modern load,
+  save, and folder dialogs.
 - Added a `TaskDialog` wrapper with custom and common buttons, command links,
   radio buttons, verification text, progress modes, icons, and callbacks.
 - Added unified Windows 8+ pointer events to the mouse aspect.

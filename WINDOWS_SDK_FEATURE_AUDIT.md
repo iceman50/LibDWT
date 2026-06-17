@@ -1,7 +1,7 @@
 # Windows SDK Feature Audit
 
 Audit date: 2026-06-14
-Last updated: 2026-06-15
+Last updated: 2026-06-17
 
 This audit compares LibDWT's public widget APIs with the desktop Win32 API
 surface available from Windows 7 through Windows 11. The local Windows SDK used
@@ -34,7 +34,7 @@ Items without an explicit status marker remain unimplemented.
 | --- | --- | --- | --- |
 | Per-monitor DPI | **Partial** | Per-Monitor V2 manifests, runtime and scoped thread awareness, per-widget DPI queries and scaling, DPI-aware metrics/system parameters/window adjustment, suggested bounds, typed DPI events, child after-parent handling, pre-layout resource callbacks, automatic font recreation, icon/image-list resize helpers, automatic image-list policies for Button/Table/Tree/ToolBar/TabView, and headless DPI contract tests | Remaining owner-drawn caches and direct bitmap/icon policies, plus live multi-monitor transition tests |
 | UI Automation | **Partial** | `IRawElementProviderSimple` plus fragment/root and logical-item navigation, native child-provider bridging, properties/events/structure notifications, `Splitter` RangeValue, `ScrolledContainer` Scroll, TableTree/VirtualTree/TabView selection, expansion, invocation, focus, bounds and hit-testing, and logical-item contract tests | Additional semantic patterns, live UIA client validation, text-scaling checks, and visual high-contrast audits |
-| Modern file dialogs | **Partial** | `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and folder selection; filters, filesystem paths, long paths, custom places, client GUIDs, options, and `FOS_PICKFOLDERS` | Public `IShellItem` and multi-result APIs, virtual-folder results, `IFileDialogEvents`, and `IFileDialogCustomize` |
+| Modern file dialogs | **Partial** | `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and folder selection; filters, filesystem paths, long paths, custom places, shell-item places/results, multiple shell-item results, client GUIDs, events, customization hooks, options, and `FOS_PICKFOLDERS` | Higher-level typed wrappers around common custom-control patterns and live validation of library and virtual-folder selections |
 | Task dialogs | **Added** | `TaskDialogIndirect` wrapper with common/custom buttons, command links, radio buttons, verification, expanded/footer text, icons, progress modes, callbacks, and callback-based live updates | Convenience APIs for hyperlinks and typed live progress/text updates |
 
 ### P1 Work Completed So Far
@@ -103,8 +103,11 @@ Items without an explicit status marker remain unimplemented.
      `IFileOpenDialog` and `IFileSaveDialog`.
    - **Added:** Filesystem path results, long paths, custom places, persisted
      client GUIDs, option flags, and folder picking through `FOS_PICKFOLDERS`.
-   - **Remaining:** Public `IShellItem` results, libraries and virtual folders,
-     event callbacks, custom controls, and public multiple-result APIs.
+   - **Added:** Public shell-item result APIs, shell-item places and initial
+     folders, multiple shell-item results, event callbacks, and
+     `IFileDialogCustomize` hooks for custom controls.
+   - **Remaining:** Higher-level typed wrappers around common custom-control
+     patterns and live validation of library and virtual-folder selections.
    - Available since Windows Vista, so no fallback is required with a Windows 7
      minimum.
 
@@ -440,8 +443,10 @@ LibDWT already wraps overlay icons and custom tab thumbnails. Missing
 **Partial:** These now use an `IFileDialog` backend while preserving the simple
 path-returning API. `FolderDialog::setRoot()` retains a legacy rooted fallback
 because `IFileDialog` does not provide an equivalent hard-root restriction.
-Public shell-item results, events, customization, virtual-folder results, and
-multiple-result APIs remain.
+Public shell-item results, shell-item places and initial folders,
+multiple-result APIs, events, and customization hooks are available. Higher-level
+typed custom-control helpers and live validation of library and virtual-folder
+behavior remain.
 
 ### MessageBox
 
@@ -521,7 +526,9 @@ No longer entirely missing:
 
 - **Added:** `TaskDialog` abstraction.
 - **Partial:** Modern `IFileDialog` abstraction. The path-based load, save, and
-  folder APIs use it; shell-item results, events, and customization remain.
+  folder APIs use it; shell-item results, events, and customization hooks are
+  available. Typed custom-control helpers and live virtual-folder validation
+  remain.
 
 The final four are mature or niche controls and should not displace DPI,
 accessibility, shell-dialog, Table, or Tree work.
@@ -538,8 +545,8 @@ accessibility, shell-dialog, Table, or Tree work.
    notifications are covered. Continue with live client validation,
    text-scaling and visual high-contrast audits, and specialist patterns.
 3. **Partial:** `IFileDialog` and `TaskDialog` wrappers are added. Continue with
-   shell-item results, file-dialog events/customization, and typed task-dialog
-   live updates.
+   typed file-dialog custom-control helpers, live virtual-folder validation, and
+   typed task-dialog live updates.
 4. **Partial:** Basic pointer events are added. Continue with touch, gestures,
    pen details, history, capture, and cancellation.
 5. **Partial:** Native Table and Tree common-controls v6 coverage is complete
@@ -561,7 +568,8 @@ The highest-value remaining sequence after this update is:
 1. Add live UIA client and multi-monitor DPI transition tests, then complete
    visual high-contrast and text-scaling audits.
 2. Add true VirtualTree multiselect storage, enumeration, and tests.
-3. Add `IFileDialogEvents`, shell-item results, and customization.
+3. Add higher-level typed file-dialog custom-control helpers and live
+   library/virtual-folder validation.
 4. Add taskbar thumbnail buttons and complete tray identity/options.
 5. Finish pointer/touch/gesture/pen input.
 6. Add standalone `MonthCalendar`, then Slider and Header coverage.

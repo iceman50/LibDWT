@@ -4,6 +4,7 @@
 #include <dwt/Message.h>
 #include <dwt/Widget.h>
 #include <dwt/util/win32/Dpi.h>
+#include <dwt/util/win32/FileDialog.h>
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/Tree.h>
 
@@ -130,6 +131,24 @@ void testControlContracts() {
 		(item.state & LVFIS_FOCUSED), "table footer value contracts");
 }
 
+void testFileDialogContracts() {
+	using namespace dwt::util::win32;
+
+	FileDialogOptions options;
+	check(options.forceFilesystem, "file dialogs force filesystem paths by default");
+
+	FileDialogEvents events;
+	check(events.empty(), "empty file dialog event set");
+	events.fileOk = [](IFileDialog*) { return S_OK; };
+	check(!events.empty(), "file dialog event set detects callbacks");
+
+	FileDialogResult result;
+	check(!result.hasPath(), "empty file dialog result has no path");
+	dwt::tstring displayName;
+	check(!result.getDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, displayName),
+		"empty file dialog result has no display name");
+}
+
 void testMessageContracts() {
 	using namespace dwt;
 
@@ -158,6 +177,7 @@ int main() {
 	testSystemSettings();
 	testAccessibilityContract();
 	testControlContracts();
+	testFileDialogContracts();
 	testMessageContracts();
 
 	if(failures) {

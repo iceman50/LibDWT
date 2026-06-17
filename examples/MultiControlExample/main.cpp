@@ -553,22 +553,33 @@ int dwtMain(dwt::Application& app) {
 	const GUID folderDialogGuid =
 		{ 0x114f332a, 0xc51b, 0x46ec, { 0xb2, 0x2c, 0xb3, 0xc5, 0x4a, 0xc5, 0x8e, 0xa0 } };
 
+	dwt::util::win32::FileDialogEvents loadDialogEvents;
+	loadDialogEvents.selectionChanged = [status](IFileDialog*) {
+		setStatus(status, _T("Open dialog selection changed"));
+	};
+	loadDialogEvents.typeChanged = [status](IFileDialog*) {
+		setStatus(status, _T("Open dialog file type changed"));
+	};
+
 	loadDialog
 		.setTitle(_T("Open with IFileOpenDialog"))
 		.setClientGuid(loadDialogGuid)
-		.addOptions(FOS_FORCEFILESYSTEM)
+		.setFileDialogEvents(loadDialogEvents)
+		.onFileDialogCustomize([](IFileDialogCustomize& customize) {
+			customize.StartVisualGroup(3000, _T("DWT custom controls"));
+			customize.AddCheckButton(3001, _T("Custom checkbox from IFileDialogCustomize"), TRUE);
+			customize.EndVisualGroup();
+		})
 		.addFilter(_T("All Files"), _T("*.*"));
 	saveDialog
 		.setTitle(_T("Save with IFileSaveDialog"))
 		.setClientGuid(saveDialogGuid)
 		.setDefaultExtension(_T("txt"))
-		.addOptions(FOS_FORCEFILESYSTEM)
 		.addFilter(_T("Text Files"), _T("*.txt"))
 		.addFilter(_T("All Files"), _T("*.*"));
 	folderDialog
 		.setTitle(_T("Choose a folder with IFileOpenDialog"))
-		.setClientGuid(folderDialogGuid)
-		.addOptions(FOS_FORCEFILESYSTEM);
+		.setClientGuid(folderDialogGuid);
 
 	toolbar->addButton("msg", -1, _T("Message"), true, 0, [status, &messageBox] {
 		messageBox.show(_T("Toolbar action triggered."), _T("DWT MessageBox"), dwt::MessageBox::BOX_OK, dwt::MessageBox::BOX_ICONINFORMATION);
@@ -595,6 +606,16 @@ int dwtMain(dwt::Application& app) {
 			setStatus(status, _T("Opened: ") + file);
 		}
 	});
+	toolbar->addButton("shell", -1, _T("Shell Item"), true, 0, [status, &loadDialog] {
+		dwt::util::win32::FileDialogResult result;
+		if(loadDialog.openShellItem(result)) {
+			dwt::tstring name;
+			if(!result.getDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, name)) {
+				name = result.path;
+			}
+			setStatus(status, _T("Shell item: ") + name);
+		}
+	});
 	toolbar->addButton("save", -1, _T("Save"), true, 0, [status, &saveDialog] {
 		dwt::tstring file;
 		if(saveDialog.open(file)) {
@@ -613,7 +634,7 @@ int dwtMain(dwt::Application& app) {
 		});
 		setStatus(status, _T("Tray notification sent"));
 	});
-	toolbar->setLayout({ "msg", "task", "color", "font", "", "open", "save", "folder", "", "notify" });
+	toolbar->setLayout({ "msg", "task", "color", "font", "", "open", "shell", "save", "folder", "", "notify" });
 	toolbar->refresh();
 	rebar->add(toolbar);
 	rebar->refresh();
