@@ -45,7 +45,7 @@ Items without an explicit status marker remain unimplemented.
 | Button | **Partial** | Command-link styles through seeds, note get/set, elevation shield, aligned image lists, split configuration, and `BCN_DROPDOWN` | Image-list getter, text-margin getter, explicit dropdown-state helpers, and hot/focus notifications |
 | ProgressBar | **Added** | Marquee mode/speed, normal/error/paused states, colors, and non-mutating cached step retrieval | No remaining item from the original P1 audit |
 | Table/ListView | **Added** | View and tile get/set, empty markup, footer information/items/rectangles/link events, complete group info/metrics/state/focus operations, `LVITEMINDEX` state/iteration/rectangles, insertion marks and colors, work areas, hot item/cursor, hover time, outline color, selected column, background image, geometry, image-list getters, and drag/activate/key/change/label-edit events | No remaining item from the original P1 audit |
-| Tree/VirtualTree | **Partial** | Native Tree extended styles and checkbox states, multiselect enumeration/counting, item-change/info-tip/label-edit/async-draw/drag/key events, drag images, insertion marks/colors, indentation, scroll/autoscroll settings, tooltips, sorting, item/part rectangles and accessibility IDs; VirtualTree translates applicable states, geometry, sorting, IDs and events | VirtualTree still needs true multiselect storage/enumeration and live behavioral tests |
+| Tree/VirtualTree | **Partial** | Native Tree extended styles and checkbox states, multiselect enumeration/counting, item-change/info-tip/label-edit/async-draw/drag/key events, drag images, insertion marks/colors, indentation, scroll/autoscroll settings, tooltips, sorting, item/part rectangles and accessibility IDs; VirtualTree translates applicable states, geometry, sorting, IDs and events, with model-backed multiselect storage/enumeration and framework behavior tests | Remaining live UI/accessibility validation for VirtualTree multiselect behavior |
 | Taskbar | **Partial** | Progress state and value | Thumbnail toolbar buttons/updates, thumbnail tooltip/clipping, tab properties, AppUserModelID, and Jump Lists |
 | Notification | **Partial** | `NOTIFYICON_VERSION_4`, keyboard selection, `Shell_NotifyIconGetRect`, `NIM_SETFOCUS`, popup lifecycle events, and basic Explorer recreation handling | GUID identity, real-time/quiet-time/large-icon/sound flags, balloon-show events, and stronger restoration/error handling |
 | ToolTip | **Partial** | Title/icon, margins, colors, pop/update, window theme, and `TTN_LINKCLICK` | Balloon/close styles, tracking APIs, current-tool/enumeration/bubble sizing/rectangle adjustment, and per-tool flags |
@@ -124,8 +124,9 @@ Items without an explicit status marker remain unimplemented.
 
 1. **Partial:** Pointer events added; touch, gesture, and richer pen data remain.
 2. **Added:** The audited ListView/Table v6 P1 surface is covered.
-3. **Partial:** Native Tree P1 coverage is complete; true VirtualTree
-   multiselection and live behavior tests remain.
+3. **Partial:** Native Tree P1 coverage is complete; VirtualTree has
+   model-backed multiselection and framework behavior tests. Live UI and
+   accessibility validation remain.
 4. **Partial:** Taskbar progress is added; thumbnail-toolbar support remains.
 5. **Added:** Notification icons now use `NOTIFYICON_VERSION_4`; related tray
    options remain.
@@ -550,8 +551,8 @@ accessibility, shell-dialog, Table, or Tree work.
 4. **Partial:** Basic pointer events are added. Continue with touch, gestures,
    pen details, history, capture, and cancellation.
 5. **Partial:** Native Table and Tree common-controls v6 coverage is complete
-   against the original P1 audit. Continue with VirtualTree multiselect and live
-   behavior tests.
+   against the original P1 audit. Continue with live VirtualTree UI and
+   accessibility validation.
 6. **Partial:** Taskbar progress, tray v4, ProgressBar, Button, and ToolTip work
    is added. Continue thumbnail buttons and the remaining tray/Button/ToolTip
    items.
@@ -567,13 +568,12 @@ The highest-value remaining sequence after this update is:
 
 1. Add live UIA client and multi-monitor DPI transition tests, then complete
    visual high-contrast and text-scaling audits.
-2. Add true VirtualTree multiselect storage, enumeration, and tests.
-3. Add higher-level typed file-dialog custom-control helpers and live
+2. Add higher-level typed file-dialog custom-control helpers and live
    library/virtual-folder validation.
-4. Add taskbar thumbnail buttons and complete tray identity/options.
-5. Finish pointer/touch/gesture/pen input.
-6. Add standalone `MonthCalendar`, then Slider and Header coverage.
-7. Add guarded Windows 11 DWM appearance APIs.
+3. Add taskbar thumbnail buttons and complete tray identity/options.
+4. Finish pointer/touch/gesture/pen input.
+5. Add standalone `MonthCalendar`, then Slider and Header coverage.
+6. Add guarded Windows 11 DWM appearance APIs.
 
 ## Primary References
 

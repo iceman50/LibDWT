@@ -3,11 +3,15 @@
 #include <dwt/Events.h>
 #include <dwt/Message.h>
 #include <dwt/Widget.h>
+#include <dwt/WidgetCreator.h>
 #include <dwt/util/win32/Dpi.h>
 #include <dwt/util/win32/FileDialog.h>
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/Tree.h>
+#include <dwt/widgets/VirtualTree.h>
+#include <dwt/widgets/Window.h>
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -131,6 +135,54 @@ void testControlContracts() {
 		(item.state & LVFIS_FOCUSED), "table footer value contracts");
 }
 
+void testVirtualTreeSelection() {
+	using namespace dwt;
+
+	Window::Seed windowSeed(_T("FrameworkTests"));
+	windowSeed.style &= ~WS_VISIBLE;
+	windowSeed.location = dwt::Rectangle(0, 0, 320, 240);
+	auto* window = WidgetCreator<Window>::create(windowSeed);
+
+	Tree::Seed treeSeed;
+	treeSeed.style &= ~WS_VISIBLE;
+	treeSeed.tvExStyle = TVS_EX_MULTISELECT;
+	auto* tree = WidgetCreator<VirtualTree>::create(window, VirtualTree::Seed(treeSeed));
+	tree->resize(dwt::Rectangle(0, 0, 320, 240));
+
+	auto root = tree->insert(_T("Root"), TVI_ROOT, TVI_LAST, 1, true);
+	auto first = tree->insert(_T("First"), root, TVI_LAST, 2, false);
+	auto branch = tree->insert(_T("Branch"), root, TVI_LAST, 3, true);
+	auto hidden = tree->insert(_T("Hidden child"), branch, TVI_LAST, 4, false);
+
+	tree->setItemSelected(first);
+	tree->setItemSelected(hidden);
+	check(tree->countSelected() == 2, "virtual tree selected count");
+	check(tree->getItemSelected(first) && tree->getItemSelected(hidden),
+		"virtual tree selected item state");
+
+	auto selected = tree->getSelectedItems();
+	check(selected.size() == 2, "virtual tree selected enumeration size");
+	check(std::find(selected.begin(), selected.end(), first) != selected.end() &&
+		std::find(selected.begin(), selected.end(), hidden) != selected.end(),
+		"virtual tree selected enumeration values");
+
+	tree->collapse(branch);
+	check(tree->countSelected() == 2, "virtual tree hidden selection count");
+	selected = tree->getSelectedItems();
+	check(selected.size() == 2 &&
+		std::find(selected.begin(), selected.end(), hidden) != selected.end(),
+		"virtual tree hidden selection enumeration");
+
+	tree->expand(branch);
+	tree->setSelected(hidden);
+	check(tree->countSelected() == 1 && tree->getSelected() == hidden,
+		"virtual tree setSelected resets to a single selected item");
+	check(!tree->getItemSelected(first) && tree->getItemSelected(hidden),
+		"virtual tree single selection state reset");
+
+	window->close();
+}
+
 void testFileDialogContracts() {
 	using namespace dwt::util::win32;
 
@@ -173,12 +225,17 @@ int dwtMain(dwt::Application&) {
 }
 
 int main() {
+	dwt::Application::init();
+
 	testDpiMath();
 	testSystemSettings();
 	testAccessibilityContract();
 	testControlContracts();
+	testVirtualTreeSelection();
 	testFileDialogContracts();
 	testMessageContracts();
+
+	dwt::Application::uninit();
 
 	if(failures) {
 		std::cerr << failures << " framework test(s) failed\n";

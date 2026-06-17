@@ -63,6 +63,9 @@ All notable changes to LibDWT are documented in this file.
   accessibility-ID mapping.
 - Added VirtualTree translation for the new item states, geometry, drag images,
   insertion marks, sorting, accessibility IDs, and notification payloads.
+- Added typed Tree selected-state helpers and model-backed VirtualTree
+  multiselect storage, enumeration, selected counts, hidden-node preservation,
+  and framework behavior tests.
 - Added taskbar progress state and value APIs.
 - Added notification icon version 4, focus, icon rectangle, keyboard selection,
   and popup lifecycle support.

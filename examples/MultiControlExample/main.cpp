@@ -366,15 +366,23 @@ int dwtMain(dwt::Application& app) {
 
 	virtualTree->addColumn(_T("Virtual Node"), 240);
 	virtualTree->addColumn(_T("Role"), 180);
+	virtualTree->setMultiSelect();
 	auto virtualRoot = virtualTree->insert(_T("Virtual Root"), TVI_ROOT, TVI_LAST, 500, true);
+	std::vector<HTREEITEM> virtualSelectedItems;
 	for(int i = 0; i < 6; ++i) {
 		auto section = virtualTree->insert(_T("Section ") + std::to_wstring(i + 1), virtualRoot, TVI_LAST, 600 + i, true);
 		for(int j = 0; j < 3; ++j) {
-			virtualTree->insert(_T("Item ") + std::to_wstring(i + 1) + _T(".") + std::to_wstring(j + 1), section, TVI_LAST, 700 + (i * 10) + j, false);
+			auto item = virtualTree->insert(_T("Item ") + std::to_wstring(i + 1) + _T(".") + std::to_wstring(j + 1), section, TVI_LAST, 700 + (i * 10) + j, false);
+			if((i == 0 && j == 1) || (i == 3 && j == 2)) {
+				virtualSelectedItems.push_back(item);
+			}
 		}
 	}
 	virtualTree->setCheckState(virtualRoot, Tree::Dimmed);
 	virtualTree->expand(virtualRoot);
+	for(auto item: virtualSelectedItems) {
+		virtualTree->setItemSelected(item);
+	}
 
 	setRichSummary(richText);
 
@@ -544,6 +552,10 @@ int dwtMain(dwt::Application& app) {
 			setStatus(status, _T("Tree checkbox state: ") +
 				std::to_wstring(tree->getCheckState(item)));
 		}
+	});
+	virtualTree->onSelectionChanged([virtualTree, status] {
+		setStatus(status, _T("VirtualTree selected items: ") +
+			std::to_wstring(virtualTree->getSelectedItems().size()));
 	});
 
 	const GUID loadDialogGuid =

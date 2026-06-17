@@ -240,6 +240,8 @@ public:
 	DWORD getExtendedStyle() const;
 	void setMultiSelect(bool value = true);
 	void setDoubleBuffered(bool value = true);
+	bool getItemSelected(HTREEITEM item) const;
+	void setItemSelected(HTREEITEM item, bool selected = true);
 	std::vector<HTREEITEM> getSelectedItems() const;
 	void onItemChanged(std::function<void (const NMTVITEMCHANGE&)> f);
 	void onItemChanging(std::function<bool (const NMTVITEMCHANGE&)> f);

@@ -276,9 +276,24 @@ void Tree::setDoubleBuffered(bool value) {
 	setExtendedStyle(value ? TVS_EX_DOUBLEBUFFER : 0, TVS_EX_DOUBLEBUFFER);
 }
 
+bool Tree::getItemSelected(HTREEITEM item) const {
+	return (TreeView_GetItemState(treeHandle(), item, TVIS_SELECTED) &
+		TVIS_SELECTED) != 0;
+}
+
+void Tree::setItemSelected(HTREEITEM item, bool selected) {
+	TVITEM value = { TVIF_HANDLE | TVIF_STATE, item };
+	value.stateMask = TVIS_SELECTED;
+	value.state = selected ? TVIS_SELECTED : 0;
+	TreeView_SetItem(treeHandle(), &value);
+}
+
 std::vector<HTREEITEM> Tree::getSelectedItems() const {
 	std::vector<HTREEITEM> items;
-	auto item = TreeView_GetSelection(treeHandle());
+	auto item = TreeView_GetNextItem(treeHandle(), nullptr, TVGN_NEXTSELECTED);
+	if(!item) {
+		item = TreeView_GetSelection(treeHandle());
+	}
 	while(item) {
 		items.push_back(item);
 		item = TreeView_GetNextItem(treeHandle(), item, TVGN_NEXTSELECTED);
