@@ -94,8 +94,9 @@ All notable changes to LibDWT are documented in this file.
 - Expanded `CustomDrawExample` to demonstrate Button, Header, Rebar, Slider,
   Table/ListView, TableTree, ToolBar, ToolTip, Tree, VirtualTree, and
   ProgressBar custom-draw paths with a shared Segoe UI font, visible
-  slider/progress layout, visual styles enabled, working toolbar commands, and
-  native tree expand glyphs.
+  slider/progress layout, embedded Table/Tree header custom draw, visual styles
+  enabled, dark native list/tree backgrounds, fully owner-painted trackbar
+  surfaces, working toolbar commands, and native tree expand glyphs.
 - Added a working MDI implementation for `MDIFrame`, `MDIParent`, and
   `MDIChild`, including native MDI dispatching, system accelerator translation,
   menu merging support, active child management, cascade, tiling, icon

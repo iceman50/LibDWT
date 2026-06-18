@@ -290,30 +290,56 @@ LRESULT drawHeader(NMCUSTOMDRAW& data, bool dark) {
 LRESULT drawSlider(NMCUSTOMDRAW& data, bool dark) {
 	auto palette = makePalette(dark);
 	if(data.dwDrawStage == CDDS_PREPAINT) {
-		return CDRF_NOTIFYITEMDRAW;
-	}
-	if(data.dwDrawStage != CDDS_ITEMPREPAINT) {
-		return CDRF_DODEFAULT;
-	}
+		RECT client = {};
+		::GetClientRect(data.hdr.hwndFrom, &client);
+		fillRect(data.hdc, client, palette.windowBg);
 
-	if(data.dwItemSpec == TBCD_CHANNEL) {
-		RECT track = data.rc;
-		const int center = (track.top + track.bottom) / 2;
+		RECT channel = {};
+		::SendMessage(data.hdr.hwndFrom, TBM_GETCHANNELRECT, 0, reinterpret_cast<LPARAM>(&channel));
+		const int center = (channel.top + channel.bottom) / 2;
+		RECT track = channel;
 		track.top = center - 3;
 		track.bottom = center + 3;
 		fillRect(data.hdc, track, palette.progressTrack);
 		drawBorder(data.hdc, track, palette.border);
-		return CDRF_SKIPDEFAULT;
-	}
 
-	if(data.dwItemSpec == TBCD_THUMB) {
-		fillRect(data.hdc, data.rc, palette.progressFill);
-		drawBorder(data.hdc, data.rc, palette.border);
-		return CDRF_SKIPDEFAULT;
-	}
+		const int rangeMin = static_cast<int>(::SendMessage(data.hdr.hwndFrom, TBM_GETRANGEMIN, 0, 0));
+		const int rangeMax = static_cast<int>(::SendMessage(data.hdr.hwndFrom, TBM_GETRANGEMAX, 0, 0));
+		const int range = rangeMax > rangeMin ? rangeMax - rangeMin : 1;
+		auto valueToX = [channel, rangeMin, range](int value) {
+			return channel.left + ((channel.right - channel.left) * (value - rangeMin)) / range;
+		};
 
-	if(data.dwItemSpec == TBCD_TICS) {
-		return CDRF_DODEFAULT;
+		const int selStart = static_cast<int>(::SendMessage(data.hdr.hwndFrom, TBM_GETSELSTART, 0, 0));
+		const int selEnd = static_cast<int>(::SendMessage(data.hdr.hwndFrom, TBM_GETSELEND, 0, 0));
+		if(selEnd > selStart) {
+			RECT selected = track;
+			selected.left = valueToX(selStart);
+			selected.right = valueToX(selEnd);
+			fillRect(data.hdc, selected, blendColor(palette.progressFill, palette.windowBg, 45));
+		}
+
+		for(int tick = rangeMin; tick <= rangeMax; tick += 10) {
+			const int x = valueToX(tick);
+			RECT tickRect = { x - 1, channel.bottom + 4, x + 1, channel.bottom + 10 };
+			fillRect(data.hdc, tickRect, palette.border);
+			if(rangeMax - tick < 10) {
+				break;
+			}
+		}
+
+		RECT thumb = {};
+		::SendMessage(data.hdr.hwndFrom, TBM_GETTHUMBRECT, 0, reinterpret_cast<LPARAM>(&thumb));
+		fillRect(data.hdc, thumb, palette.progressFill);
+		drawBorder(data.hdc, thumb, palette.border);
+
+		if((data.uItemState & CDIS_FOCUS) != 0) {
+			RECT focusRect = client;
+			::InflateRect(&focusRect, -2, -2);
+			::DrawFocusRect(data.hdc, &focusRect);
+		}
+
+		return CDRF_SKIPDEFAULT;
 	}
 
 	return CDRF_DODEFAULT;
@@ -350,13 +376,45 @@ LRESULT drawProgress(NMCUSTOMDRAW& data, ProgressBar::ObjectType progress, bool 
 	return CDRF_SKIPDEFAULT;
 }
 
-void applyTheme(Label::ObjectType status, ProgressBar::ObjectType progress,
+void applyTheme(Window::ObjectType window, Grid::ObjectType grid,
+	Label::ObjectType status, Label::ObjectType sliderLabel,
+	Slider::ObjectType slider, ProgressBar::ObjectType progress,
+	Table::ObjectType table, TableTree::ObjectType tableTree,
+	Tree::ObjectType tree, VirtualTree::ObjectType virtualTree,
 	ToolTip::ObjectType toolTip, bool dark)
 {
 	auto palette = makePalette(dark);
+	if(window) {
+		window->setColor(palette.text, palette.windowBg);
+	}
+	if(grid) {
+		grid->setColor(palette.text, palette.windowBg);
+	}
+	if(status) {
+		status->setColor(palette.text, palette.windowBg);
+	}
+	if(sliderLabel) {
+		sliderLabel->setColor(palette.text, palette.windowBg);
+	}
+	if(slider) {
+		slider->setColor(palette.text, palette.windowBg);
+		slider->setTransparentBackground(false);
+	}
 	if(progress) {
 		progress->setBarColor(palette.progressFill);
 		progress->setBackgroundColor(palette.progressTrack);
+	}
+	if(table) {
+		table->setColor(palette.text, palette.rowEven);
+	}
+	if(tableTree) {
+		tableTree->setColor(palette.text, palette.rowEven);
+	}
+	if(tree) {
+		tree->setColor(palette.text, palette.rowEven);
+	}
+	if(virtualTree) {
+		virtualTree->setColor(palette.text, palette.rowEven);
 	}
 	if(toolTip) {
 		toolTip->sendMessage(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(palette.panelBg));
@@ -367,6 +425,33 @@ void applyTheme(Label::ObjectType status, ProgressBar::ObjectType progress,
 			? _T("Dark custom draw active across Button, Header, Rebar, Slider, Table, TableTree, ToolBar, ToolTip, Tree, VirtualTree, and ProgressBar.")
 			: _T("Light custom draw active across Button, Header, Rebar, Slider, Table, TableTree, ToolBar, ToolTip, Tree, VirtualTree, and ProgressBar."));
 	}
+}
+
+Header::ObjectType getHeaderWidget(dwt::Widget* parent, HWND headerHandle) {
+	if(!headerHandle || !::IsWindow(headerHandle)) {
+		return nullptr;
+	}
+	if(auto* existing = dwt::hwnd_cast<Header*>(headerHandle)) {
+		return existing;
+	}
+	return parent ? WidgetCreator<Header>::attach(parent, headerHandle) : nullptr;
+}
+
+Header::ObjectType findHeaderChildWidget(dwt::Widget* parent) {
+	if(!parent || !parent->handle() || !::IsWindow(parent->handle())) {
+		return nullptr;
+	}
+
+	for(HWND child = ::FindWindowEx(parent->handle(), nullptr, nullptr, nullptr);
+		child;
+		child = ::FindWindowEx(parent->handle(), child, nullptr, nullptr))
+	{
+		if(auto* header = dwt::hwnd_cast<Header*>(child)) {
+			return header;
+		}
+	}
+
+	return nullptr;
 }
 
 } // namespace
@@ -380,7 +465,7 @@ int dwtMain(dwt::Application& app) {
 	auto uiFont = createExampleFont(window->getDpi());
 	window->setFont(uiFont);
 
-	auto* grid = WidgetCreator<Grid>::create(window, Grid::Seed(7, 4));
+	auto* grid = WidgetCreator<Grid>::create(window, Grid::Seed(8, 4));
 	grid->setFont(uiFont);
 	grid->addRemoveStyle(WS_CLIPCHILDREN, true);
 	grid->addRemoveStyle(WS_CLIPSIBLINGS, true);
@@ -395,14 +480,16 @@ int dwtMain(dwt::Application& app) {
 	grid->row(2).mode = GridInfo::STATIC;
 	grid->row(2).size = 54;
 	grid->row(3).mode = GridInfo::STATIC;
-	grid->row(3).size = 54;
+	grid->row(3).size = 24;
 	grid->row(4).mode = GridInfo::STATIC;
-	grid->row(4).size = 34;
-	grid->row(5).mode = GridInfo::FILL;
-	grid->row(5).align = GridInfo::STRETCH;
+	grid->row(4).size = 68;
+	grid->row(5).mode = GridInfo::STATIC;
+	grid->row(5).size = 34;
 	grid->row(6).mode = GridInfo::FILL;
 	grid->row(6).align = GridInfo::STRETCH;
-	for(int i = 0; i < 7; ++i) {
+	grid->row(7).mode = GridInfo::FILL;
+	grid->row(7).align = GridInfo::STRETCH;
+	for(int i = 0; i < 8; ++i) {
 		grid->row(i).align = GridInfo::STRETCH;
 	}
 
@@ -428,9 +515,11 @@ int dwtMain(dwt::Application& app) {
 	progress->setPosition(62);
 
 	Slider::Seed sliderSeed;
+	sliderSeed.style &= ~TBS_NOTICKS;
 	sliderSeed.style |= TBS_ENABLESELRANGE | TBS_AUTOTICKS;
 	auto* slider = WidgetCreator<Slider>::create(grid, sliderSeed);
 	slider->setFont(uiFont);
+	slider->setTransparentBackground(false);
 	slider->setRange(0, 100);
 	slider->setPosition(62);
 	slider->setSelection(25, 75);
@@ -579,6 +668,10 @@ int dwtMain(dwt::Application& app) {
 	rebar->refresh();
 
 	auto isDark = std::make_shared<bool>(false);
+	auto* tableHeader = getHeaderWidget(table, ListView_GetHeader(table->handle()));
+	auto* tableTreeHeader = getHeaderWidget(tableTree, ListView_GetHeader(tableTree->handle()));
+	auto* treeHeader = findHeaderChildWidget(tree);
+	auto* virtualTreeHeader = findHeaderChildWidget(virtualTree);
 
 	window->addCallback(dwt::Message(WM_ERASEBKGND), [isDark](const MSG& msg, LRESULT& retVal) {
 		auto palette = makePalette(*isDark);
@@ -596,19 +689,29 @@ int dwtMain(dwt::Application& app) {
 		retVal = 1;
 		return true;
 	});
+	slider->addCallback(dwt::Message(WM_ERASEBKGND), [isDark](const MSG& msg, LRESULT& retVal) {
+		auto palette = makePalette(*isDark);
+		RECT rc = {};
+		::GetClientRect(msg.hwnd, &rc);
+		fillRect(reinterpret_cast<HDC>(msg.wParam), rc, palette.windowBg);
+		retVal = 1;
+		return true;
+	});
 
 	auto refreshAll = [window, grid, rebar, toolBar, regularButton, darkButton,
-		header, slider, progress, table, tableTree, tree, virtualTree]
+		header, tableHeader, tableTreeHeader, treeHeader, virtualTreeHeader,
+		slider, progress, table, tableTree, tree, virtualTree]
 	{
 		std::vector<HWND> handles = {
 			window->handle(), grid->handle(), rebar->handle(), toolBar->handle(),
 			regularButton->handle(), darkButton->handle(), header->handle(),
+			tableHeader ? tableHeader->handle() : nullptr,
+			tableTreeHeader ? tableTreeHeader->handle() : nullptr,
+			treeHeader ? treeHeader->handle() : nullptr,
+			virtualTreeHeader ? virtualTreeHeader->handle() : nullptr,
 			slider->handle(), progress->handle(), table->handle(), tableTree->handle(),
 			tree->handle(), tree->treeHandle(), virtualTree->handle(), virtualTree->treeHandle()
 		};
-		if(auto tableHeader = ListView_GetHeader(table->handle())) {
-			handles.push_back(tableHeader);
-		}
 		for(auto handle : handles) {
 			if(handle && ::IsWindow(handle)) {
 				::RedrawWindow(handle, nullptr, nullptr,
@@ -627,6 +730,26 @@ int dwtMain(dwt::Application& app) {
 	header->onCustomDraw([isDark](NMCUSTOMDRAW& data) -> LRESULT {
 		return drawHeader(data, *isDark);
 	});
+	if(tableHeader) {
+		tableHeader->onCustomDraw([isDark](NMCUSTOMDRAW& data) -> LRESULT {
+			return drawHeader(data, *isDark);
+		});
+	}
+	if(tableTreeHeader) {
+		tableTreeHeader->onCustomDraw([isDark](NMCUSTOMDRAW& data) -> LRESULT {
+			return drawHeader(data, *isDark);
+		});
+	}
+	if(treeHeader) {
+		treeHeader->onCustomDraw([isDark](NMCUSTOMDRAW& data) -> LRESULT {
+			return drawHeader(data, *isDark);
+		});
+	}
+	if(virtualTreeHeader) {
+		virtualTreeHeader->onCustomDraw([isDark](NMCUSTOMDRAW& data) -> LRESULT {
+			return drawHeader(data, *isDark);
+		});
+	}
 
 	rebar->onCustomDraw([isDark](NMCUSTOMDRAW& data) -> LRESULT {
 		auto palette = makePalette(*isDark);
@@ -727,9 +850,12 @@ int dwtMain(dwt::Application& app) {
 		return CDRF_DODEFAULT;
 	});
 
-	auto setMode = [status, progress, toolTip, isDark, refreshAll](bool dark) {
+	auto setMode = [window, grid, status, sliderLabel, slider, progress, table, tableTree, tree,
+		virtualTree, toolTip, isDark, refreshAll](bool dark)
+	{
 		*isDark = dark;
-		applyTheme(status, progress, toolTip, *isDark);
+		applyTheme(window, grid, status, sliderLabel, slider, progress, table, tableTree, tree,
+			virtualTree, toolTip, *isDark);
 		refreshAll();
 	};
 
@@ -770,13 +896,13 @@ int dwtMain(dwt::Application& app) {
 	grid->setWidget(regularButton, 2, 0);
 	grid->setWidget(darkButton, 2, 1);
 	grid->setWidget(progress, 2, 2, 1, 2);
-	grid->setWidget(sliderLabel, 3, 0);
-	grid->setWidget(slider, 3, 1, 1, 3);
-	grid->setWidget(header, 4, 0, 1, 4);
-	grid->setWidget(table, 5, 0, 1, 2);
-	grid->setWidget(tree, 5, 2, 1, 2);
-	grid->setWidget(tableTree, 6, 0, 1, 2);
-	grid->setWidget(virtualTree, 6, 2, 1, 2);
+	grid->setWidget(sliderLabel, 3, 0, 1, 4);
+	grid->setWidget(slider, 4, 0, 1, 4);
+	grid->setWidget(header, 5, 0, 1, 4);
+	grid->setWidget(table, 6, 0, 1, 2);
+	grid->setWidget(tree, 6, 2, 1, 2);
+	grid->setWidget(tableTree, 7, 0, 1, 2);
+	grid->setWidget(virtualTree, 7, 2, 1, 2);
 
 	auto layout = [window, grid, rebar] {
 		auto client = window->getClientSize();
