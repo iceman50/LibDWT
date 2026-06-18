@@ -252,6 +252,7 @@ public:
 	void onBeginRightDrag(std::function<void (const NMTREEVIEW&)> f);
 	void onAsyncDraw(std::function<void (NMTVASYNCDRAW&)> f);
 	void onTreeKeyDown(std::function<void (const NMTVKEYDOWN&)> f);
+	void onCustomDraw(std::function<LRESULT (NMTVCUSTOMDRAW&)> f);
 
 	ImageListPtr createDragImage(HTREEITEM item) const;
 	void setInsertMark(HTREEITEM item, bool after = false);
@@ -308,6 +309,7 @@ protected:
 private:
 	ImageListPtr itsNormalImageList;
 	ImageListPtr itsStateImageList;
+	std::function<LRESULT (NMTVCUSTOMDRAW&)> customDraw;
 
 	HeaderPtr header;
 

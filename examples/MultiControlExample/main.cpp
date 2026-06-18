@@ -202,7 +202,10 @@ int dwtMain(dwt::Application& app) {
 	auto* progress = WidgetCreator<ProgressBar>::create(grid, ProgressBar::Seed());
 	auto* link = WidgetCreator<Link>::create(grid, Link::Seed(_T("https://dcplusplus.sourceforge.io/"), true));
 
-	auto* header = WidgetCreator<Header>::create(grid, Header::Seed());
+	Header::Seed headerSeed;
+	headerSeed.style |= HDS_BUTTONS | HDS_CHECKBOXES | HDS_DRAGDROP |
+		HDS_FILTERBAR | HDS_OVERFLOW;
+	auto* header = WidgetCreator<Header>::create(grid, headerSeed);
 	header->setFont(uiFont);
 
 	Table::Seed tableSeed;
@@ -339,9 +342,56 @@ int dwtMain(dwt::Application& app) {
 	monthCalendar->setRange(&minimumDate, &maximumDate);
 	monthCalendar->setMaxSelectionCount(14);
 
-	header->insert(_T("Control"), 180);
-	header->insert(_T("Category"), 180);
-	header->insert(_T("State"), 160);
+	const int controlColumn = header->insert(_T("Control"), 180, 301);
+	const int categoryColumn = header->insert(_T("Category"), 180, 302);
+	const int stateColumn = header->insert(_T("State"), 160, 303);
+	header->setCheckBoxes();
+	header->setBitmapMargin(window->scale(4));
+	header->setUnicodeFormat(true);
+	header->setFilterChangeTimeout(250);
+	if(controlColumn >= 0) {
+		header->setItemCheckBox(controlColumn);
+		header->setItemChecked(controlColumn);
+		header->setSortArrow(controlColumn, 1);
+		header->setFocusedItem(controlColumn);
+	}
+	if(categoryColumn >= 0) {
+		header->setItemSplitButton(categoryColumn);
+		header->setWidth(categoryColumn, 190);
+	}
+	if(stateColumn >= 0) {
+		header->setItemDropDown(stateColumn);
+		header->setText(stateColumn, _T("Status"));
+	}
+	auto headerOrder = header->getOrder();
+	if(!headerOrder.empty()) {
+		header->setOrder(headerOrder);
+	}
+	dwt::Rectangle headerRect;
+	if(controlColumn >= 0) {
+		header->getItemRect(controlColumn, headerRect);
+		header->getItemDropDownRect(controlColumn, headerRect);
+	}
+	header->getOverflowRect(headerRect);
+	header->clearFilter(controlColumn >= 0 ? controlColumn : 0);
+	header->onItemClicked([status](const NMHEADER& item) {
+		setStatus(status, _T("Header clicked: ") + std::to_wstring(item.iItem));
+	});
+	header->onDividerDoubleClicked([status](const NMHEADER& item) {
+		setStatus(status, _T("Header divider: ") + std::to_wstring(item.iItem));
+	});
+	header->onDropDown([status](const NMHEADER& item) {
+		setStatus(status, _T("Header dropdown: ") + std::to_wstring(item.iItem));
+	});
+	header->onFilterButtonClicked([status](const NMHDFILTERBTNCLICK& item) {
+		setStatus(status, _T("Header filter button: ") + std::to_wstring(item.iItem));
+	});
+	header->onBeginTrack([](const NMHEADER&) {
+		return true;
+	});
+	header->onBeginDrag([](const NMHEADER&) {
+		return true;
+	});
 
 	table->addColumn(_T("Control"), 180);
 	table->addColumn(_T("Value"), 180);

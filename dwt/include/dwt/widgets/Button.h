@@ -38,6 +38,7 @@
 
 #include "../aspects/Caption.h"
 #include "../aspects/Clickable.h"
+#include "../aspects/CustomDraw.h"
 #include "../resources/ImageList.h"
 #include "Control.h"
 
@@ -47,6 +48,7 @@ namespace dwt {
 class Button :
 	public CommonControl,
 	public aspects::Caption<Button>,
+	public aspects::CustomDraw<Button, NMCUSTOMDRAW>,
 	private aspects::Clickable<Button>
 {
 	typedef CommonControl BaseType;

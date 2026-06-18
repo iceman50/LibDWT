@@ -116,7 +116,11 @@ void Button::setSplitInfo(const BUTTON_SPLITINFO& info) {
 
 void Button::onDropDown(std::function<void (const RECT&)> f) {
 	addCallback(Message(WM_NOTIFY, BCN_DROPDOWN), [f](const MSG& msg, LRESULT&) -> bool {
-		f(reinterpret_cast<NMBCDROPDOWN*>(msg.lParam)->rcButton);
+		auto data = reinterpret_cast<NMBCDROPDOWN*>(msg.lParam);
+		if(!data) {
+			return false;
+		}
+		f(data->rcButton);
 		return true;
 	});
 }

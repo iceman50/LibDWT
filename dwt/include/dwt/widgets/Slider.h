@@ -36,6 +36,7 @@
 #ifndef DWT_Slider_h
 #define DWT_Slider_h
 
+#include "../aspects/CustomDraw.h"
 #include "../aspects/Scrollable.h"
 #include "Control.h"
 
@@ -58,6 +59,7 @@ namespace dwt {
 class Slider :
 	public CommonControl,
 	// aspects::s
+	public aspects::CustomDraw<Slider, NMCUSTOMDRAW>,
 	public aspects::Scrollable< Slider >
 {
 	typedef CommonControl BaseType;

@@ -31,9 +31,41 @@
 
 #include <dwt/widgets/Header.h>
 
+#include <algorithm>
+
 namespace dwt {
 
 const TCHAR Header::windowClass[] = WC_HEADER;
+
+namespace {
+
+template<typename T, typename F>
+void addHeaderNotify(Header* header, int code, F f) {
+	header->addCallback(Message(WM_NOTIFY, code),
+		[f](const MSG& msg, LRESULT&) -> bool {
+			auto data = reinterpret_cast<const T*>(msg.lParam);
+			if(!data) {
+				return false;
+			}
+			f(*data);
+			return true;
+		});
+}
+
+template<typename T, typename F>
+void addHeaderVetoNotify(Header* header, int code, F f) {
+	header->addCallback(Message(WM_NOTIFY, code),
+		[f](const MSG& msg, LRESULT& result) -> bool {
+			auto data = reinterpret_cast<const T*>(msg.lParam);
+			if(!data) {
+				return false;
+			}
+			result = f(*data) ? FALSE : TRUE;
+			return true;
+		});
+}
+
+}
 
 Header::Seed::Seed() :
 	/// @todo add HDS_DRAGDROP when the tree has better support for col ordering
@@ -56,11 +88,12 @@ Point Header::getPreferredSize() {
 	return Point(0, 0);
 }
 
-int Header::insert(const tstring& header, int width, LPARAM /*lParam*/, int after) {
+int Header::insert(const tstring& header, int width, LPARAM lParam, int after) {
 	if(after == -1) after = static_cast<int>(size());
 
 	HDITEM item = { HDI_FORMAT };
 	item.fmt = HDF_LEFT;// TODO
+	item.lParam = lParam;
 	if(!header.empty()) {
 		item.mask |= HDI_TEXT;
 		item.pszText = const_cast<LPTSTR>(header.c_str());
@@ -71,12 +104,18 @@ int Header::insert(const tstring& header, int width, LPARAM /*lParam*/, int afte
 		item.cxy = width;
 	}
 
+	item.mask |= HDI_LPARAM;
+
 	return Header_InsertItem(handle(), after, &item);
 }
 
 int Header::findDataImpl(LPARAM data, int start) {
-    LVFINDINFO fi = { LVFI_PARAM, NULL, data };
-    return ListView_FindItem(handle(), start, &fi);
+	for(int i = std::max(start + 1, 0), n = static_cast<int>(size()); i < n; ++i) {
+		if(getData(i) == data) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 LPARAM Header::getDataImpl(int idx) {
@@ -89,7 +128,7 @@ LPARAM Header::getDataImpl(int idx) {
 }
 
 void Header::setDataImpl(int idx, LPARAM data) {
-	LVITEM item = { HDI_LPARAM };
+	HDITEM item = { HDI_LPARAM };
 	item.lParam = data;
 
 	Header_SetItem(handle(), idx, &item);
@@ -102,6 +141,100 @@ int Header::getWidth(int idx) const {
 		return 0;
 	}
 	return item.cxy;
+}
+
+tstring Header::getText(int index) const {
+	std::vector<TCHAR> text(256);
+	for(;;) {
+		HDITEM item = { HDI_TEXT };
+		item.pszText = text.data();
+		item.cchTextMax = static_cast<int>(text.size());
+		if(!Header_GetItem(handle(), index, &item)) {
+			return tstring();
+		}
+		if(text.empty() || text.back() == 0) {
+			return text.data();
+		}
+		text.resize(text.size() * 2);
+	}
+}
+
+int Header::getFormat(int index) const {
+	HDITEM item = { HDI_FORMAT };
+	return getItem(index, item) ? item.fmt : 0;
+}
+
+void Header::clearSortArrows() {
+	for(int i = 0, n = static_cast<int>(size()); i < n; ++i) {
+		setSortArrow(i, 0);
+	}
+}
+
+std::vector<int> Header::getOrder() const {
+	std::vector<int> order(size());
+	if(order.empty()) {
+		return order;
+	}
+	if(!Header_GetOrderArray(handle(), static_cast<int>(order.size()), order.data())) {
+		order.clear();
+	}
+	return order;
+}
+
+bool Header::setOrder(const std::vector<int>& order) {
+	if(order.empty()) {
+		return true;
+	}
+	return Header_SetOrderArray(handle(), static_cast<int>(order.size()),
+		const_cast<int*>(order.data())) == TRUE;
+}
+
+void Header::onItemClicked(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_ITEMCLICK, f);
+}
+
+void Header::onItemDoubleClicked(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_ITEMDBLCLICK, f);
+}
+
+void Header::onDividerDoubleClicked(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_DIVIDERDBLCLICK, f);
+}
+
+void Header::onTrack(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_TRACK, f);
+}
+
+void Header::onEndTrack(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_ENDTRACK, f);
+}
+
+void Header::onEndDrag(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_ENDDRAG, f);
+}
+
+void Header::onFilterChanged(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_FILTERCHANGE, f);
+}
+
+void Header::onFilterButtonClicked(std::function<void (const NMHDFILTERBTNCLICK&)> f) {
+	addHeaderNotify<NMHDFILTERBTNCLICK>(this, HDN_FILTERBTNCLICK, f);
+}
+
+void Header::onDropDown(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_DROPDOWN, f);
+}
+
+void Header::onOverflowClicked(std::function<void (const NMHEADER&)> f) {
+	addHeaderNotify<NMHEADER>(this, HDN_OVERFLOWCLICK, f);
+}
+
+void Header::onBeginTrack(std::function<bool (const NMHEADER&)> f) {
+	addHeaderVetoNotify<NMHEADER>(this, HDN_BEGINTRACK, f);
+}
+
+void Header::onBeginDrag(std::function<bool (const NMHEADER&)> f) {
+	addHeaderVetoNotify<NMHEADER>(this, HDN_BEGINDRAG, f);
 }
 
 }

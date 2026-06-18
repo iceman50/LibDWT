@@ -1,7 +1,7 @@
 # Windows SDK Feature Audit
 
 Audit date: 2026-06-14
-Last updated: 2026-06-17
+Last updated: 2026-06-18
 
 This audit compares LibDWT's public widget APIs with the desktop Win32 API
 surface available from Windows 7 through Windows 11. The local Windows SDK used
@@ -45,12 +45,13 @@ Items without an explicit status marker remain unimplemented.
 | Button | **Partial** | Command-link styles through seeds, note get/set, elevation shield, aligned image lists, split configuration, and `BCN_DROPDOWN` | Image-list getter, text-margin getter, explicit dropdown-state helpers, and hot/focus notifications |
 | ProgressBar | **Added** | Marquee mode/speed, normal/error/paused states, colors, and non-mutating cached step retrieval | No remaining item from the original P1 audit |
 | Table/ListView | **Added** | View and tile get/set, empty markup, footer information/items/rectangles/link events, complete group info/metrics/state/focus operations, `LVITEMINDEX` state/iteration/rectangles, insertion marks and colors, work areas, hot item/cursor, hover time, outline color, selected column, background image, geometry, image-list getters, and drag/activate/key/change/label-edit events | No remaining item from the original P1 audit |
-| Tree/VirtualTree | **Partial** | Native Tree extended styles and checkbox states, multiselect enumeration/counting, item-change/info-tip/label-edit/async-draw/drag/key events, drag images, insertion marks/colors, indentation, scroll/autoscroll settings, tooltips, sorting, item/part rectangles and accessibility IDs; VirtualTree translates applicable states, geometry, sorting, IDs and events, with model-backed multiselect storage/enumeration and framework behavior tests | Remaining live UI/accessibility validation for VirtualTree multiselect behavior |
+| Tree/VirtualTree | **Partial** | Native Tree extended styles and checkbox states, multiselect enumeration/counting, item-change/info-tip/label-edit/async-draw/drag/key events, public TreeView custom-draw hook, drag images, insertion marks/colors, indentation, scroll/autoscroll settings, tooltips, sorting, item/part rectangles and accessibility IDs; VirtualTree translates applicable states, geometry, sorting, IDs and events, with model-backed multiselect storage/enumeration and framework behavior tests | Remaining live UI/accessibility validation for VirtualTree multiselect behavior |
 | Taskbar | **Partial** | Progress state and value | Thumbnail toolbar buttons/updates, thumbnail tooltip/clipping, tab properties, AppUserModelID, and Jump Lists |
 | Notification | **Partial** | `NOTIFYICON_VERSION_4`, keyboard selection, `Shell_NotifyIconGetRect`, `NIM_SETFOCUS`, popup lifecycle events, and basic Explorer recreation handling | GUID identity, real-time/quiet-time/large-icon/sound flags, balloon-show events, and stronger restoration/error handling |
 | ToolTip | **Partial** | Title/icon, margins, colors, pop/update, window theme, and `TTN_LINKCLICK` | Balloon/close styles, tracking APIs, current-tool/enumeration/bubble sizing/rectangle adjustment, and per-tool flags |
 | DateTime / MonthCalendar | **Partial** | Nullable values, ranges, ideal size, close-calendar, month-calendar styles, picker information, month-calendar handle/font wrappers, format callbacks, and standalone `MonthCalendar` value, range, multiselect, color, sizing, view, grid-info, and selection/view-event APIs | Specialist `MonthCalendar` calendar-ID and day-state APIs |
 | Slider/Trackbar | **Added** | 32-bit range APIs, selection range, line/page size, thumb length, channel/thumb rectangles, tick values/positions/counts, tooltip control/placement, buddy getter, Unicode format, reversed/down-is-left/transparent-background/notify-before-move styles, and `TRBN_THUMBPOSCHANGING` validation | No remaining item from the original Slider audit |
+| Header | **Added** | Text/data fixes, checkbox and checked-state helpers, split/drop-down affordances, sort arrows, image lists, drag images, item/drop-down/overflow rectangles, hit testing, order/focus/hot-divider/filter/Unicode wrappers, and typed click/drag/filter/drop-down/overflow notifications | No remaining item from the original Header audit |
 
 ## Priority Summary
 
@@ -281,11 +282,15 @@ not require runtime fallback paths:
 
 **Priority: P2**
 
-- Checkbox items and checked state.
-- Split/drop-down items and overflow notifications.
-- Filter-bar editing, timeout, clear, and filter-change events.
-- Focus item, order arrays, sort arrows, image lists, item rectangles, hot
-  divider, drag tracking, and Unicode-format wrappers.
+- **Added:** Checkbox items and checked state.
+- **Added:** Split/drop-down item affordances and drop-down/overflow
+  notifications.
+- **Added:** Filter-bar timeout, editing, clearing, and filter-change/button
+  notifications.
+- **Added:** Focus item, order arrays, sort arrows, image lists, drag images,
+  item/drop-down/overflow rectangles, hit testing, hot divider, drag tracking,
+  item text/data fixes, and Unicode-format wrappers.
+- **Added:** `CustomDraw` aspect coverage for native header custom drawing.
 
 ### Table (ListView)
 
@@ -563,8 +568,8 @@ accessibility, shell-dialog, Table, or Tree work.
 6. **Partial:** Taskbar progress, tray v4, ProgressBar, Button, and ToolTip work
    is added. Continue thumbnail buttons and the remaining tray/Button/ToolTip
    items.
-7. **Partial:** DateTime and MonthCalendar additions are present, and Slider is
-   complete against the audit. Continue with Header, ToolBar, and Rebar.
+7. **Partial:** DateTime and MonthCalendar additions are present, and Slider and
+   Header are complete against the audit. Continue with ToolBar and Rebar.
 8. **Remaining:** Windows 11 DWM appearance options with build guards.
 9. **Remaining:** Lower-priority completeness work and specialist Rich Edit
    features.
@@ -578,7 +583,7 @@ The highest-value remaining sequence after this update is:
 2. Add higher-level typed file-dialog custom-control helpers and live
    library/virtual-folder validation.
 3. Add taskbar thumbnail buttons and complete tray identity/options.
-4. Add Header coverage, then ToolTip/Button completion and ToolBar/Rebar.
+4. Add ToolTip/Button completion, then ToolBar/Rebar.
 5. Add guarded Windows 11 DWM appearance APIs.
 
 ## Primary References

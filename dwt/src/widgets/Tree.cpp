@@ -88,7 +88,15 @@ void Tree::create( const Seed & cs )
 	forwardMsg(Message(WM_SETFONT));
 	forwardMsg(Message(WM_SETREDRAW));
 
-	tree->onCustomDraw([this](NMTVCUSTOMDRAW& x) { return draw(x); });
+	tree->onCustomDraw([this](NMTVCUSTOMDRAW& x) {
+		if(customDraw) {
+			auto result = customDraw(x);
+			if(result && result != CDRF_DODEFAULT) {
+				return result;
+			}
+		}
+		return draw(x);
+	});
 
 	if(cs.font) {
 		setFont(cs.font);
@@ -379,6 +387,10 @@ void Tree::onTreeKeyDown(std::function<void (const NMTVKEYDOWN&)> f) {
 			f(*reinterpret_cast<const NMTVKEYDOWN*>(msg.lParam));
 			return true;
 		});
+}
+
+void Tree::onCustomDraw(std::function<LRESULT (NMTVCUSTOMDRAW&)> f) {
+	customDraw = f;
 }
 
 ImageListPtr Tree::createDragImage(HTREEITEM item) const {

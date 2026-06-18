@@ -83,6 +83,19 @@ All notable changes to LibDWT are documented in this file.
 - Added 32-bit range, selection range, line/page size, thumb length, geometry,
   tick, tooltip, buddy, Unicode-format, style, and movement-validation APIs to
   `Slider`.
+- Added audited Header coverage, including item text/data wrappers, checkbox
+  and checked-state helpers, split/drop-down affordances, sort arrows, image
+  lists, drag images, geometry, order/focus/filter/Unicode APIs, and typed
+  header notifications.
+- Added the `CustomDraw` aspect to `Button`, `Header`, `ProgressBar`, and
+  `Slider`; custom-draw callbacks now ignore null notification payloads.
+- Added a public `Tree::onCustomDraw()` hook for native tree-view custom draw
+  customization before LibDWT's built-in column renderer runs.
+- Expanded `CustomDrawExample` to demonstrate Button, Header, Rebar, Slider,
+  Table/ListView, TableTree, ToolBar, ToolTip, Tree, VirtualTree, and
+  ProgressBar custom-draw paths with a shared Segoe UI font, visible
+  slider/progress layout, visual styles enabled, working toolbar commands, and
+  native tree expand glyphs.
 - Added a working MDI implementation for `MDIFrame`, `MDIParent`, and
   `MDIChild`, including native MDI dispatching, system accelerator translation,
   menu merging support, active child management, cascade, tiling, icon
