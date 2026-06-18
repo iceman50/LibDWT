@@ -345,33 +345,72 @@ LRESULT drawSlider(NMCUSTOMDRAW& data, bool dark) {
 	return CDRF_DODEFAULT;
 }
 
-LRESULT drawProgress(NMCUSTOMDRAW& data, ProgressBar::ObjectType progress, bool dark) {
-	if(data.dwDrawStage != CDDS_PREPAINT || !progress) {
-		return CDRF_DODEFAULT;
+void drawProgressSurface(HDC hdc, const RECT& client,
+	int minimumValue, int maximumValue, int currentValue, bool dark)
+{
+	if(!hdc || client.left >= client.right || client.top >= client.bottom) {
+		return;
 	}
 
 	auto palette = makePalette(dark);
-	fillRect(data.hdc, data.rc, palette.progressTrack);
-	drawBorder(data.hdc, data.rc, palette.border);
+	fillRect(hdc, client, palette.progressTrack);
+	drawBorder(hdc, client, palette.border);
 
-	const int minimum = progress->getMinValue();
-	const int maximum = progress->getMaxValue();
-	const int value = progress->getPosition();
-	const int range = maximum > minimum ? maximum - minimum : 1;
-	const int clamped = value < minimum ? minimum : (value > maximum ? maximum : value);
+	const int innerWidth = client.right - client.left - 4;
+	const int innerHeight = client.bottom - client.top - 4;
+	if(innerWidth <= 0 || innerHeight <= 0) {
+		return;
+	}
 
-	RECT fill = data.rc;
+	const long long minimum = minimumValue;
+	const long long maximum = maximumValue > minimumValue ?
+		static_cast<long long>(maximumValue) : minimum + 1;
+	long long value = currentValue;
+	if(value < minimum) {
+		value = minimum;
+	} else if(value > maximum) {
+		value = maximum;
+	}
+	const long long range = maximum - minimum;
+	const long long delta = value - minimum;
+
+	RECT fill = client;
 	fill.left += 2;
 	fill.top += 2;
 	fill.bottom -= 2;
-	fill.right = fill.left + ((data.rc.right - data.rc.left - 4) * (clamped - minimum)) / range;
-	fillRect(data.hdc, fill, palette.progressFill);
+	const int fillWidth = static_cast<int>((static_cast<long long>(innerWidth) * delta) / range);
+	fill.right = fill.left + fillWidth;
+	if(fill.right > client.right - 2) {
+		fill.right = client.right - 2;
+	}
+	fillRect(hdc, fill, palette.progressFill);
 
-	RECT textRect = data.rc;
-	const int percent = ((clamped - minimum) * 100) / range;
-	drawTextInRect(data.hdc, std::to_wstring(percent) + _T("%"), textRect,
+	RECT textRect = client;
+	const int percent = static_cast<int>((delta * 100) / range);
+	drawTextInRect(hdc, std::to_wstring(percent) + _T("%"), textRect,
 		dark ? palette.text : palette.accentText,
 		DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
+
+LRESULT drawProgress(NMCUSTOMDRAW& data, ProgressBar::ObjectType progress, bool dark) {
+	if(data.dwDrawStage != CDDS_PREPAINT || !progress || !progress->handle() ||
+		!::IsWindow(progress->handle()) || !data.hdc)
+	{
+		return CDRF_DODEFAULT;
+	}
+
+	HWND hwnd = (data.hdr.hwndFrom && ::IsWindow(data.hdr.hwndFrom)) ?
+		data.hdr.hwndFrom : progress->handle();
+	RECT client = {};
+	if(!::GetClientRect(hwnd, &client)) {
+		client = data.rc;
+	}
+	if(client.left >= client.right || client.top >= client.bottom) {
+		return CDRF_DODEFAULT;
+	}
+
+	drawProgressSurface(data.hdc, client,
+		progress->getMinValue(), progress->getMaxValue(), progress->getPosition(), dark);
 
 	return CDRF_SKIPDEFAULT;
 }
@@ -452,6 +491,12 @@ Header::ObjectType findHeaderChildWidget(dwt::Widget* parent) {
 	}
 
 	return nullptr;
+}
+
+void redrawHandle(HWND handle, UINT flags) {
+	if(handle && ::IsWindow(handle)) {
+		::RedrawWindow(handle, nullptr, nullptr, flags);
+	}
 }
 
 } // namespace
@@ -555,7 +600,7 @@ int dwtMain(dwt::Application& app) {
 	table->insert({ _T("ToolBar"), _T("NMTBCUSTOMDRAW"), _T("Button face, text, and hot-track colors") }, 6);
 	table->insert({ _T("ToolTip"), _T("NMTTCUSTOMDRAW"), _T("Tooltip text and background palette on hover") }, 7);
 	table->insert({ _T("Tree"), _T("NMTVCUSTOMDRAW"), _T("Tree item colors plus LibDWT column renderer") }, 8);
-	table->insert({ _T("ProgressBar"), _T("NMCUSTOMDRAW"), _T("Painted track, fill, border, and percentage text when notified") }, 9);
+	table->insert({ _T("ProgressBar"), _T("NMCUSTOMDRAW"), _T("Painted track, fill, border, and percentage text with a paint fallback") }, 9);
 	table->insert({ _T("TableTree"), _T("Inherited NMLVCUSTOMDRAW"), _T("Hierarchical list glyphs plus list-view coloring") }, 10);
 	table->insert({ _T("VirtualTree"), _T("Inherited NMTVCUSTOMDRAW"), _T("Virtualized tree items using the Tree custom-draw hook") }, 11);
 
@@ -633,24 +678,28 @@ int dwtMain(dwt::Application& app) {
 	toolTip->addTool(slider);
 	toolTip->setText(slider, _T("Trackbar custom draw paints the native channel and thumb parts."));
 	toolTip->addTool(progress);
-	toolTip->setText(progress, _T("ProgressBar custom draw paints a determinate progress surface when the native control asks for it."));
+	toolTip->setText(progress, _T("ProgressBar custom draw paints a determinate progress surface and falls back to WM_PAINT if needed."));
 
 	constexpr int toolbarCommandBase = 100;
 	constexpr int toolbarLightCommand = toolbarCommandBase;
 	constexpr int toolbarDarkCommand = toolbarCommandBase + 1;
 	constexpr int toolbarAdvanceCommand = toolbarCommandBase + 2;
 
-	auto advanceControls = [slider, progress] {
+	auto refreshSliderProgress = [slider, progress] {
+		redrawHandle(slider ? slider->handle() : nullptr,
+			RDW_INVALIDATE | RDW_NOERASE | RDW_UPDATENOW);
+		redrawHandle(progress ? progress->handle() : nullptr,
+			RDW_INVALIDATE | RDW_NOERASE | RDW_UPDATENOW);
+	};
+
+	auto advanceControls = [slider, progress, refreshSliderProgress] {
 		if(!slider || !progress) {
 			return;
 		}
 		const int next = slider->getPosition() >= 95 ? 5 : slider->getPosition() + 5;
 		slider->setPosition(next);
 		progress->setPosition(next);
-		::RedrawWindow(slider->handle(), nullptr, nullptr,
-			RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
-		::RedrawWindow(progress->handle(), nullptr, nullptr,
-			RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
+		refreshSliderProgress();
 	};
 
 	toolBar->addButton("light", -1, _T("Light"), true, 0, [regularButton] {
@@ -697,6 +746,43 @@ int dwtMain(dwt::Application& app) {
 		retVal = 1;
 		return true;
 	});
+	progress->addCallback(dwt::Message(WM_ERASEBKGND), [progress, isDark](const MSG& msg, LRESULT& retVal) {
+		if(!progress || !progress->handle() || !::IsWindow(progress->handle()) ||
+			!msg.hwnd || !::IsWindow(msg.hwnd) || !msg.wParam)
+		{
+			return false;
+		}
+
+		RECT rc = {};
+		if(!::GetClientRect(msg.hwnd, &rc)) {
+			return false;
+		}
+		drawProgressSurface(reinterpret_cast<HDC>(msg.wParam), rc,
+			progress->getMinValue(), progress->getMaxValue(), progress->getPosition(), *isDark);
+		retVal = 1;
+		return true;
+	});
+	progress->addCallback(dwt::Message(WM_PAINT), [progress, isDark](const MSG& msg, LRESULT& retVal) {
+		if(!progress || !progress->handle() || !::IsWindow(progress->handle()) ||
+			!msg.hwnd || !::IsWindow(msg.hwnd))
+		{
+			return false;
+		}
+
+		PAINTSTRUCT paint = {};
+		HDC hdc = ::BeginPaint(msg.hwnd, &paint);
+		if(hdc) {
+			RECT rc = {};
+			if(::GetClientRect(msg.hwnd, &rc)) {
+				drawProgressSurface(hdc, rc,
+					progress->getMinValue(), progress->getMaxValue(), progress->getPosition(), *isDark);
+			}
+		}
+		::EndPaint(msg.hwnd, &paint);
+
+		retVal = 0;
+		return true;
+	});
 
 	auto refreshAll = [window, grid, rebar, toolBar, regularButton, darkButton,
 		header, tableHeader, tableTreeHeader, treeHeader, virtualTreeHeader,
@@ -713,10 +799,7 @@ int dwtMain(dwt::Application& app) {
 			tree->handle(), tree->treeHandle(), virtualTree->handle(), virtualTree->treeHandle()
 		};
 		for(auto handle : handles) {
-			if(handle && ::IsWindow(handle)) {
-				::RedrawWindow(handle, nullptr, nullptr,
-					RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
-			}
+			redrawHandle(handle, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 		}
 	};
 
@@ -881,9 +964,12 @@ int dwtMain(dwt::Application& app) {
 	darkButton->onClicked([setMode] {
 		setMode(true);
 	});
-	slider->onScrollHorz([slider, progress, refreshAll] {
+	slider->onScrollHorz([slider, progress, refreshSliderProgress] {
+		if(!slider || !progress) {
+			return;
+		}
 		progress->setPosition(slider->getPosition());
-		refreshAll();
+		refreshSliderProgress();
 	});
 
 	window->onDestroy([toolTip] {
@@ -909,8 +995,7 @@ int dwtMain(dwt::Application& app) {
 		grid->resize(dwt::Rectangle(0, 0, client.x, client.y));
 		grid->layout();
 		rebar->refresh();
-		::RedrawWindow(window->handle(), nullptr, nullptr,
-			RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+		redrawHandle(window->handle(), RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
 	};
 
 	window->onSized([layout](const dwt::SizedEvent&) {
