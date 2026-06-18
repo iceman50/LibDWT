@@ -17,6 +17,7 @@
 #include <dwt/widgets/Link.h>
 #include <dwt/widgets/LoadDialog.h>
 #include <dwt/widgets/MessageBox.h>
+#include <dwt/widgets/MonthCalendar.h>
 #include <dwt/widgets/Notification.h>
 #include <dwt/widgets/ProgressBar.h>
 #include <dwt/widgets/RadioButton.h>
@@ -62,6 +63,7 @@ using dwt::Header;
 using dwt::Label;
 using dwt::Link;
 using dwt::LoadDialog;
+using dwt::MonthCalendar;
 using dwt::Notification;
 using dwt::ProgressBar;
 using dwt::RadioButton;
@@ -194,7 +196,9 @@ int dwtMain(dwt::Application& app) {
 	dateTimeSeed.style |= DTS_SHOWNONE;
 	auto* dateTime = WidgetCreator<DateTime>::create(grid, dateTimeSeed);
 	auto* spinner = WidgetCreator<Spinner>::create(grid, Spinner::Seed(0, 100));
-	auto* slider = WidgetCreator<Slider>::create(grid, Slider::Seed());
+	Slider::Seed sliderSeed;
+	sliderSeed.style |= TBS_ENABLESELRANGE | TBS_FIXEDLENGTH | TBS_NOTIFYBEFOREMOVE;
+	auto* slider = WidgetCreator<Slider>::create(grid, sliderSeed);
 	auto* progress = WidgetCreator<ProgressBar>::create(grid, ProgressBar::Seed());
 	auto* link = WidgetCreator<Link>::create(grid, Link::Seed(_T("https://dcplusplus.sourceforge.io/"), true));
 
@@ -222,13 +226,14 @@ int dwtMain(dwt::Application& app) {
 	auto* richText = WidgetCreator<RichTextBox>::create(grid, RichTextBox::Seed());
 
 	auto* scrolled = WidgetCreator<ScrolledContainer>::create(grid, ScrolledContainer::Seed());
-	auto* scrolledGrid = scrolled->addChild(Grid::Seed(4, 1));
+	auto* scrolledGrid = scrolled->addChild(Grid::Seed(5, 1));
 	scrolledGrid->setSpacing(6);
 	scrolledGrid->row(0).mode = GridInfo::AUTO;
 	scrolledGrid->row(1).mode = GridInfo::AUTO;
 	scrolledGrid->row(2).mode = GridInfo::AUTO;
-	scrolledGrid->row(3).mode = GridInfo::STATIC;
-	scrolledGrid->row(3).size = 260;
+	scrolledGrid->row(3).mode = GridInfo::AUTO;
+	scrolledGrid->row(4).mode = GridInfo::STATIC;
+	scrolledGrid->row(4).size = 190;
 	scrolledGrid->column(0).mode = GridInfo::STATIC;
 	scrolledGrid->column(0).size = 420;
 	scrolledGrid->column(0).align = GridInfo::STRETCH;
@@ -236,10 +241,15 @@ int dwtMain(dwt::Application& app) {
 	auto* scrollLabel2 = WidgetCreator<Label>::create(scrolledGrid, Label::Seed(_T("- Maintains spacing and alignment")));
 	auto* scrollLabel3 = WidgetCreator<Label>::create(scrolledGrid, Label::Seed(_T("- Shows scrollbars when content exceeds viewport")));
 	auto* scrollLabel4 = WidgetCreator<Label>::create(scrolledGrid, Label::Seed(_T("- Wide and tall content area below should trigger horizontal and vertical scrolling in normal window sizes.")));
+	MonthCalendar::Seed calendarSeed;
+	calendarSeed.font = uiFont;
+	calendarSeed.style |= MCS_WEEKNUMBERS | MCS_MULTISELECT;
+	auto* monthCalendar = WidgetCreator<MonthCalendar>::create(scrolledGrid, calendarSeed);
 	scrolledGrid->setWidget(scrollLabel1, 0, 0);
 	scrolledGrid->setWidget(scrollLabel2, 1, 0);
 	scrolledGrid->setWidget(scrollLabel3, 2, 0);
 	scrolledGrid->setWidget(scrollLabel4, 3, 0);
+	scrolledGrid->setWidget(monthCalendar, 4, 0);
 	scrolledGrid->layout();
 
 	auto* status = WidgetCreator<StatusBar>::create(window, StatusBar::Seed(2, 1, true));
@@ -262,6 +272,7 @@ int dwtMain(dwt::Application& app) {
 	grid->setAccessibleName(_T("Multi-control example content"));
 	grid->setAccessibleHelpText(_T("Demonstrates LibDWT controls and Windows 7 or later APIs."));
 	scrolled->setAccessibleName(_T("Scrollable feature summary"));
+	monthCalendar->setAccessibleName(_T("Standalone month calendar"));
 
 	toolTip->setTitle(_T("Windows 7+ control features"), TTI_INFO);
 	toolTip->setMargin(dwt::Rectangle(6, 4, 6, 4));
@@ -302,6 +313,15 @@ int dwtMain(dwt::Application& app) {
 	slider->setPosition(25);
 	slider->setAutoTicks(true);
 	slider->setTickFrequency(10);
+	slider->setLineSize(5);
+	slider->setPageSize(20);
+	slider->setSelectionRangeVisible();
+	slider->setSelection(20, 80);
+	slider->setFixedThumbLength();
+	slider->setThumbLength(window->scale(18));
+	slider->setNotifyBeforeMove();
+	slider->setToolTipPosition(TBTS_BOTTOM);
+	slider->setUnicodeFormat(true);
 	progress->setRange(0, 100);
 	progress->setPosition(25);
 	progress->setState(ProgressBar::Normal);
@@ -316,6 +336,8 @@ int dwtMain(dwt::Application& app) {
 	maximumDate.wMonth = 12;
 	maximumDate.wDay = 31;
 	dateTime->setRange(&minimumDate, &maximumDate);
+	monthCalendar->setRange(&minimumDate, &maximumDate);
+	monthCalendar->setMaxSelectionCount(14);
 
 	header->insert(_T("Control"), 180);
 	header->insert(_T("Category"), 180);
@@ -337,6 +359,7 @@ int dwtMain(dwt::Application& app) {
 	table->insert({ _T("Rebar/Toolbar"), _T("Top row"), _T("Dialog and notify actions") }, 102);
 	table->insert({ _T("TableTree"), _T("Hierarchy"), _T("Parent-child list entries") }, 103);
 	table->insert({ _T("VirtualTree"), _T("Large trees"), _T("Lazy tree structure") }, 104);
+	table->insert({ _T("MonthCalendar"), _T("Standalone"), _T("Range, multiselect, and view events") }, 105);
 	table->setChecked(0, true);
 
 	tree->addColumn(_T("Node"), 240);
@@ -521,6 +544,9 @@ int dwtMain(dwt::Application& app) {
 		setStatus(status, _T("Slider: ") + std::to_wstring(value));
 		*syncingRange = false;
 	});
+	slider->onThumbPositionChanging([](const NMTRBTHUMBPOSCHANGING& change) {
+		return change.dwPos <= 100;
+	});
 
 	spinner->onUpdate([slider, progress, status, syncingRange](int value, int) {
 		if(*syncingRange) {
@@ -542,6 +568,25 @@ int dwtMain(dwt::Application& app) {
 		}
 		setStatus(status, _T("Date changed: ") + std::to_wstring(value->wYear) +
 			_T("-") + std::to_wstring(value->wMonth) + _T("-") + std::to_wstring(value->wDay));
+	});
+	dateTime->onFormatQuery([](const NMDATETIMEFORMATQUERY&) {
+		return dwt::Point(80, 20);
+	});
+	dateTime->onFormat([](const NMDATETIMEFORMAT& data) {
+		return data.st.wDayOfWeek == 0 || data.st.wDayOfWeek == 6 ?
+			_T("Weekend") : _T("Weekday");
+	});
+	monthCalendar->onSelectionChanged([dateTime, status](const SYSTEMTIME& first,
+		const SYSTEMTIME& last)
+	{
+		dateTime->setDateTime(first);
+		setStatus(status, _T("Calendar range: ") +
+			std::to_wstring(first.wMonth) + _T("/") + std::to_wstring(first.wDay) +
+			_T(" - ") + std::to_wstring(last.wMonth) + _T("/") +
+			std::to_wstring(last.wDay));
+	});
+	monthCalendar->onViewChanged([status](DWORD, DWORD view) {
+		setStatus(status, _T("Calendar view changed: ") + std::to_wstring(view));
 	});
 
 	table->onColumnClick([status](int col) {
@@ -760,6 +805,7 @@ int dwtMain(dwt::Application& app) {
 		radioB,
 		combo,
 		dateTime,
+		monthCalendar,
 		spinner,
 		slider,
 		progress,

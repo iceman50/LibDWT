@@ -163,6 +163,9 @@
     <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\ModelessDialog.cpp">
       <Filter>Source Files\\widgets</Filter>
     </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\MonthCalendar.cpp">
+      <Filter>Source Files\\widgets</Filter>
+    </ClCompile>
     <ClCompile Include="$(ProjectDir)..\\..\\..\\dwt\\src\\widgets\Notification.cpp">
       <Filter>Source Files\\widgets</Filter>
     </ClCompile>
@@ -541,6 +544,9 @@
       <Filter>Header Files\\widgets</Filter>
     </ClInclude>
     <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\MessageBox.h">
+      <Filter>Header Files\\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\MonthCalendar.h">
       <Filter>Header Files\\widgets</Filter>
     </ClInclude>
     <ClInclude Include="$(ProjectDir)..\\..\\..\\dwt\\include\\dwt\\widgets\ModalDialog.h">

@@ -75,6 +75,14 @@ All notable changes to LibDWT are documented in this file.
 - Added tooltip titles, margins, colors, themes, links, pop, and update APIs.
 - Added nullable values, ranges, ideal sizing, month-calendar styles, and picker
   information to `DateTime`.
+- Added `MonthCalendar`, including value and range APIs, multiselect ranges,
+  colors, sizing helpers, view state, grid information, and selection/view
+  events.
+- Added `DateTime` month-calendar handle/font wrappers and format-query/format
+  callbacks.
+- Added 32-bit range, selection range, line/page size, thumb length, geometry,
+  tick, tooltip, buddy, Unicode-format, style, and movement-validation APIs to
+  `Slider`.
 - Added a working MDI implementation for `MDIFrame`, `MDIParent`, and
   `MDIChild`, including native MDI dispatching, system accelerator translation,
   menu merging support, active child management, cascade, tiling, icon
@@ -89,9 +97,10 @@ All notable changes to LibDWT are documented in this file.
 - Added a generic mouse-wheel callback to the mouse aspect.
 - Expanded `MultiControlExample` to demonstrate task dialogs, command-link
   buttons, modern file dialogs, progress states and marquee mode, nullable date
-  values, tooltip styling, pointer and DPI events, accessibility metadata, and
-  richer Table, Tree, and notification callbacks, including extended Tree and
-  VirtualTree checkbox states.
+  values, slider selection and movement validation, tooltip styling, pointer and
+  DPI events, accessibility metadata, and richer Table, Tree, MonthCalendar, and
+  notification callbacks, including extended Tree and VirtualTree checkbox
+  states.
 
 ### Changed
 

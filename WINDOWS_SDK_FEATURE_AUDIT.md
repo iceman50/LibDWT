@@ -49,7 +49,8 @@ Items without an explicit status marker remain unimplemented.
 | Taskbar | **Partial** | Progress state and value | Thumbnail toolbar buttons/updates, thumbnail tooltip/clipping, tab properties, AppUserModelID, and Jump Lists |
 | Notification | **Partial** | `NOTIFYICON_VERSION_4`, keyboard selection, `Shell_NotifyIconGetRect`, `NIM_SETFOCUS`, popup lifecycle events, and basic Explorer recreation handling | GUID identity, real-time/quiet-time/large-icon/sound flags, balloon-show events, and stronger restoration/error handling |
 | ToolTip | **Partial** | Title/icon, margins, colors, pop/update, window theme, and `TTN_LINKCLICK` | Balloon/close styles, tracking APIs, current-tool/enumeration/bubble sizing/rectangle adjustment, and per-tool flags |
-| DateTime | **Partial** | Nullable values, ranges, ideal size, close-calendar, month-calendar styles, and picker information | Month-calendar handle/font wrappers, format-query callbacks, and standalone `MonthCalendar` |
+| DateTime / MonthCalendar | **Partial** | Nullable values, ranges, ideal size, close-calendar, month-calendar styles, picker information, month-calendar handle/font wrappers, format callbacks, and standalone `MonthCalendar` value, range, multiselect, color, sizing, view, grid-info, and selection/view-event APIs | Specialist `MonthCalendar` calendar-ID and day-state APIs |
+| Slider/Trackbar | **Added** | 32-bit range APIs, selection range, line/page size, thumb length, channel/thumb rectangles, tick values/positions/counts, tooltip control/placement, buddy getter, Unicode format, reversed/down-is-left/transparent-background/notify-before-move styles, and `TRBN_THUMBPOSCHANGING` validation | No remaining item from the original Slider audit |
 
 ## Priority Summary
 
@@ -131,8 +132,8 @@ Items without an explicit status marker remain unimplemented.
 4. **Partial:** Taskbar progress is added; thumbnail-toolbar support remains.
 5. **Added:** Notification icons now use `NOTIFYICON_VERSION_4`; related tray
    options remain.
-6. **Partial:** Button, ProgressBar, ToolTip, and DateTime additions are in
-   place; ProgressBar is complete against this audit.
+6. **Partial:** Button, ProgressBar, ToolTip, DateTime, and MonthCalendar
+   additions are in place; ProgressBar is complete against this audit.
 
 ## Platform Features by Windows Generation
 
@@ -259,19 +260,22 @@ not require runtime fallback paths:
   accessibility need a separate capability-based audit because installed Rich
   Edit behavior is not cleanly tied to one Windows release.
 
-### DateTime
+### DateTime and MonthCalendar
 
 **Priority: P1-P2**
 
 - **Added:** Nullable/no-date mode through `DTS_SHOWNONE`, `getValue()`, and
   `setNone()`.
 - **Added:** Date range get/set.
-- **Partial:** Ideal size, close-month-calendar, picker information, and
-  month-calendar styles are added; direct month-calendar handle/font wrappers
-  remain.
-- **Remaining:** Format-query and format callback notifications.
-- **Remaining:** A standalone `MonthCalendar` widget, including multiselect, week
-  numbers, range limits, current view, calendar identifiers, and grid info.
+- **Added:** Ideal size, close-month-calendar, picker information,
+  month-calendar styles, direct month-calendar handle/font wrappers, and
+  format-query/format callback notifications.
+- **Added:** A standalone `MonthCalendar` widget with value, multiselect range,
+  maximum selection count, min/max range, today, month range, sizing, colors,
+  Unicode format, hit testing, current view, month delta, calendar count, grid
+  info, and selection/view-change events.
+- **Remaining:** Specialist standalone `MonthCalendar` calendar-ID and day-state
+  APIs.
 
 ### Header
 
@@ -337,13 +341,15 @@ not require runtime fallback paths:
 
 **Priority: P1-P2**
 
-- Full 32-bit min/max range messages instead of the packed 16-bit range API.
-- Selection range, line/page size, thumb length, channel/thumb rectangles, and
-  tick position/count arrays.
-- Tooltip control and placement, buddy getter, and Unicode-format setting.
-- Reversed, down-is-left, transparent-background, and notify-before-move
-  styles.
-- `TRBN_THUMBPOSCHANGING` for validation before movement.
+- **Added:** Full 32-bit min/max range messages instead of the packed 16-bit
+  range API.
+- **Added:** Selection range, line/page size, thumb length,
+  channel/thumb rectangles, and tick value/position/count arrays.
+- **Added:** Tooltip control and placement, buddy getter, and Unicode-format
+  setting.
+- **Added:** Reversed, down-is-left, transparent-background,
+  selection-range-visible, fixed-thumb-length, and notify-before-move styles.
+- **Added:** `TRBN_THUMBPOSCHANGING` for validation before movement.
 
 ### Spinner (Up-Down)
 
@@ -515,18 +521,18 @@ theme, and accessibility compatibility rather than new MDI-specific APIs.
 
 Ordered by likely usefulness:
 
-1. Standalone `MonthCalendar`.
-2. `ComboBoxEx`.
-3. Native `ListBox`.
-4. Hot-key control.
-5. IP-address control.
-6. Pager control.
-7. Animation control.
-8. Property sheet/wizard abstraction.
+1. `ComboBoxEx`.
+2. Native `ListBox`.
+3. Hot-key control.
+4. IP-address control.
+5. Pager control.
+6. Animation control.
+7. Property sheet/wizard abstraction.
 
 No longer entirely missing:
 
 - **Added:** `TaskDialog` abstraction.
+- **Added:** Standalone `MonthCalendar` abstraction.
 - **Partial:** Modern `IFileDialog` abstraction. The path-based load, save, and
   folder APIs use it; shell-item results, events, and customization hooks are
   available. Typed custom-control helpers and live virtual-folder validation
@@ -557,8 +563,8 @@ accessibility, shell-dialog, Table, or Tree work.
 6. **Partial:** Taskbar progress, tray v4, ProgressBar, Button, and ToolTip work
    is added. Continue thumbnail buttons and the remaining tray/Button/ToolTip
    items.
-7. **Partial:** DateTime additions are present. Add `MonthCalendar`, then work
-   through Slider, Header, ToolBar, and Rebar.
+7. **Partial:** DateTime and MonthCalendar additions are present, and Slider is
+   complete against the audit. Continue with Header, ToolBar, and Rebar.
 8. **Remaining:** Windows 11 DWM appearance options with build guards.
 9. **Remaining:** Lower-priority completeness work and specialist Rich Edit
    features.
@@ -572,7 +578,7 @@ The highest-value remaining sequence after this update is:
 2. Add higher-level typed file-dialog custom-control helpers and live
    library/virtual-folder validation.
 3. Add taskbar thumbnail buttons and complete tray identity/options.
-4. Add standalone `MonthCalendar`, then Slider and Header coverage.
+4. Add Header coverage, then ToolTip/Button completion and ToolBar/Rebar.
 5. Add guarded Windows 11 DWM appearance APIs.
 
 ## Primary References
