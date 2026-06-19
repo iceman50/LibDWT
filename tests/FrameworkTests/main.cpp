@@ -12,6 +12,7 @@
 #include <dwt/widgets/Window.h>
 
 #include <algorithm>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -24,6 +25,14 @@ void check(bool condition, const char* message) {
 	if(!condition) {
 		std::cerr << "FAIL: " << message << '\n';
 		++failures;
+	}
+}
+
+void pumpMessages() {
+	MSG message;
+	while(::PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
+		::TranslateMessage(&message);
+		::DispatchMessage(&message);
 	}
 }
 
@@ -248,15 +257,126 @@ void testMessageContracts() {
 		"control WM_COMMAND matches the notification code");
 }
 
+BOOL CALLBACK countMonitor(HMONITOR, HDC, LPRECT, LPARAM value) {
+	auto count = reinterpret_cast<unsigned*>(value);
+	++*count;
+	return TRUE;
 }
 
-int dwtMain(dwt::Application&) {
-	return 0;
+void testLiveDpiAndSettingsValidation() {
+	using namespace dwt;
+
+	Window::Seed windowSeed(_T("FrameworkTests Live Validation"));
+	windowSeed.style &= ~WS_VISIBLE;
+	windowSeed.location = dwt::Rectangle(10, 10, 320, 240);
+	auto* window = WidgetCreator<Window>::create(windowSeed);
+
+	check(window && ::IsWindow(window->handle()),
+		"live validation window creation");
+	if(!window || !::IsWindow(window->handle())) {
+		return;
+	}
+
+	const auto initialDpi = window->getDpi();
+	check(initialDpi > 0, "live validation window DPI");
+	check(window->getSystemMetric(SM_CXVSCROLL) > 0,
+		"live validation DPI-aware system metrics");
+
+	RECT adjusted = { 0, 0, 320, 240 };
+	check(window->adjustWindowRect(adjusted),
+		"live validation DPI-aware window rectangle");
+
+	bool resourceChanged = false;
+	bool dpiChanged = false;
+	window->onDpiResourcesChanged([&](const DpiResourceEvent& event) {
+		resourceChanged = true;
+		check(event.oldDpi == initialDpi,
+			"live validation previous resource DPI");
+		check(event.newDpi != event.oldDpi,
+			"live validation changed resource DPI");
+	});
+	window->onDpiChanged([&](const DpiChangedEvent& event) {
+		dpiChanged = true;
+		check(event.oldDpi == initialDpi,
+			"live validation previous DPI");
+		check(event.newDpi != event.oldDpi,
+			"live validation changed DPI");
+		check(event.suggestedBounds.size.x > 0 &&
+			event.suggestedBounds.size.y > 0,
+			"live validation suggested bounds");
+	});
+
+	RECT suggested = { 20, 20, 420, 320 };
+	const auto nextDpi = initialDpi == 144 ? 96U : 144U;
+	window->sendMessage(WM_DPICHANGED, MAKEWPARAM(nextDpi, nextDpi),
+		reinterpret_cast<LPARAM>(&suggested));
+	check(dpiChanged, "live validation WM_DPICHANGED callbacks");
+	check(resourceChanged,
+		"live validation DPI resource callbacks");
+	check(window->getDpi() > 0,
+		"live validation effective window DPI");
+
+	bool settingsChanged = false;
+	window->onSystemSettingsChanged([&](const SystemSettingsEvent& event) {
+		settingsChanged = true;
+		check(event.action == SPI_SETHIGHCONTRAST,
+			"live validation system setting action");
+		check(event.accessibilityChanged(),
+			"live validation accessibility settings classification");
+	});
+	const TCHAR section[] = _T("Accessibility");
+	window->sendMessage(WM_SETTINGCHANGE, SPI_SETHIGHCONTRAST,
+		reinterpret_cast<LPARAM>(section));
+	check(settingsChanged, "live validation WM_SETTINGCHANGE callbacks");
+
+	unsigned monitorCount = 0;
+	::EnumDisplayMonitors(nullptr, nullptr, countMonitor,
+		reinterpret_cast<LPARAM>(&monitorCount));
+	check(monitorCount > 0, "live validation display monitor enumeration");
+
+	window->close();
+	pumpMessages();
 }
 
-int main() {
-	dwt::Application::init();
+void testLiveAccessibilityValidation() {
+	using namespace dwt;
 
+	Window::Seed windowSeed(_T("FrameworkTests UIA Validation"));
+	windowSeed.style &= ~WS_VISIBLE;
+	windowSeed.location = dwt::Rectangle(10, 10, 240, 160);
+	auto* window = WidgetCreator<Window>::create(windowSeed);
+
+	check(window && ::IsWindow(window->handle()),
+		"UIA validation window creation");
+	if(!window || !::IsWindow(window->handle())) {
+		return;
+	}
+
+	window->enableAccessibility(accessibility::Window);
+	window->setAccessibleName(_T("FrameworkTests UIA Validation"));
+	window->setAccessibleHelpText(_T("Validation provider"));
+	window->setAccessibleKeyboardFocusable(true);
+
+	check(window->accessibilityEnabled(), "UIA validation provider enabled");
+	check(window->getAccessibleName() == _T("FrameworkTests UIA Validation"),
+		"UIA validation provider name");
+	check(window->getAccessibleHelpText() == _T("Validation provider"),
+		"UIA validation provider help text");
+	check(window->getAccessibleControlType() == accessibility::Window,
+		"UIA validation provider control type");
+	check(window->getAccessibleKeyboardFocusable(),
+		"UIA validation keyboard-focusable state");
+
+	// UiaRootObjectId is -25. Sending WM_GETOBJECT verifies the live provider
+	// return path without requiring an external UIA client in ordinary test runs.
+	auto result = window->sendMessage(WM_GETOBJECT, 0, static_cast<LPARAM>(-25));
+	check(result != 0, "UIA validation raw element provider");
+
+	window->close();
+	pumpMessages();
+}
+
+void runHeadlessTests() {
 	testDpiMath();
 	testSystemSettings();
 	testAccessibilityContract();
@@ -265,6 +385,35 @@ int main() {
 	testVirtualTreeSelection();
 	testFileDialogContracts();
 	testMessageContracts();
+}
+
+void runLiveValidationTests() {
+	testLiveDpiAndSettingsValidation();
+	testLiveAccessibilityValidation();
+}
+
+bool hasArgument(int argc, char* argv[], const char* value) {
+	for(int i = 1; i < argc; ++i) {
+		if(std::strcmp(argv[i], value) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+}
+
+int dwtMain(dwt::Application&) {
+	return 0;
+}
+
+int main(int argc, char* argv[]) {
+	dwt::Application::init();
+
+	runHeadlessTests();
+	if(hasArgument(argc, argv, "--live-validation")) {
+		runLiveValidationTests();
+	}
 
 	dwt::Application::uninit();
 

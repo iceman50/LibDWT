@@ -1,7 +1,7 @@
 # Windows SDK Feature Audit
 
 Audit date: 2026-06-14
-Last updated: 2026-06-18
+Last updated: 2026-06-19
 
 This audit compares LibDWT's public widget APIs with the desktop Win32 API
 surface available from Windows 7 through Windows 11. The local Windows SDK used
@@ -71,6 +71,9 @@ Items without an explicit status marker remain unimplemented.
      `SystemParametersInfoForDpi`, and `AdjustWindowRectExForDpi`.
    - **Added:** Scoped thread DPI-awareness helpers.
    - **Added:** Headless DPI scaling, event, and system-parameter tests.
+   - **Added:** Opt-in live validation through
+     `FrameworkTests --live-validation` plus the
+     `tests/WINDOWS_SDK_VALIDATION.md` checklist.
    - **Remaining:** Live multi-monitor transition tests and policies for
      remaining direct bitmap/icon and owner-drawn caches.
    - Earliest relevant versions: Windows 8.1 for per-monitor DPI and Windows 10
@@ -91,6 +94,9 @@ Items without an explicit status marker remain unimplemented.
      `TabView`, including Selection, SelectionItem, ExpandCollapse, Invoke,
      focus, bounds, hit-testing, and item events.
    - **Added:** Headless logical-item provider contract tests.
+   - **Added:** Opt-in live provider-return validation through
+     `FrameworkTests --live-validation` plus the
+     `tests/WINDOWS_SDK_VALIDATION.md` checklist.
    - **Added:** Typed theme, system-color, and system-settings notifications,
      including current high-contrast and client-area-animation state.
    - **Added:** Keyboard audit and missing keyboard scrolling support for
@@ -578,8 +584,8 @@ accessibility, shell-dialog, Table, or Tree work.
 
 The highest-value remaining sequence after this update is:
 
-1. Add live UIA client and multi-monitor DPI transition tests, then complete
-   visual high-contrast and text-scaling audits.
+1. Run the opt-in validation harness and complete live UIA client,
+   multi-monitor DPI transition, visual high-contrast, and text-scaling audits.
 2. Add higher-level typed file-dialog custom-control helpers and live
    library/virtual-folder validation.
 3. Add taskbar thumbnail buttons and complete tray identity/options.
