@@ -8,6 +8,7 @@
 #include <dwt/util/win32/Dpi.h>
 #include <dwt/util/win32/FileDialog.h>
 #include <dwt/widgets/Table.h>
+#include <dwt/widgets/Notification.h>
 #include <dwt/widgets/Tree.h>
 #include <dwt/widgets/VirtualTree.h>
 #include <dwt/widgets/Window.h>
@@ -152,6 +153,15 @@ void testControlContracts() {
 		thumbnailButton.dwFlags == THBF_ENABLED &&
 		thumbnailButton.iId == 1,
 		"taskbar thumbnail button value contract");
+
+	Notification::MessageOptions notificationOptions;
+	notificationOptions.realTime = true;
+	notificationOptions.respectQuietTime = true;
+	notificationOptions.largeIcon = true;
+	notificationOptions.noSound = true;
+	check(notificationOptions.realTime && notificationOptions.respectQuietTime &&
+		notificationOptions.largeIcon && notificationOptions.noSound,
+		"notification message options value contract");
 }
 
 void testInputEventContracts() {

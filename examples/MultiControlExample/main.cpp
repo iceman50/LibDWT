@@ -351,7 +351,11 @@ int dwtMain(dwt::Application& app) {
 
 	auto notification = std::make_shared<Notification>(window);
 	dwt::IconPtr trayIcon(new dwt::Icon(IDI_MULTI_TRAY, dwt::Point(16, 16)));
+	dwt::IconPtr balloonIcon(new dwt::Icon(IDI_MULTI_TRAY, window->scale(dwt::Point(32, 32))));
+	const GUID notificationGuid =
+		{ 0x9572be0a, 0xf60f, 0x43c0, { 0x89, 0x4d, 0xf1, 0x94, 0x29, 0xd4, 0x5f, 0x18 } };
 	notification->create(Notification::Seed(trayIcon, _T("DWT MultiControlExample notification")));
+	notification->setGuid(notificationGuid);
 	notification->setTooltip(_T("DWT MultiControlExample notification"));
 	notification->setVisible(true);
 	notification->onIconClicked([status, notification] {
@@ -363,6 +367,7 @@ int dwtMain(dwt::Application& app) {
 		setStatus(status, _T("Tray icon context menu requested"));
 		notification->setFocus();
 	});
+	notification->onBalloonShown([status] { setStatus(status, _T("Tray balloon shown")); });
 	notification->onPopupOpened([status] { setStatus(status, _T("Tray popup opened")); });
 	notification->onPopupClosed([status] { setStatus(status, _T("Tray popup closed")); });
 	window->onDpiResourcesChanged(
@@ -874,11 +879,22 @@ int dwtMain(dwt::Application& app) {
 			setStatus(status, _T("Folder: ") + dir);
 		}
 	});
-	toolbar->addButton("notify", -1, _T("Notify"), true, 0, [status, notification] {
-		notification->addMessage(_T("DWT Notification"), _T("Toolbar-triggered balloon message"), [status] {
+	toolbar->addButton("notify", -1, _T("Notify"), true, 0, [status, notification, balloonIcon] {
+		Notification::MessageOptions options;
+		options.callback = [status] {
 			setStatus(status, _T("Balloon clicked"));
-		});
-		setStatus(status, _T("Tray notification sent"));
+		};
+		options.balloonIcon = balloonIcon;
+		options.largeIcon = true;
+		options.noSound = true;
+		notification->addMessage(_T("DWT Notification"),
+			_T("Toolbar-triggered notification with a large icon"), options);
+		if(notification->lastNotifySucceeded()) {
+			setStatus(status, _T("Tray notification sent"));
+		} else {
+			setStatus(status, _T("Tray notification failed: ") +
+				std::to_wstring(notification->getLastNotifyError()));
+		}
 	});
 	toolbar->setLayout({ "msg", "task", "color", "font", "", "open", "shell", "save", "folder", "", "notify" });
 	toolbar->refresh();
