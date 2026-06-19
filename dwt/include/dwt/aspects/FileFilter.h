@@ -152,6 +152,11 @@ public:
 		return W();
 	}
 
+	WidgetType& onFileDialogControls(const util::win32::FileDialogControlsCallback& callback) {
+		itsControls = callback;
+		return W();
+	}
+
 	bool open(tstring& file, unsigned flags = 0) {
 		return W().openImpl(file, flags);
 	}
@@ -179,6 +184,7 @@ protected:
 		options.clientGuid = itsClientGuid ? &*itsClientGuid : nullptr;
 		options.events = itsEvents.empty() ? nullptr : &itsEvents;
 		options.customize = itsCustomize;
+		options.controls = itsControls;
 		return options;
 	}
 
@@ -198,6 +204,7 @@ private:
 	std::optional<GUID> itsClientGuid;
 	util::win32::FileDialogEvents itsEvents;
 	util::win32::FileDialogCustomizeCallback itsCustomize;
+	util::win32::FileDialogControlsCallback itsControls;
 };
 
 } }

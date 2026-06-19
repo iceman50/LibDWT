@@ -238,6 +238,14 @@ void testFileDialogContracts() {
 	dwt::tstring displayName;
 	check(!result.getDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, displayName),
 		"empty file dialog result has no display name");
+
+	FileDialogControlItem item(7, _T("Choice"));
+	check(item.id == 7 && item.label == _T("Choice"),
+		"file dialog control item value contract");
+
+	options.controls = [](FileDialogControls&) { };
+	check(static_cast<bool>(options.controls),
+		"file dialog typed controls callback contract");
 }
 
 void testMessageContracts() {

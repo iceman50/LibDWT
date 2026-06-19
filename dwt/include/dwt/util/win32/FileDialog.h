@@ -105,6 +105,62 @@ private:
 
 typedef ComPtr<IShellItem> ShellItemPtr;
 
+struct FileDialogControlItem {
+	FileDialogControlItem(DWORD id_, const tstring& label_) :
+		id(id_), label(label_) { }
+
+	DWORD id;
+	tstring label;
+};
+
+class FileDialogControls {
+public:
+	explicit FileDialogControls(IFileDialogCustomize& customize);
+	explicit FileDialogControls(IFileDialog& dialog);
+
+	IFileDialogCustomize& raw() const;
+
+	void startVisualGroup(DWORD id, const tstring& label);
+	void endVisualGroup();
+	void makeProminent(DWORD id);
+
+	void addLabel(DWORD id, const tstring& text);
+	void addText(DWORD id, const tstring& text);
+	void addPushButton(DWORD id, const tstring& label);
+	void addCheckButton(DWORD id, const tstring& label, bool checked = false);
+	void addRadioButtonList(DWORD id,
+		const std::vector<FileDialogControlItem>& items = std::vector<FileDialogControlItem>());
+	void addComboBox(DWORD id,
+		const std::vector<FileDialogControlItem>& items = std::vector<FileDialogControlItem>());
+	void addMenu(DWORD id, const tstring& label);
+	void addControlItem(DWORD controlId, DWORD itemId, const tstring& label);
+	void removeControlItem(DWORD controlId, DWORD itemId);
+	void removeAllControlItems(DWORD controlId);
+
+	void setControlLabel(DWORD id, const tstring& label);
+	CDCONTROLSTATEF getControlState(DWORD id) const;
+	void setControlState(DWORD id, CDCONTROLSTATEF state);
+	bool getControlVisible(DWORD id) const;
+	bool getControlEnabled(DWORD id) const;
+	void setControlVisible(DWORD id, bool visible = true);
+	void setControlEnabled(DWORD id, bool enabled = true);
+
+	bool getCheckButtonChecked(DWORD id) const;
+	void setCheckButtonChecked(DWORD id, bool checked = true);
+	DWORD getSelectedControlItem(DWORD controlId) const;
+	void setSelectedControlItem(DWORD controlId, DWORD itemId);
+
+	CDCONTROLSTATEF getControlItemState(DWORD controlId, DWORD itemId) const;
+	void setControlItemState(DWORD controlId, DWORD itemId, CDCONTROLSTATEF state);
+	bool getControlItemVisible(DWORD controlId, DWORD itemId) const;
+	bool getControlItemEnabled(DWORD controlId, DWORD itemId) const;
+	void setControlItemVisible(DWORD controlId, DWORD itemId, bool visible = true);
+	void setControlItemEnabled(DWORD controlId, DWORD itemId, bool enabled = true);
+
+private:
+	ComPtr<IFileDialogCustomize> customize;
+};
+
 struct FileDialogResult {
 	ShellItemPtr item;
 	tstring path;
@@ -135,6 +191,7 @@ struct FileDialogEvents {
 };
 
 typedef std::function<void (IFileDialogCustomize&)> FileDialogCustomizeCallback;
+typedef std::function<void (FileDialogControls&)> FileDialogControlsCallback;
 
 struct FileDialogOptions {
 	HWND owner = nullptr;
@@ -157,6 +214,7 @@ struct FileDialogOptions {
 	const GUID* clientGuid = nullptr;
 	const FileDialogEvents* events = nullptr;
 	FileDialogCustomizeCallback customize;
+	FileDialogControlsCallback controls;
 };
 
 bool showFileDialog(const FileDialogOptions& options, std::vector<tstring>& paths);

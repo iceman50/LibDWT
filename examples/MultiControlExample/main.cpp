@@ -702,10 +702,10 @@ int dwtMain(dwt::Application& app) {
 		.setTitle(_T("Open with IFileOpenDialog"))
 		.setClientGuid(loadDialogGuid)
 		.setFileDialogEvents(loadDialogEvents)
-		.onFileDialogCustomize([](IFileDialogCustomize& customize) {
-			customize.StartVisualGroup(3000, _T("DWT custom controls"));
-			customize.AddCheckButton(3001, _T("Custom checkbox from IFileDialogCustomize"), TRUE);
-			customize.EndVisualGroup();
+		.onFileDialogControls([](dwt::util::win32::FileDialogControls& controls) {
+			controls.startVisualGroup(3000, _T("DWT custom controls"));
+			controls.addCheckButton(3001, _T("Custom checkbox"), true);
+			controls.endVisualGroup();
 		})
 		.addFilter(_T("All Files"), _T("*.*"));
 	saveDialog

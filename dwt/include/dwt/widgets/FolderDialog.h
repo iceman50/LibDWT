@@ -89,6 +89,7 @@ public:
 	FolderDialog& addOptions(FILEOPENDIALOGOPTIONS options);
 	FolderDialog& setFileDialogEvents(const util::win32::FileDialogEvents& events);
 	FolderDialog& onFileDialogCustomize(const util::win32::FileDialogCustomizeCallback& callback);
+	FolderDialog& onFileDialogControls(const util::win32::FileDialogControlsCallback& callback);
 
 	/** Display the dialog.
 	@param dir On input, may define an initially selected dir (shortcut for setInitialSelection).
@@ -114,6 +115,7 @@ private:
 	bool hasClientGuid;
 	util::win32::FileDialogEvents events;
 	util::win32::FileDialogCustomizeCallback customize;
+	util::win32::FileDialogControlsCallback controls;
 
 	HWND getParentHandle() const { return parent ? parent->handle() : nullptr; }
 	util::win32::FileDialogOptions getModernOptions() const;

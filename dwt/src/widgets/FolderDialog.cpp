@@ -133,6 +133,13 @@ FolderDialog& FolderDialog::onFileDialogCustomize(
 	return *this;
 }
 
+FolderDialog& FolderDialog::onFileDialogControls(
+	const util::win32::FileDialogControlsCallback& callback)
+{
+	controls = callback;
+	return *this;
+}
+
 bool FolderDialog::open(tstring& dir) {
 	if(!dir.empty())
 		setInitialSelection(dir);
@@ -184,6 +191,7 @@ util::win32::FileDialogOptions FolderDialog::getModernOptions() const {
 	dialogOptions.clientGuid = hasClientGuid ? &clientGuid : nullptr;
 	dialogOptions.events = events.empty() ? nullptr : &events;
 	dialogOptions.customize = customize;
+	dialogOptions.controls = controls;
 	return dialogOptions;
 }
 
