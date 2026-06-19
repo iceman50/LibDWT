@@ -37,14 +37,60 @@
 #include "Rectangle.h"
 #include "resources/Bitmap.h"
 #include "resources/Icon.h"
+#include "tstring.h"
 #include <unordered_map>
 #include <vector>
 
 namespace dwt {
 
+struct JumpListLink {
+	JumpListLink() :
+		iconIndex(0),
+		separator(false)
+	{
+	}
+
+	tstring title;
+	tstring path;
+	tstring arguments;
+	tstring workingDirectory;
+	tstring iconPath;
+	int iconIndex;
+	tstring description;
+	bool separator;
+};
+
+struct JumpListCategory {
+	JumpListCategory() { }
+	JumpListCategory(const tstring& name_) : name(name_) { }
+
+	tstring name;
+	std::vector<JumpListLink> links;
+};
+
+struct JumpList {
+	JumpList() :
+		showFrequent(false),
+		showRecent(false)
+	{
+	}
+
+	tstring appId;
+	bool showFrequent;
+	bool showRecent;
+	std::vector<JumpListCategory> categories;
+	std::vector<JumpListLink> userTasks;
+};
+
 /** provides widgets with the ability to play with the taskbar associated with a main window. */
 class Taskbar {
 public:
+	static HRESULT setCurrentAppId(const tstring& appId);
+	static HRESULT setWindowAppId(HWND window, const tstring& appId);
+	static HRESULT setWindowAppId(WindowPtr window, const tstring& appId);
+	static HRESULT commitJumpList(const JumpList& jumpList, UINT* minSlots = nullptr);
+	static HRESULT deleteJumpList(const tstring& appId = tstring());
+
 	void initTaskbar(WindowPtr window_);
 
 	void setOverlayIcon(ContainerPtr tab, const IconPtr& icon, const tstring& description);

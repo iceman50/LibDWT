@@ -7,6 +7,7 @@
 #include <dwt/WidgetCreator.h>
 #include <dwt/util/win32/Dpi.h>
 #include <dwt/util/win32/FileDialog.h>
+#include <dwt/widgets/Header.h>
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/Notification.h>
 #include <dwt/widgets/Tree.h>
@@ -153,6 +154,19 @@ void testControlContracts() {
 		thumbnailButton.dwFlags == THBF_ENABLED &&
 		thumbnailButton.iId == 1,
 		"taskbar thumbnail button value contract");
+
+	JumpList jumpList;
+	jumpList.appId = _T("LibDWT.FrameworkTests");
+	jumpList.showFrequent = true;
+	JumpListCategory category(_T("Examples"));
+	JumpListLink link;
+	link.title = _T("Open Example");
+	link.arguments = _T("--example");
+	category.links.push_back(link);
+	jumpList.categories.push_back(category);
+	check(jumpList.showFrequent && !jumpList.showRecent &&
+		jumpList.categories.front().links.front().title == _T("Open Example"),
+		"taskbar jump list value contract");
 
 	Notification::MessageOptions notificationOptions;
 	notificationOptions.realTime = true;
@@ -343,6 +357,15 @@ void testLiveDpiAndSettingsValidation() {
 		"live validation DPI resource callbacks");
 	check(window->getDpi() > 0,
 		"live validation effective window DPI");
+
+	FontPtr headerFont(new Font(Font::DefaultGui));
+	Header::Seed headerSeed;
+	headerSeed.style |= HDS_FILTERBAR;
+	headerSeed.font = headerFont;
+	auto* header = WidgetCreator<Header>::create(window, headerSeed);
+	header->insert(_T("Filter"), 120);
+	check(reinterpret_cast<HFONT>(header->sendMessage(WM_GETFONT)) ==
+		headerFont->handle(), "live validation header seed font");
 
 	bool settingsChanged = false;
 	window->onSystemSettingsChanged([&](const SystemSettingsEvent& event) {

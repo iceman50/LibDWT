@@ -1,4 +1,5 @@
 #include <dwt/Application.h>
+#include <dwt/Taskbar.h>
 #include <dwt/WidgetCreator.h>
 
 #include <dwt/resources/Font.h>
@@ -127,6 +128,15 @@ dwt::tstring pointerTypeName(dwt::PointerEvent::Type type) {
 	}
 }
 
+dwt::FontPtr createExampleFont(unsigned dpi = 96) {
+	LOGFONT lf = {};
+	lf.lfHeight = -::MulDiv(9, static_cast<int>(dpi), 72);
+	lf.lfWeight = FW_NORMAL;
+	lf.lfQuality = CLEARTYPE_QUALITY;
+	_tcscpy_s(lf.lfFaceName, LF_FACESIZE, _T("Segoe UI"));
+	return dwt::FontPtr(new dwt::Font(lf));
+}
+
 void setRichSummary(RichTextBox::ObjectType richText) {
 	const char* rtf =
 		"{\\rtf1\\ansi\\ansicpg1252\\deff0"
@@ -194,10 +204,20 @@ void configureGrid(Grid::ObjectType grid) {
 } // namespace
 
 int dwtMain(dwt::Application& app) {
+	const dwt::tstring appId = _T("LibDWT.MultiControlExample");
+	dwt::Taskbar::setCurrentAppId(appId);
+	const bool clearJumpListOnStart = _tcsstr(::GetCommandLine(), _T("--clear-jump-list")) != nullptr;
+	const bool openTaskbarOnStart = _tcsstr(::GetCommandLine(), _T("--taskbar")) != nullptr;
+	if(clearJumpListOnStart) {
+		dwt::Taskbar::deleteJumpList(appId);
+	}
+
 	Window::Seed seed(_T("DWT MultiControlExample - Grid Showcase"));
 	seed.location = dwt::Rectangle(70, 70, 1400, 900);
 	auto* window = WidgetCreator<Window>::create(seed);
-	auto uiFont = window->getFont();
+	dwt::Taskbar::setWindowAppId(window, appId);
+	auto uiFont = createExampleFont(window->getDpi());
+	window->setFont(uiFont);
 
 	auto* grid = WidgetCreator<Grid>::create(window, Grid::Seed(8, 4));
 	configureGrid(grid);
@@ -224,10 +244,10 @@ int dwtMain(dwt::Application& app) {
 	auto* link = WidgetCreator<Link>::create(grid, Link::Seed(_T("https://dcplusplus.sourceforge.io/"), true));
 
 	Header::Seed headerSeed;
+	headerSeed.font = uiFont;
 	headerSeed.style |= HDS_BUTTONS | HDS_CHECKBOXES | HDS_DRAGDROP |
 		HDS_FILTERBAR | HDS_OVERFLOW;
 	auto* header = WidgetCreator<Header>::create(grid, headerSeed);
-	header->setFont(uiFont);
 
 	Table::Seed tableSeed;
 	tableSeed.font = uiFont;
@@ -288,17 +308,17 @@ int dwtMain(dwt::Application& app) {
 	auto* richText = WidgetCreator<RichTextBox>::create(summaryPage, RichTextBox::Seed());
 	summaryPage->setWidget(richText, 0, 0);
 
-	auto* taskbarPage = WidgetCreator<Grid>::create(taskbarTabs, Grid::Seed(5, 1));
+	auto* taskbarPage = WidgetCreator<Grid>::create(taskbarTabs, Grid::Seed(6, 1));
 	taskbarPage->setText(_T("Taskbar"));
 	taskbarPage->setSpacing(6);
-	for(size_t row = 0; row < 5; ++row) {
+	for(size_t row = 0; row < 6; ++row) {
 		taskbarPage->row(row).mode = GridInfo::AUTO;
 		taskbarPage->row(row).align = GridInfo::STRETCH;
 	}
 	taskbarPage->column(0).mode = GridInfo::FILL;
 	taskbarPage->column(0).align = GridInfo::STRETCH;
 	auto* taskbarLabel = WidgetCreator<Label>::create(taskbarPage,
-		Label::Seed(_T("Taskbar: progress, overlay, thumbnail buttons, clipping, and tab properties")));
+		Label::Seed(_T("Taskbar: identity, Jump Lists, progress, overlay, thumbnail buttons, clipping, and tab properties")));
 	auto* taskbarProgressDemo = WidgetCreator<Button>::create(taskbarPage,
 		Button::Seed(_T("Sync taskbar progress")));
 	auto* taskbarOverlayDemo = WidgetCreator<Button>::create(taskbarPage,
@@ -307,11 +327,14 @@ int dwtMain(dwt::Application& app) {
 		Button::Seed(_T("Toggle thumbnail clip")));
 	auto* taskbarTabDemo = WidgetCreator<Button>::create(taskbarPage,
 		Button::Seed(_T("Apply per-tab settings")));
+	auto* taskbarJumpListDemo = WidgetCreator<Button>::create(taskbarPage,
+		Button::Seed(_T("Update Jump List")));
 	taskbarPage->setWidget(taskbarLabel, 0, 0);
 	taskbarPage->setWidget(taskbarProgressDemo, 1, 0);
 	taskbarPage->setWidget(taskbarOverlayDemo, 2, 0);
 	taskbarPage->setWidget(taskbarClipDemo, 3, 0);
 	taskbarPage->setWidget(taskbarTabDemo, 4, 0);
+	taskbarPage->setWidget(taskbarJumpListDemo, 5, 0);
 	taskbarTabs->add(summaryPage, taskbarIcon);
 	taskbarTabs->add(taskbarPage, taskbarIcon);
 	taskbarTabs->setThumbnailTooltip(summaryPage, _T("Rich text summary tab"));
@@ -319,10 +342,16 @@ int dwtMain(dwt::Application& app) {
 	taskbarTabs->setTabProperties(summaryPage, STPF_USEAPPTHUMBNAILWHENACTIVE);
 	taskbarTabs->setTabProperties(taskbarPage,
 		static_cast<STPFLAG>(STPF_USEAPPTHUMBNAILALWAYS | STPF_USEAPPPEEKALWAYS));
+	if(openTaskbarOnStart) {
+		taskbarTabs->setActive(taskbarPage);
+	}
 
 	auto* status = WidgetCreator<StatusBar>::create(window, StatusBar::Seed(2, 1, true));
 	status->setSize(0, 420);
 	status->setText(1, _T("MultiControlExample"));
+	if(clearJumpListOnStart) {
+		setStatus(status, _T("Example Jump List cleared"));
+	}
 
 	dwt::MessageBoxW messageBox(window);
 	ColorDialog colorDialog(window);
@@ -572,6 +601,50 @@ int dwtMain(dwt::Application& app) {
 		taskbarTabs->setTabProperties(taskbarPage,
 			static_cast<STPFLAG>(STPF_USEAPPTHUMBNAILALWAYS | STPF_USEAPPPEEKALWAYS));
 		setStatus(status, _T("Per-tab taskbar tooltip, clip, mark, and properties applied"));
+	});
+	taskbarJumpListDemo->onClicked([appId, status] {
+		dwt::JumpList list;
+		list.appId = appId;
+		list.showRecent = true;
+
+		dwt::JumpListCategory category(_T("Examples"));
+		dwt::JumpListLink openExample;
+		openExample.title = _T("Open MultiControlExample");
+		openExample.description = _T("Launch the full LibDWT control showcase.");
+		category.links.push_back(openExample);
+
+		dwt::JumpListLink openTaskbarTab;
+		openTaskbarTab.title = _T("Open Taskbar Examples");
+		openTaskbarTab.arguments = _T("--taskbar");
+		openTaskbarTab.description = _T("Launch the showcase with the taskbar examples in mind.");
+		category.links.push_back(openTaskbarTab);
+		list.categories.push_back(category);
+
+		dwt::JumpListLink controlsTask;
+		controlsTask.title = _T("Modern Controls");
+		controlsTask.arguments = _T("--modern-controls");
+		controlsTask.description = _T("Launch the showcase for modern control testing.");
+		list.userTasks.push_back(controlsTask);
+
+		dwt::JumpListLink separator;
+		separator.separator = true;
+		list.userTasks.push_back(separator);
+
+		dwt::JumpListLink clearTask;
+		clearTask.title = _T("Clear Example Jump List");
+		clearTask.arguments = _T("--clear-jump-list");
+		clearTask.description = _T("Launch the showcase for Jump List cleanup testing.");
+		list.userTasks.push_back(clearTask);
+
+		UINT minSlots = 0;
+		auto result = dwt::Taskbar::commitJumpList(list, &minSlots);
+		if(SUCCEEDED(result)) {
+			setStatus(status, _T("Jump List updated; shell reported ") +
+				std::to_wstring(minSlots) + _T(" available slots"));
+		} else {
+			setStatus(status, _T("Jump List update failed: ") +
+				std::to_wstring(static_cast<long>(result)));
+		}
 	});
 
 	auto showModernControls = [window, status, textInput, slider, progress, dateTime, marqueeActive] {

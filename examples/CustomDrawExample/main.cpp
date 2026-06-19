@@ -574,9 +574,9 @@ int dwtMain(dwt::Application& app) {
 	sliderLabel->setFont(uiFont);
 
 	Header::Seed headerSeed;
+	headerSeed.font = uiFont;
 	headerSeed.style |= HDS_BUTTONS | HDS_DRAGDROP;
 	auto* header = WidgetCreator<Header>::create(grid, headerSeed);
-	header->setFont(uiFont);
 	header->insert(_T("Control"), 190);
 	header->insert(_T("Native draw data"), 220);
 	header->insert(_T("Example behavior"), 520);

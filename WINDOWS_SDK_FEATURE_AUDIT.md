@@ -46,7 +46,7 @@ Items without an explicit status marker remain unimplemented.
 | ProgressBar | **Added** | Marquee mode/speed, normal/error/paused states, colors, and non-mutating cached step retrieval | No remaining item from the original P1 audit |
 | Table/ListView | **Added** | View and tile get/set, empty markup, footer information/items/rectangles/link events, complete group info/metrics/state/focus operations, `LVITEMINDEX` state/iteration/rectangles, insertion marks and colors, work areas, hot item/cursor, hover time, outline color, selected column, background image, geometry, image-list getters, and drag/activate/key/change/label-edit events | No remaining item from the original P1 audit |
 | Tree/VirtualTree | **Partial** | Native Tree extended styles and checkbox states, multiselect enumeration/counting, item-change/info-tip/label-edit/async-draw/drag/key events, public TreeView custom-draw hook, drag images, insertion marks/colors, indentation, scroll/autoscroll settings, tooltips, sorting, item/part rectangles and accessibility IDs; VirtualTree translates applicable states, geometry, sorting, IDs and events, with model-backed multiselect storage/enumeration and framework behavior tests | Remaining live UI/accessibility validation for VirtualTree multiselect behavior |
-| Taskbar | **Partial** | Progress state and value, thumbnail toolbar buttons and updates, thumbnail tooltip/clipping, and tab properties | AppUserModelID and Jump Lists |
+| Taskbar | **Partial** | Progress state and value, thumbnail toolbar buttons and updates, thumbnail tooltip/clipping, tab properties, AppUserModelID helpers, and Jump List creation/deletion | Live shell validation for AppID grouping, Jump List relaunch entries, and user-removal behavior |
 | Notification | **Partial** | `NOTIFYICON_VERSION_4`, GUID identity, keyboard selection, `Shell_NotifyIconGetRect`, `NIM_SETFOCUS`, real-time/quiet-time/large-icon/sound balloon flags, balloon-show and popup lifecycle events, Shell_NotifyIcon result tracking, and Explorer recreation handling | Live tray validation and any further restoration hardening |
 | ToolTip | **Partial** | Title/icon, margins, colors, pop/update, window theme, and `TTN_LINKCLICK` | Balloon/close styles, tracking APIs, current-tool/enumeration/bubble sizing/rectangle adjustment, and per-tool flags |
 | DateTime / MonthCalendar | **Partial** | Nullable values, ranges, ideal size, close-calendar, month-calendar styles, picker information, month-calendar handle/font wrappers, format callbacks, and standalone `MonthCalendar` value, range, multiselect, color, sizing, view, grid-info, and selection/view-event APIs | Specialist `MonthCalendar` calendar-ID and day-state APIs |
@@ -137,8 +137,9 @@ Items without an explicit status marker remain unimplemented.
 3. **Partial:** Native Tree P1 coverage is complete; VirtualTree has
    model-backed multiselection and framework behavior tests. Live UI and
    accessibility validation remain.
-4. **Partial:** Taskbar progress, thumbnail toolbar, tooltip/clipping, and tab
-   properties are added; AppUserModelID and Jump Lists remain.
+4. **Partial:** Taskbar progress, thumbnail toolbar, tooltip/clipping, tab
+   properties, AppUserModelID, and Jump Lists are added. Live shell validation
+   remains.
 5. **Partial:** Notification icons now use `NOTIFYICON_VERSION_4`, GUID
    identity, balloon options, balloon-show callbacks, and result tracking.
    Live tray validation and any further restoration hardening remain.
@@ -458,8 +459,13 @@ LibDWT already wraps overlay icons and custom tab thumbnails. Missing
 - **Added:** Thumbnail toolbar buttons and button updates.
 - **Added:** Thumbnail tooltip and clipping rectangle.
 - **Added:** Tab properties through `ITaskbarList4`.
-- **Remaining:** AppUserModelID support and optional Jump List/recent-document
-  integration.
+- **Added:** AppUserModelID helpers for the current process and individual
+  windows.
+- **Added:** Jump List creation/deletion with Recent/Frequent categories,
+  custom categories, relaunch links, user tasks, titles, descriptions, icons,
+  working directories, arguments, and separators.
+- **Remaining:** Live shell validation for AppID grouping, Jump List relaunch
+  entries, and user-removal behavior.
 
 ### LoadDialog, SaveDialog, and FolderDialog
 
@@ -576,9 +582,10 @@ accessibility, shell-dialog, Table, or Tree work.
 5. **Partial:** Native Table and Tree common-controls v6 coverage is complete
    against the original P1 audit. Continue with live VirtualTree UI and
    accessibility validation.
-6. **Partial:** Taskbar progress, thumbnail controls, tray v4/options,
-   ProgressBar, Button, and ToolTip work is added. Continue
-   AppUserModelID/Jump Lists and the remaining tray/Button/ToolTip items.
+6. **Partial:** Taskbar progress, thumbnail controls, AppUserModelID, Jump
+   Lists, tray v4/options, ProgressBar, Button, and ToolTip work is added.
+   Continue live taskbar/tray validation and the remaining Button/ToolTip
+   items.
 7. **Partial:** DateTime and MonthCalendar additions are present, and Slider and
    Header are complete against the audit. Continue with ToolBar and Rebar.
 8. **Remaining:** Windows 11 DWM appearance options with build guards.
@@ -592,8 +599,8 @@ The highest-value remaining sequence after this update is:
 1. Run the opt-in validation harness and complete live UIA client,
    multi-monitor DPI transition, visual high-contrast, and text-scaling audits.
 2. Complete live file-dialog library and virtual-folder validation.
-3. Add taskbar AppUserModelID/Jump List support and complete live tray
-   validation.
+3. Complete live taskbar/tray validation, including AppID grouping, Jump List
+   relaunch entries, tray restoration, and notification lifecycle behavior.
 4. Add ToolTip/Button completion, then ToolBar/Rebar.
 5. Add guarded Windows 11 DWM appearance APIs.
 

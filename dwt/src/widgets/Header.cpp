@@ -32,6 +32,7 @@
 #include <dwt/widgets/Header.h>
 
 #include <algorithm>
+#include <uxtheme.h>
 
 namespace dwt {
 
@@ -69,12 +70,15 @@ void addHeaderVetoNotify(Header* header, int code, F f) {
 
 Header::Seed::Seed() :
 	/// @todo add HDS_DRAGDROP when the tree has better support for col ordering
-	BaseType::Seed(WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | HDS_HORZ)
+	BaseType::Seed(WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | HDS_HORZ),
+	font(0)
 {
 }
 
 void Header::create( const Header::Seed & cs ) {
 	BaseType::create(cs);
+	setFont(cs.font);
+	applyFilterStyles();
 }
 
 Point Header::getPreferredSize() {
@@ -106,7 +110,57 @@ int Header::insert(const tstring& header, int width, LPARAM lParam, int after) {
 
 	item.mask |= HDI_LPARAM;
 
-	return Header_InsertItem(handle(), after, &item);
+	const auto index = Header_InsertItem(handle(), after, &item);
+	applyFilterStyles();
+	return index;
+}
+
+namespace {
+
+BOOL CALLBACK styleHeaderFilterChild(HWND child, LPARAM fontParam) {
+	if(fontParam) {
+		::SendMessage(child, WM_SETFONT, static_cast<WPARAM>(fontParam), TRUE);
+	}
+	::SetWindowTheme(child, L"Explorer", nullptr);
+	return TRUE;
+}
+
+}
+
+void Header::applyFilterStyles() {
+	if(!handle()) {
+		return;
+	}
+
+	auto font = getFont();
+	::EnumChildWindows(handle(), styleHeaderFilterChild,
+		reinterpret_cast<LPARAM>(font ? font->handle() : nullptr));
+}
+
+void Header::setFontImpl() {
+	BaseType::setFontImpl();
+	applyFilterStyles();
+}
+
+void Header::setFilterBar(bool value) {
+	addRemoveStyle(HDS_FILTERBAR, value);
+	applyFilterStyles();
+}
+
+bool Header::handleMessage(const MSG& msg, LRESULT& retVal) {
+	auto handled = BaseType::handleMessage(msg, retVal);
+	if(msg.message == WM_PARENTNOTIFY && LOWORD(msg.wParam) == WM_CREATE) {
+		auto font = getFont();
+		if(HWND child = reinterpret_cast<HWND>(msg.lParam)) {
+			styleHeaderFilterChild(child,
+				reinterpret_cast<LPARAM>(font ? font->handle() : nullptr));
+		}
+		applyFilterStyles();
+	} else if(msg.message == WM_THEMECHANGED || msg.message == WM_SETTINGCHANGE ||
+		msg.message == WM_SYSCOLORCHANGE) {
+		applyFilterStyles();
+	}
+	return handled;
 }
 
 int Header::findDataImpl(LPARAM data, int start) {

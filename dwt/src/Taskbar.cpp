@@ -32,13 +32,183 @@
 #include <dwt/Taskbar.h>
 
 #include <dwmapi.h>
+#include <objectarray.h>
+#include <propkey.h>
+#include <propsys.h>
 
 #include <dwt/util/check.h>
+#include <dwt/util/StringConversion.h>
+#include <dwt/util/win32/FileDialog.h>
 #include <dwt/util/win32/Version.h>
 #include <dwt/widgets/Container.h>
 #include <dwt/widgets/Window.h>
 
 namespace dwt {
+
+namespace {
+
+using util::win32::ComPtr;
+
+std::wstring toWide(const tstring& value) {
+	return util::UnicodeGuaranteed::doConvert(value, util::ConversionCodepage::ANSI);
+}
+
+std::wstring modulePath() {
+	std::wstring value(MAX_PATH, L'\0');
+	DWORD length = ::GetModuleFileNameW(nullptr, &value[0], static_cast<DWORD>(value.size()));
+	while(length == value.size()) {
+		value.resize(value.size() * 2, L'\0');
+		length = ::GetModuleFileNameW(nullptr, &value[0], static_cast<DWORD>(value.size()));
+	}
+	value.resize(length);
+	return value;
+}
+
+PROPVARIANT stringVariant(const std::wstring& value) {
+	PROPVARIANT variant = { };
+	variant.vt = VT_LPWSTR;
+	variant.pwszVal = const_cast<PWSTR>(value.c_str());
+	return variant;
+}
+
+PROPVARIANT boolVariant(bool value) {
+	PROPVARIANT variant = { };
+	variant.vt = VT_BOOL;
+	variant.boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
+	return variant;
+}
+
+HRESULT setStringProperty(IPropertyStore& store, REFPROPERTYKEY key,
+	const std::wstring& value)
+{
+	auto variant = stringVariant(value);
+	return store.SetValue(key, variant);
+}
+
+HRESULT setBoolProperty(IPropertyStore& store, REFPROPERTYKEY key, bool value) {
+	auto variant = boolVariant(value);
+	return store.SetValue(key, variant);
+}
+
+HRESULT createShellLink(const JumpListLink& item, IShellLinkW** value) {
+	if(!value) {
+		return E_POINTER;
+	}
+	*value = nullptr;
+
+	ComPtr<IShellLinkW> link;
+	auto result = ::CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
+		IID_IShellLinkW, reinterpret_cast<void**>(link.put()));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	ComPtr<IPropertyStore> properties;
+	result = link->QueryInterface(IID_IPropertyStore,
+		reinterpret_cast<void**>(properties.put()));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	if(item.separator) {
+		result = setBoolProperty(*properties.get(), PKEY_AppUserModel_IsDestListSeparator, true);
+		if(FAILED(result)) {
+			return result;
+		}
+		result = properties->Commit();
+		if(FAILED(result)) {
+			return result;
+		}
+		*value = link.detach();
+		return S_OK;
+	}
+
+	if(item.title.empty()) {
+		return E_INVALIDARG;
+	}
+
+	auto path = item.path.empty() ? modulePath() : toWide(item.path);
+	result = link->SetPath(path.c_str());
+	if(FAILED(result)) {
+		return result;
+	}
+
+	auto arguments = toWide(item.arguments);
+	if(!arguments.empty()) {
+		result = link->SetArguments(arguments.c_str());
+		if(FAILED(result)) {
+			return result;
+		}
+	}
+
+	auto workingDirectory = toWide(item.workingDirectory);
+	if(!workingDirectory.empty()) {
+		result = link->SetWorkingDirectory(workingDirectory.c_str());
+		if(FAILED(result)) {
+			return result;
+		}
+	}
+
+	auto iconPath = item.iconPath.empty() ? path : toWide(item.iconPath);
+	if(!iconPath.empty()) {
+		result = link->SetIconLocation(iconPath.c_str(), item.iconIndex);
+		if(FAILED(result)) {
+			return result;
+		}
+	}
+
+	auto description = toWide(item.description);
+	if(!description.empty()) {
+		result = link->SetDescription(description.c_str());
+		if(FAILED(result)) {
+			return result;
+		}
+	}
+
+	result = setStringProperty(*properties.get(), PKEY_Title, toWide(item.title));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	result = properties->Commit();
+	if(FAILED(result)) {
+		return result;
+	}
+
+	*value = link.detach();
+	return S_OK;
+}
+
+HRESULT makeObjectArray(const std::vector<JumpListLink>& items, IObjectArray** value) {
+	if(!value) {
+		return E_POINTER;
+	}
+	*value = nullptr;
+
+	ComPtr<IObjectCollection> collection;
+	auto result = ::CoCreateInstance(CLSID_EnumerableObjectCollection, nullptr,
+		CLSCTX_INPROC_SERVER, IID_IObjectCollection,
+		reinterpret_cast<void**>(collection.put()));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	for(const auto& item : items) {
+		ComPtr<IShellLinkW> link;
+		result = createShellLink(item, link.put());
+		if(FAILED(result)) {
+			return result;
+		}
+		result = collection->AddObject(link.get());
+		if(FAILED(result)) {
+			return result;
+		}
+	}
+
+	return collection->QueryInterface(IID_IObjectArray, reinterpret_cast<void**>(value));
+}
+
+}
 
 Taskbar::Taskbar() :
 taskbar(0),
@@ -79,6 +249,137 @@ void Taskbar::initTaskbar(WindowPtr window_) {
 		reinterpret_cast<void**>(&taskbar4)) != S_OK) {
 		taskbar4 = 0;
 	}
+}
+
+HRESULT Taskbar::setCurrentAppId(const tstring& appId) {
+	auto value = toWide(appId);
+	return ::SetCurrentProcessExplicitAppUserModelID(value.empty() ? nullptr : value.c_str());
+}
+
+HRESULT Taskbar::setWindowAppId(HWND window, const tstring& appId) {
+	if(!window) {
+		return E_HANDLE;
+	}
+
+	ComPtr<IPropertyStore> properties;
+	auto result = ::SHGetPropertyStoreForWindow(window, IID_IPropertyStore,
+		reinterpret_cast<void**>(properties.put()));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	auto value = toWide(appId);
+	if(value.empty()) {
+		PROPVARIANT empty = { };
+		result = properties->SetValue(PKEY_AppUserModel_ID, empty);
+	} else {
+		result = setStringProperty(*properties.get(), PKEY_AppUserModel_ID, value);
+	}
+	if(FAILED(result)) {
+		return result;
+	}
+
+	return properties->Commit();
+}
+
+HRESULT Taskbar::setWindowAppId(WindowPtr window, const tstring& appId) {
+	return window ? setWindowAppId(window->handle(), appId) : E_HANDLE;
+}
+
+HRESULT Taskbar::commitJumpList(const JumpList& jumpList, UINT* minSlots) {
+	ComPtr<ICustomDestinationList> list;
+	auto result = ::CoCreateInstance(CLSID_DestinationList, nullptr,
+		CLSCTX_INPROC_SERVER, IID_ICustomDestinationList,
+		reinterpret_cast<void**>(list.put()));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	auto appId = toWide(jumpList.appId);
+	if(!appId.empty()) {
+		result = list->SetAppID(appId.c_str());
+		if(FAILED(result)) {
+			return result;
+		}
+	}
+
+	UINT slots = 0;
+	ComPtr<IObjectArray> removed;
+	result = list->BeginList(&slots, IID_IObjectArray,
+		reinterpret_cast<void**>(removed.put()));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	auto abortList = [&list] {
+		list->AbortList();
+	};
+
+	if(jumpList.showFrequent) {
+		result = list->AppendKnownCategory(KDC_FREQUENT);
+		if(FAILED(result)) {
+			abortList();
+			return result;
+		}
+	}
+
+	if(jumpList.showRecent) {
+		result = list->AppendKnownCategory(KDC_RECENT);
+		if(FAILED(result)) {
+			abortList();
+			return result;
+		}
+	}
+
+	for(const auto& category : jumpList.categories) {
+		if(category.name.empty() || category.links.empty()) {
+			continue;
+		}
+		ComPtr<IObjectArray> items;
+		result = makeObjectArray(category.links, items.put());
+		if(FAILED(result)) {
+			abortList();
+			return result;
+		}
+		result = list->AppendCategory(toWide(category.name).c_str(), items.get());
+		if(FAILED(result)) {
+			abortList();
+			return result;
+		}
+	}
+
+	if(!jumpList.userTasks.empty()) {
+		ComPtr<IObjectArray> tasks;
+		result = makeObjectArray(jumpList.userTasks, tasks.put());
+		if(FAILED(result)) {
+			abortList();
+			return result;
+		}
+		result = list->AddUserTasks(tasks.get());
+		if(FAILED(result)) {
+			abortList();
+			return result;
+		}
+	}
+
+	result = list->CommitList();
+	if(SUCCEEDED(result) && minSlots) {
+		*minSlots = slots;
+	}
+	return result;
+}
+
+HRESULT Taskbar::deleteJumpList(const tstring& appId) {
+	ComPtr<ICustomDestinationList> list;
+	auto result = ::CoCreateInstance(CLSID_DestinationList, nullptr,
+		CLSCTX_INPROC_SERVER, IID_ICustomDestinationList,
+		reinterpret_cast<void**>(list.put()));
+	if(FAILED(result)) {
+		return result;
+	}
+
+	auto value = toWide(appId);
+	return list->DeleteList(value.empty() ? nullptr : value.c_str());
 }
 
 class Proxy : public Frame {

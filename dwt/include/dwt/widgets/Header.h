@@ -70,6 +70,8 @@ public:
 	struct Seed : public BaseType::Seed {
 		typedef ThisType WidgetType;
 
+		FontPtr font;
+
 		/// Fills with default parameters
 		Seed();
 	};
@@ -136,6 +138,7 @@ public:
 	void onBeginDrag(std::function<bool (const NMHEADER&)> f);
 
 	virtual Point getPreferredSize();
+	virtual bool handleMessage(const MSG& msg, LRESULT& retVal);
 
 protected:
 	/// Constructor Taking pointer to parent
@@ -150,6 +153,9 @@ private:
 	friend class ChainingDispatcher;
 	static const TCHAR windowClass[];
 	ImageListPtr imageList;
+
+	void applyFilterStyles();
+	void setFontImpl();
 
 	// aspects::Collection
 	void eraseImpl(int row);
@@ -340,16 +346,14 @@ inline int Header::setHotDividerPosition(int position) {
 	return static_cast<int>(sendMessage(HDM_SETHOTDIVIDER, TRUE, position));
 }
 
-inline void Header::setFilterBar(bool value) {
-	addRemoveStyle(HDS_FILTERBAR, value);
-}
-
 inline void Header::setFilterChangeTimeout(unsigned milliseconds) {
 	sendMessage(HDM_SETFILTERCHANGETIMEOUT, 0, milliseconds);
 }
 
 inline bool Header::editFilter(int index, bool discardChanges) {
-	return sendMessage(HDM_EDITFILTER, index, discardChanges ? TRUE : FALSE) != FALSE;
+	auto result = sendMessage(HDM_EDITFILTER, index, discardChanges ? TRUE : FALSE) != FALSE;
+	applyFilterStyles();
+	return result;
 }
 
 inline bool Header::clearFilter(int index) {
