@@ -31,6 +31,7 @@
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/TableTree.h>
 #include <dwt/widgets/TaskDialog.h>
+#include <dwt/widgets/TabView.h>
 #include <dwt/widgets/TextBox.h>
 #include <dwt/widgets/ToolBar.h>
 #include <dwt/widgets/ToolTip.h>
@@ -76,6 +77,7 @@ using dwt::Spinner;
 using dwt::StatusBar;
 using dwt::Table;
 using dwt::TableTree;
+using dwt::TabView;
 using dwt::TextBox;
 using dwt::ToolBar;
 using dwt::ToolTip;
@@ -83,6 +85,25 @@ using dwt::Tree;
 using dwt::VirtualTree;
 using dwt::WidgetCreator;
 using dwt::Window;
+
+const UINT taskbarMessageButton = 4101;
+const UINT taskbarProgressButton = 4102;
+const UINT taskbarClipButton = 4103;
+
+THUMBBUTTON makeThumbnailButton(UINT id, HICON icon, const dwt::tstring& tip,
+	THUMBBUTTONFLAGS flags = THBF_ENABLED)
+{
+	THUMBBUTTON button = { };
+	button.dwMask = THB_FLAGS | THB_TOOLTIP;
+	button.iId = id;
+	button.dwFlags = flags;
+	tip.copy(button.szTip, sizeof(button.szTip) / sizeof(button.szTip[0]) - 1);
+	if(icon) {
+		button.dwMask |= THB_ICON;
+		button.hIcon = icon;
+	}
+	return button;
+}
 
 void setStatus(StatusBar::ObjectType status, const dwt::tstring& text) {
 	status->setText(0, text, true);
@@ -226,8 +247,6 @@ int dwtMain(dwt::Application& app) {
 	virtualTreeSeed.tvExStyle = treeSeed.tvExStyle;
 	auto* virtualTree = WidgetCreator<VirtualTree>::create(grid, VirtualTree::Seed(virtualTreeSeed));
 
-	auto* richText = WidgetCreator<RichTextBox>::create(grid, RichTextBox::Seed());
-
 	auto* scrolled = WidgetCreator<ScrolledContainer>::create(grid, ScrolledContainer::Seed());
 	auto* scrolledGrid = scrolled->addChild(Grid::Seed(5, 1));
 	scrolledGrid->setSpacing(6);
@@ -254,6 +273,52 @@ int dwtMain(dwt::Application& app) {
 	scrolledGrid->setWidget(scrollLabel4, 3, 0);
 	scrolledGrid->setWidget(monthCalendar, 4, 0);
 	scrolledGrid->layout();
+
+	dwt::IconPtr taskbarIcon(new dwt::Icon(IDI_MULTI_TRAY, dwt::Point(16, 16)));
+	auto* taskbarTabs = WidgetCreator<TabView>::create(grid, TabView::Seed(160, false, true));
+	taskbarTabs->initTaskbar(window);
+
+	auto* summaryPage = WidgetCreator<Grid>::create(taskbarTabs, Grid::Seed(1, 1));
+	summaryPage->setText(_T("Summary"));
+	summaryPage->setSpacing(0);
+	summaryPage->row(0).mode = GridInfo::FILL;
+	summaryPage->row(0).align = GridInfo::STRETCH;
+	summaryPage->column(0).mode = GridInfo::FILL;
+	summaryPage->column(0).align = GridInfo::STRETCH;
+	auto* richText = WidgetCreator<RichTextBox>::create(summaryPage, RichTextBox::Seed());
+	summaryPage->setWidget(richText, 0, 0);
+
+	auto* taskbarPage = WidgetCreator<Grid>::create(taskbarTabs, Grid::Seed(5, 1));
+	taskbarPage->setText(_T("Taskbar"));
+	taskbarPage->setSpacing(6);
+	for(size_t row = 0; row < 5; ++row) {
+		taskbarPage->row(row).mode = GridInfo::AUTO;
+		taskbarPage->row(row).align = GridInfo::STRETCH;
+	}
+	taskbarPage->column(0).mode = GridInfo::FILL;
+	taskbarPage->column(0).align = GridInfo::STRETCH;
+	auto* taskbarLabel = WidgetCreator<Label>::create(taskbarPage,
+		Label::Seed(_T("Taskbar: progress, overlay, thumbnail buttons, clipping, and tab properties")));
+	auto* taskbarProgressDemo = WidgetCreator<Button>::create(taskbarPage,
+		Button::Seed(_T("Sync taskbar progress")));
+	auto* taskbarOverlayDemo = WidgetCreator<Button>::create(taskbarPage,
+		Button::Seed(_T("Toggle overlay icon")));
+	auto* taskbarClipDemo = WidgetCreator<Button>::create(taskbarPage,
+		Button::Seed(_T("Toggle thumbnail clip")));
+	auto* taskbarTabDemo = WidgetCreator<Button>::create(taskbarPage,
+		Button::Seed(_T("Apply per-tab settings")));
+	taskbarPage->setWidget(taskbarLabel, 0, 0);
+	taskbarPage->setWidget(taskbarProgressDemo, 1, 0);
+	taskbarPage->setWidget(taskbarOverlayDemo, 2, 0);
+	taskbarPage->setWidget(taskbarClipDemo, 3, 0);
+	taskbarPage->setWidget(taskbarTabDemo, 4, 0);
+	taskbarTabs->add(summaryPage, taskbarIcon);
+	taskbarTabs->add(taskbarPage, taskbarIcon);
+	taskbarTabs->setThumbnailTooltip(summaryPage, _T("Rich text summary tab"));
+	taskbarTabs->setThumbnailTooltip(taskbarPage, _T("Taskbar API examples tab"));
+	taskbarTabs->setTabProperties(summaryPage, STPF_USEAPPTHUMBNAILWHENACTIVE);
+	taskbarTabs->setTabProperties(taskbarPage,
+		static_cast<STPFLAG>(STPF_USEAPPTHUMBNAILALWAYS | STPF_USEAPPPEEKALWAYS));
 
 	auto* status = WidgetCreator<StatusBar>::create(window, StatusBar::Seed(2, 1, true));
 	status->setSize(0, 420);
@@ -461,6 +526,48 @@ int dwtMain(dwt::Application& app) {
 
 	auto syncingRange = std::make_shared<bool>(false);
 	auto marqueeActive = std::make_shared<bool>(false);
+	auto taskbarOverlayActive = std::make_shared<bool>(false);
+	auto taskbarClipActive = std::make_shared<bool>(false);
+
+	auto syncTaskbarProgress = [taskbarTabs, slider] {
+		taskbarTabs->setProgressState(TBPF_NORMAL);
+		taskbarTabs->setProgressValue(static_cast<ULONGLONG>(slider->getPosition()), 100);
+	};
+
+	auto toggleTaskbarOverlay = [taskbarTabs, taskbarIcon, taskbarOverlayActive, status] {
+		*taskbarOverlayActive = !*taskbarOverlayActive;
+		taskbarTabs->setOverlayIcon(nullptr, *taskbarOverlayActive ? taskbarIcon : dwt::IconPtr(),
+			*taskbarOverlayActive ? _T("DWT example overlay") : dwt::tstring());
+		setStatus(status, *taskbarOverlayActive ? _T("Taskbar overlay icon set") :
+			_T("Taskbar overlay icon cleared"));
+	};
+
+	auto toggleTaskbarClip = [window, taskbarTabs, taskbarClipActive, status] {
+		*taskbarClipActive = !*taskbarClipActive;
+		if(*taskbarClipActive) {
+			taskbarTabs->setThumbnailClip(dwt::Rectangle(0, 0,
+				window->scale(700), window->scale(430)));
+			setStatus(status, _T("Taskbar thumbnail clipped to the upper content area"));
+		} else {
+			taskbarTabs->clearThumbnailClip();
+			setStatus(status, _T("Taskbar thumbnail clip cleared"));
+		}
+	};
+
+	taskbarProgressDemo->onClicked([syncTaskbarProgress, status] {
+		syncTaskbarProgress();
+		setStatus(status, _T("Taskbar progress synced from the slider"));
+	});
+	taskbarOverlayDemo->onClicked(toggleTaskbarOverlay);
+	taskbarClipDemo->onClicked(toggleTaskbarClip);
+	taskbarTabDemo->onClicked([taskbarTabs, taskbarPage, status] {
+		taskbarTabs->mark(taskbarPage);
+		taskbarTabs->setThumbnailTooltip(taskbarPage, _T("Updated taskbar tab tooltip"));
+		taskbarTabs->setThumbnailClip(taskbarPage, dwt::Rectangle(0, 0, 360, 180));
+		taskbarTabs->setTabProperties(taskbarPage,
+			static_cast<STPFLAG>(STPF_USEAPPTHUMBNAILALWAYS | STPF_USEAPPPEEKALWAYS));
+		setStatus(status, _T("Per-tab taskbar tooltip, clip, mark, and properties applied"));
+	});
 
 	auto showModernControls = [window, status, textInput, slider, progress, dateTime, marqueeActive] {
 		const int applyStateButton = 1001;
@@ -583,7 +690,7 @@ int dwtMain(dwt::Application& app) {
 		setStatus(status, _T("ComboBox: ") + text);
 	});
 
-	slider->onScrollHorz([slider, progress, spinner, status, syncingRange] {
+	slider->onScrollHorz([slider, progress, spinner, status, syncingRange, syncTaskbarProgress] {
 		if(*syncingRange) {
 			return;
 		}
@@ -591,6 +698,7 @@ int dwtMain(dwt::Application& app) {
 		auto value = slider->getPosition();
 		progress->setPosition(value);
 		spinner->setValue(value);
+		syncTaskbarProgress();
 		setStatus(status, _T("Slider: ") + std::to_wstring(value));
 		*syncingRange = false;
 	});
@@ -598,13 +706,14 @@ int dwtMain(dwt::Application& app) {
 		return change.dwPos <= 100;
 	});
 
-	spinner->onUpdate([slider, progress, status, syncingRange](int value, int) {
+	spinner->onUpdate([slider, progress, status, syncingRange, syncTaskbarProgress](int value, int) {
 		if(*syncingRange) {
 			return true;
 		}
 		*syncingRange = true;
 		slider->setPosition(value);
 		progress->setPosition(value);
+		syncTaskbarProgress();
 		setStatus(status, _T("Spinner: ") + std::to_wstring(value));
 		*syncingRange = false;
 		return true;
@@ -776,6 +885,26 @@ int dwtMain(dwt::Application& app) {
 	rebar->add(toolbar);
 	rebar->refresh();
 
+	window->addCallback(dwt::Message(WM_COMMAND, taskbarMessageButton),
+		[status, &messageBox](const MSG&, LRESULT&) -> bool {
+			messageBox.show(_T("Triggered from the taskbar thumbnail toolbar."),
+				_T("DWT Taskbar"), dwt::MessageBox::BOX_OK,
+				dwt::MessageBox::BOX_ICONINFORMATION);
+			setStatus(status, _T("Taskbar thumbnail button opened MessageBox"));
+			return true;
+		});
+	window->addCallback(dwt::Message(WM_COMMAND, taskbarProgressButton),
+		[syncTaskbarProgress, status](const MSG&, LRESULT&) -> bool {
+			syncTaskbarProgress();
+			setStatus(status, _T("Taskbar thumbnail button synced progress"));
+			return true;
+		});
+	window->addCallback(dwt::Message(WM_COMMAND, taskbarClipButton),
+		[toggleTaskbarClip](const MSG&, LRESULT&) -> bool {
+			toggleTaskbarClip();
+			return true;
+		});
+
 	grid->setWidget(rebar, 0, 0, 1, 4);
 	grid->setWidget(labelInput, 1, 0);
 	grid->setWidget(textInput, 1, 1, 1, 3);
@@ -795,8 +924,10 @@ int dwtMain(dwt::Application& app) {
 	grid->setWidget(tableTree, 7, 0);
 	grid->setWidget(virtualTree, 7, 1);
 	grid->setWidget(scrolled, 7, 2);
-	grid->setWidget(richText, 7, 3);
-	auto layout = [window, grid, rebar, scrolled, scrolledGrid, status] {
+	grid->setWidget(taskbarTabs, 7, 3);
+	auto layout = [window, grid, rebar, scrolled, scrolledGrid, taskbarTabs,
+		summaryPage, taskbarPage, status]
+	{
 		auto client = window->getClientSize();
 		auto statusSize = status->getPreferredSize();
 		const long statusHeight = statusSize.y > 0 ? statusSize.y : 24;
@@ -823,6 +954,9 @@ int dwtMain(dwt::Application& app) {
 		rebar->refresh();
 		scrolled->layout();
 		scrolledGrid->layout();
+		static_cast<dwt::Widget*>(taskbarTabs)->layout();
+		summaryPage->layout();
+		taskbarPage->layout();
 
 		status->resize(dwt::Rectangle(0, contentHeight + 4, client.x, statusHeight));
 		status->refresh();
@@ -867,10 +1001,16 @@ int dwtMain(dwt::Application& app) {
 		virtualTree,
 		scrolled,
 		scrolledGrid,
+		taskbarTabs,
 		scrollLabel1,
 		scrollLabel2,
 		scrollLabel3,
 		scrollLabel4,
+		taskbarLabel,
+		taskbarProgressDemo,
+		taskbarOverlayDemo,
+		taskbarClipDemo,
+		taskbarTabDemo,
 		richText,
 	};
 	for(auto* control : visibleControls) {
@@ -884,6 +1024,13 @@ int dwtMain(dwt::Application& app) {
 
 	window->setVisible(true);
 	window->setFocus();
+	taskbarTabs->setThumbnailTooltip(_T("DWT MultiControlExample"));
+	taskbarTabs->addThumbnailToolbarButtons({
+		makeThumbnailButton(taskbarMessageButton, taskbarIcon->handle(), _T("Open message")),
+		makeThumbnailButton(taskbarProgressButton, taskbarIcon->handle(), _T("Sync progress")),
+		makeThumbnailButton(taskbarClipButton, taskbarIcon->handle(), _T("Toggle thumbnail clip"))
+	});
+	syncTaskbarProgress();
 
 	app.run();
 	return 0;

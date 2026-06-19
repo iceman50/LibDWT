@@ -42,11 +42,14 @@ namespace dwt {
 
 Taskbar::Taskbar() :
 taskbar(0),
+taskbar4(0),
 window(0)
 {
 }
 
 Taskbar::~Taskbar() {
+	if(taskbar4)
+		taskbar4->Release();
 	if(taskbar)
 		taskbar->Release();
 }
@@ -59,19 +62,22 @@ void Taskbar::initTaskbar(WindowPtr window_) {
 	"TaskbarButtonCreated" message, but neither MFC nor Win SDK samples do that, so we don't
 	either. greatly simplifies the logic of this interface. */
 #ifdef __GNUC__
-	/// @todo remove when GCC knows about ITaskbarList
 	CLSID CLSID_TaskbarList;
 	OLECHAR tbl[] = L"{56FDF344-FD6D-11d0-958A-006097C9A090}";
 	CLSIDFromString(tbl, &CLSID_TaskbarList);
-	IID IID_ITaskbarList;
-	OLECHAR itbl[] = L"{56FDF342-FD6D-11d0-958A-006097C9A090}";
-	CLSIDFromString(itbl, &IID_ITaskbarList);
+	IID IID_ITaskbarList3;
+	OLECHAR itbl[] = L"{EA1AFB91-9E28-4B86-90E9-9E9F8A5EEA84}";
+	CLSIDFromString(itbl, &IID_ITaskbarList3);
 #endif
-	if(::CoCreateInstance(CLSID_TaskbarList, 0, CLSCTX_INPROC_SERVER, IID_ITaskbarList,
+	if(::CoCreateInstance(CLSID_TaskbarList, 0, CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
 		reinterpret_cast<LPVOID*>(&taskbar)) != S_OK) { taskbar = 0; }
 	if(taskbar && taskbar->HrInit() != S_OK) {
 			taskbar->Release();
 			taskbar = 0;
+	}
+	if(taskbar && taskbar->QueryInterface(IID_ITaskbarList4,
+		reinterpret_cast<void**>(&taskbar4)) != S_OK) {
+		taskbar4 = 0;
 	}
 }
 
@@ -96,6 +102,10 @@ public:
 };
 
 void Taskbar::addToTaskbar(ContainerPtr tab) {
+	if(!taskbar || !window) {
+		return;
+	}
+
 	/* for Windows to acknowledge that our tab window is worthy of having its own thumbnail in the
 	taskbar, we have to create an invisible popup window that will act as a proxy between the
 	taskbar and the actual tab window.
@@ -165,27 +175,44 @@ void Taskbar::addToTaskbar(ContainerPtr tab) {
 }
 
 void Taskbar::removeFromTaskbar(ContainerPtr tab) {
-	auto proxy = tabs[tab];
-	taskbar->UnregisterTab(proxy->handle());
-	::DestroyWindow(proxy->handle());
-	tabs.erase(tab);
+	auto i = tabs.find(tab);
+	if(i == tabs.end() || !i->second) {
+		return;
+	}
+	if(taskbar) {
+		taskbar->UnregisterTab(i->second->handle());
+	}
+	::DestroyWindow(i->second->handle());
+	tabs.erase(i);
 }
 
 void Taskbar::moveOnTaskbar(ContainerPtr tab, ContainerPtr rightNeighbor) {
-	taskbar->SetTabOrder(tabs[tab]->handle(), rightNeighbor ? tabs[rightNeighbor]->handle() : 0);
+	auto i = tabs.find(tab);
+	if(taskbar && i != tabs.end() && i->second) {
+		auto right = rightNeighbor ? tabs.find(rightNeighbor) : tabs.end();
+		taskbar->SetTabOrder(i->second->handle(),
+			right != tabs.end() && right->second ? right->second->handle() : 0);
+	}
 }
 
 void Taskbar::setActiveOnTaskbar(ContainerPtr tab) {
-	taskbar->SetTabActive(tabs[tab]->handle(), window->handle(), 0);
+	auto i = tabs.find(tab);
+	if(taskbar && window && i != tabs.end() && i->second) {
+		taskbar->SetTabActive(i->second->handle(), window->handle(), 0);
+	}
 }
 
 void Taskbar::setTaskbarIcon(ContainerPtr tab, const IconPtr& icon) {
-	tabs[tab]->setSmallIcon(icon);
+	auto i = tabs.find(tab);
+	if(i != tabs.end() && i->second) {
+		i->second->setSmallIcon(icon);
+	}
 }
 
 void Taskbar::setOverlayIcon(ContainerPtr tab, const IconPtr& icon, const tstring& description) {
-	if(taskbar) {
-		taskbar->SetOverlayIcon(window->handle(), icon->handle(), description.c_str());
+	if(taskbar && window) {
+		taskbar->SetOverlayIcon(window->handle(), icon ? icon->handle() : nullptr,
+			description.c_str());
 	}
 }
 
@@ -199,6 +226,99 @@ void Taskbar::setProgressValue(ULONGLONG completed, ULONGLONG total) {
 	if(taskbar && window) {
 		taskbar->SetProgressValue(window->handle(), completed, total);
 	}
+}
+
+void Taskbar::addThumbnailToolbarButtons(const std::vector<THUMBBUTTON>& buttons) {
+	if(taskbar && window && !buttons.empty()) {
+		auto copy = buttons;
+		taskbar->ThumbBarAddButtons(window->handle(), static_cast<UINT>(copy.size()), copy.data());
+	}
+}
+
+void Taskbar::updateThumbnailToolbarButtons(const std::vector<THUMBBUTTON>& buttons) {
+	if(taskbar && window && !buttons.empty()) {
+		auto copy = buttons;
+		taskbar->ThumbBarUpdateButtons(window->handle(), static_cast<UINT>(copy.size()), copy.data());
+	}
+}
+
+void Taskbar::setThumbnailTooltip(const tstring& tooltip) {
+	if(taskbar && window) {
+		taskbar->SetThumbnailTooltip(window->handle(), tooltip.empty() ? nullptr : tooltip.c_str());
+	}
+}
+
+void Taskbar::setThumbnailClip(const Rectangle& clip) {
+	if(taskbar && window) {
+		auto rect = clip.toRECT();
+		taskbar->SetThumbnailClip(window->handle(), &rect);
+	}
+}
+
+void Taskbar::clearThumbnailClip() {
+	if(taskbar && window) {
+		taskbar->SetThumbnailClip(window->handle(), nullptr);
+	}
+}
+
+void Taskbar::addThumbnailToolbarButtons(ContainerPtr tab,
+	const std::vector<THUMBBUTTON>& buttons)
+{
+	auto handle = getTaskbarWindow(tab);
+	if(taskbar && handle && !buttons.empty()) {
+		auto copy = buttons;
+		taskbar->ThumbBarAddButtons(handle, static_cast<UINT>(copy.size()), copy.data());
+	}
+}
+
+void Taskbar::updateThumbnailToolbarButtons(ContainerPtr tab,
+	const std::vector<THUMBBUTTON>& buttons)
+{
+	auto handle = getTaskbarWindow(tab);
+	if(taskbar && handle && !buttons.empty()) {
+		auto copy = buttons;
+		taskbar->ThumbBarUpdateButtons(handle, static_cast<UINT>(copy.size()), copy.data());
+	}
+}
+
+void Taskbar::setThumbnailTooltip(ContainerPtr tab, const tstring& tooltip) {
+	auto handle = getTaskbarWindow(tab);
+	if(taskbar && handle) {
+		taskbar->SetThumbnailTooltip(handle, tooltip.empty() ? nullptr : tooltip.c_str());
+	}
+}
+
+void Taskbar::setThumbnailClip(ContainerPtr tab, const Rectangle& clip) {
+	auto handle = getTaskbarWindow(tab);
+	if(taskbar && handle) {
+		auto rect = clip.toRECT();
+		taskbar->SetThumbnailClip(handle, &rect);
+	}
+}
+
+void Taskbar::clearThumbnailClip(ContainerPtr tab) {
+	auto handle = getTaskbarWindow(tab);
+	if(taskbar && handle) {
+		taskbar->SetThumbnailClip(handle, nullptr);
+	}
+}
+
+void Taskbar::setTabProperties(ContainerPtr tab, STPFLAG properties) {
+	auto handle = getTaskbarWindow(tab);
+	if(taskbar4 && handle) {
+		taskbar4->SetTabProperties(handle, properties);
+	}
+}
+
+HWND Taskbar::getTaskbarWindow(ContainerPtr tab) const {
+	if(!tab) {
+		return window ? window->handle() : nullptr;
+	}
+	auto i = tabs.find(tab);
+	if(i != tabs.end() && i->second) {
+		return i->second->handle();
+	}
+	return tab->handle();
 }
 
 BitmapPtr Taskbar::getBitmap(ContainerPtr tab, LPARAM thumbnailSize) {

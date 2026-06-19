@@ -2,6 +2,7 @@
 #include <dwt/Application.h>
 #include <dwt/Events.h>
 #include <dwt/Message.h>
+#include <dwt/Taskbar.h>
 #include <dwt/Widget.h>
 #include <dwt/WidgetCreator.h>
 #include <dwt/util/win32/Dpi.h>
@@ -142,6 +143,15 @@ void testControlContracts() {
 	Table::FooterItem item { 1, _T("Item"), LVFIS_FOCUSED };
 	check(footer.itemCount == 2 && item.index == 1 &&
 		(item.state & LVFIS_FOCUSED), "table footer value contracts");
+
+	THUMBBUTTON thumbnailButton = { };
+	thumbnailButton.dwMask = THB_TOOLTIP | THB_FLAGS;
+	thumbnailButton.dwFlags = THBF_ENABLED;
+	thumbnailButton.iId = 1;
+	check((thumbnailButton.dwMask & THB_FLAGS) &&
+		thumbnailButton.dwFlags == THBF_ENABLED &&
+		thumbnailButton.iId == 1,
+		"taskbar thumbnail button value contract");
 }
 
 void testInputEventContracts() {

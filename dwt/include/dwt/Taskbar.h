@@ -34,9 +34,11 @@
 
 #include "WindowsHeaders.h"
 #include "forward.h"
+#include "Rectangle.h"
 #include "resources/Bitmap.h"
 #include "resources/Icon.h"
 #include <unordered_map>
+#include <vector>
 
 namespace dwt {
 
@@ -48,6 +50,17 @@ public:
 	void setOverlayIcon(ContainerPtr tab, const IconPtr& icon, const tstring& description);
 	void setProgressState(TBPFLAG state);
 	void setProgressValue(ULONGLONG completed, ULONGLONG total);
+	void addThumbnailToolbarButtons(const std::vector<THUMBBUTTON>& buttons);
+	void updateThumbnailToolbarButtons(const std::vector<THUMBBUTTON>& buttons);
+	void setThumbnailTooltip(const tstring& tooltip);
+	void setThumbnailClip(const Rectangle& clip);
+	void clearThumbnailClip();
+	void addThumbnailToolbarButtons(ContainerPtr tab, const std::vector<THUMBBUTTON>& buttons);
+	void updateThumbnailToolbarButtons(ContainerPtr tab, const std::vector<THUMBBUTTON>& buttons);
+	void setThumbnailTooltip(ContainerPtr tab, const tstring& tooltip);
+	void setThumbnailClip(ContainerPtr tab, const Rectangle& clip);
+	void clearThumbnailClip(ContainerPtr tab);
+	void setTabProperties(ContainerPtr tab, STPFLAG properties);
 
 protected:
 	Taskbar();
@@ -60,9 +73,11 @@ protected:
 	void setTaskbarIcon(ContainerPtr tab, const IconPtr& icon);
 
 	ITaskbarList3* taskbar;
+	ITaskbarList4* taskbar4;
 
 private:
 	BitmapPtr getBitmap(ContainerPtr tab, LPARAM thumbnailSize);
+	HWND getTaskbarWindow(ContainerPtr tab) const;
 
 	/// function called when the user activates a tab using the taskbar.
 	virtual void setActive(ContainerPtr) = 0;
