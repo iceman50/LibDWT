@@ -6,6 +6,8 @@ All notable changes to LibDWT are documented in this file.
 
 ### Added
 
+- Added `Application::processMessages()` for keeping the UI responsive during
+  lengthy work on the GUI thread by processing pending messages and callbacks.
 - Added checkbox support to `dwt::Tree`.
 - Added `Tree::Seed::checkBoxes` for enabling checkboxes when creating a tree.
 - Added `Tree::setCheckBoxes()`, with checkbox state available through

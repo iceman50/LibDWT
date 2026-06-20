@@ -89,6 +89,7 @@ MULTI_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(MULTI_SOURCE))
 RICH_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(RICH_SOURCE))
 CUSTOM_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(CUSTOM_SOURCE))
 TEST_OBJ := $(patsubst $(ROOT)/%.cpp,$(OBJ_DIR)/%.o,$(TEST_SOURCE))
+DEPFILES := $(DWT_OBJS:.o=.d) $(MULTI_OBJ:.o=.d) $(RICH_OBJ:.o=.d) $(CUSTOM_OBJ:.o=.d) $(TEST_OBJ:.o=.d)
 
 .PHONY: all build test x86-debug x86-release x64-debug x64-release clean print-config
 
@@ -148,7 +149,9 @@ $(MULTI_ICON_OBJ): $(MULTI_ICON_RC) $(ROOT)/examples/MultiControlExample/resourc
 
 $(OBJ_DIR)/%.o: $(ROOT)/%.cpp
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+-include $(DEPFILES)
 
 clean:
 	@if exist build rmdir /s /q build

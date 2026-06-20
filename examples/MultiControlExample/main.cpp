@@ -44,6 +44,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #pragma comment(lib, "comctl32.lib")
@@ -109,6 +110,46 @@ THUMBBUTTON makeThumbnailButton(UINT id, HICON icon, const dwt::tstring& tip,
 void setStatus(StatusBar::ObjectType status, const dwt::tstring& text) {
 	status->setText(0, text, true);
 	status->setText(1, _T("MultiControlExample"));
+}
+
+using TableTreeRows = std::unordered_map<LPARAM, std::vector<dwt::tstring>>;
+
+void installTableTreeRows(TableTree::ObjectType tableTree,
+	const std::shared_ptr<TableTreeRows>& rows)
+{
+	tableTree->addCallback(dwt::Message(WM_NOTIFY, LVN_GETDISPINFO),
+		[tableTree, rows](const MSG& msg, LRESULT&) -> bool {
+			auto* info = reinterpret_cast<NMLVDISPINFO*>(msg.lParam);
+			if(!info) {
+				return false;
+			}
+
+			if(info->item.mask & LVIF_TEXT) {
+				auto id = info->item.lParam ? info->item.lParam :
+					tableTree->getData(info->item.iItem);
+				auto row = rows->find(id);
+				auto column = static_cast<size_t>(info->item.iSubItem);
+				if(row != rows->end() && column < row->second.size() &&
+					info->item.pszText && info->item.cchTextMax > 0) {
+					_tcsncpy_s(info->item.pszText, info->item.cchTextMax,
+						row->second[column].c_str(), _TRUNCATE);
+				}
+			}
+
+			if(info->item.mask & LVIF_IMAGE) {
+				info->item.iImage = I_IMAGENONE;
+			}
+			return true;
+		});
+}
+
+void insertTableTreeRow(TableTree::ObjectType tableTree,
+	const std::shared_ptr<TableTreeRows>& rows, LPARAM id,
+	const std::vector<dwt::tstring>& text)
+{
+	(*rows)[id] = text;
+	tableTree->insert(LVIF_TEXT | LVIF_PARAM, -1, LPSTR_TEXTCALLBACK,
+		0, 0, I_IMAGECALLBACK, id);
 }
 
 dwt::tstring pointerTypeName(dwt::PointerEvent::Type type) {
@@ -529,9 +570,14 @@ int dwtMain(dwt::Application& app) {
 	tableTree->setFullRowSelect(true);
 	tableTree->setGridLines(true);
 	tableTree->setReadOnly(true);
-	tableTree->insert({ _T("Containers"), _T("Grid, ScrolledContainer") }, 200);
-	tableTree->insert({ _T("Views"), _T("Table, Tree, TableTree, VirtualTree") }, 201);
-	tableTree->insert({ _T("Utility"), _T("MessageBox, dialogs, tray notifications") }, 202);
+	auto tableTreeRows = std::make_shared<TableTreeRows>();
+	installTableTreeRows(tableTree, tableTreeRows);
+	insertTableTreeRow(tableTree, tableTreeRows, 200,
+		{ _T("Containers"), _T("Grid, ScrolledContainer") });
+	insertTableTreeRow(tableTree, tableTreeRows, 201,
+		{ _T("Views"), _T("Table, Tree, TableTree, VirtualTree") });
+	insertTableTreeRow(tableTree, tableTreeRows, 202,
+		{ _T("Utility"), _T("MessageBox, dialogs, tray notifications") });
 	tableTree->insertChild(200, 201);
 	tableTree->insertChild(200, 202);
 	tableTree->expand(200);

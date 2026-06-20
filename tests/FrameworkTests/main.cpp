@@ -39,6 +39,45 @@ void pumpMessages() {
 	}
 }
 
+void testApplicationMessageProcessing() {
+	using namespace dwt;
+
+	auto& application = Application::instance();
+	const UINT testMessage = WM_APP + 42;
+	unsigned messageCount = 0;
+	std::vector<unsigned> callbackOrder;
+
+	auto filter = application.addFilter([&](MSG& message) {
+		if(message.message != testMessage) {
+			return false;
+		}
+
+		++messageCount;
+		return true;
+	});
+
+	// Ensure this thread has a Windows message queue before posting to it.
+	MSG message;
+	::PeekMessage(&message, nullptr, 0, 0, PM_NOREMOVE);
+	check(::PostThreadMessage(::GetCurrentThreadId(), testMessage, 0, 0) != FALSE,
+		"post processMessages test message");
+	application.callAsync([&] {
+		callbackOrder.push_back(1);
+		application.callAsync([&] { callbackOrder.push_back(4); });
+		application.processMessages();
+		callbackOrder.push_back(2);
+	});
+	application.callAsync([&] { callbackOrder.push_back(3); });
+
+	check(application.processMessages(),
+		"processMessages keeps application running");
+	check(messageCount == 1, "processMessages dispatches pending UI messages");
+	check(callbackOrder == std::vector<unsigned>({ 1, 2, 3, 4 }),
+		"processMessages serializes asynchronous callbacks in FIFO order");
+
+	application.removeFilter(filter);
+}
+
 void testDpiMath() {
 	using namespace dwt;
 	using namespace dwt::util::win32;
@@ -428,6 +467,7 @@ void testLiveAccessibilityValidation() {
 }
 
 void runHeadlessTests() {
+	testApplicationMessageProcessing();
 	testDpiMath();
 	testSystemSettings();
 	testAccessibilityContract();

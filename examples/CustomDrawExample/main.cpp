@@ -23,6 +23,7 @@
 #include <dwt/widgets/Window.h>
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #pragma comment(lib, "comctl32.lib")
@@ -116,6 +117,46 @@ void fillRect(HDC hdc, const RECT& rc, COLORREF color) {
 	FreeCanvas canvas { hdc };
 	Brush brush { color };
 	canvas.fill(dwt::Rectangle(rc), brush);
+}
+
+using TableTreeRows = std::unordered_map<LPARAM, std::vector<dwt::tstring>>;
+
+void installTableTreeRows(TableTree::ObjectType tableTree,
+	const std::shared_ptr<TableTreeRows>& rows)
+{
+	tableTree->addCallback(dwt::Message(WM_NOTIFY, LVN_GETDISPINFO),
+		[tableTree, rows](const MSG& msg, LRESULT&) -> bool {
+			auto* info = reinterpret_cast<NMLVDISPINFO*>(msg.lParam);
+			if(!info) {
+				return false;
+			}
+
+			if(info->item.mask & LVIF_TEXT) {
+				auto id = info->item.lParam ? info->item.lParam :
+					tableTree->getData(info->item.iItem);
+				auto row = rows->find(id);
+				auto column = static_cast<size_t>(info->item.iSubItem);
+				if(row != rows->end() && column < row->second.size() &&
+					info->item.pszText && info->item.cchTextMax > 0) {
+					_tcsncpy_s(info->item.pszText, info->item.cchTextMax,
+						row->second[column].c_str(), _TRUNCATE);
+				}
+			}
+
+			if(info->item.mask & LVIF_IMAGE) {
+				info->item.iImage = I_IMAGENONE;
+			}
+			return true;
+		});
+}
+
+void insertTableTreeRow(TableTree::ObjectType tableTree,
+	const std::shared_ptr<TableTreeRows>& rows, LPARAM id,
+	const std::vector<dwt::tstring>& text)
+{
+	(*rows)[id] = text;
+	tableTree->insert(LVIF_TEXT | LVIF_PARAM, -1, LPSTR_TEXTCALLBACK,
+		0, 0, I_IMAGECALLBACK, id);
 }
 
 COLORREF blendColor(COLORREF base, COLORREF overlay, BYTE overlayWeight) {
@@ -612,9 +653,14 @@ int dwtMain(dwt::Application& app) {
 	tableTree->setFullRowSelect(true);
 	tableTree->setAlwaysShowSelection(true);
 	tableTree->setReadOnly(true);
-	tableTree->insert({ _T("Custom-draw surfaces"), _T("TableTree"), _T("Uses Table/ListView custom draw internally") }, 201);
-	tableTree->insert({ _T("Button and Header"), _T("Child"), _T("Inherited table row drawing keeps this readable") }, 202);
-	tableTree->insert({ _T("Tree and VirtualTree"), _T("Child"), _T("The hierarchy glyph is rendered by TableTree") }, 203);
+	auto tableTreeRows = std::make_shared<TableTreeRows>();
+	installTableTreeRows(tableTree, tableTreeRows);
+	insertTableTreeRow(tableTree, tableTreeRows, 201,
+		{ _T("Custom-draw surfaces"), _T("TableTree"), _T("Uses Table/ListView custom draw internally") });
+	insertTableTreeRow(tableTree, tableTreeRows, 202,
+		{ _T("Button and Header"), _T("Child"), _T("Inherited table row drawing keeps this readable") });
+	insertTableTreeRow(tableTree, tableTreeRows, 203,
+		{ _T("Tree and VirtualTree"), _T("Child"), _T("The hierarchy glyph is rendered by TableTree") });
 	tableTree->insertChild(201, 202);
 	tableTree->insertChild(201, 203);
 	tableTree->expand(201);
