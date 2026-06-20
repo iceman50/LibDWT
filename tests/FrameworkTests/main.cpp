@@ -15,7 +15,10 @@
 #include <dwt/widgets/Window.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
+#include <exception>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -23,12 +26,59 @@
 namespace {
 
 int failures = 0;
+unsigned checksRun = 0;
+unsigned checksFailed = 0;
+unsigned testsRun = 0;
+unsigned testsFailed = 0;
 
 void check(bool condition, const char* message) {
+	++checksRun;
 	if(!condition) {
-		std::cerr << "FAIL: " << message << '\n';
+		std::cout << "    [FAIL] " << message << '\n';
+		++checksFailed;
 		++failures;
+		return;
 	}
+
+	std::cout << "    [PASS] " << message << '\n';
+}
+
+template<typename TestFunction>
+void runTest(unsigned position, unsigned total, const char* name,
+	TestFunction test) {
+	++testsRun;
+	const auto failuresBefore = failures;
+	const auto checksBefore = checksRun;
+	const auto failedChecksBefore = checksFailed;
+	const auto started = std::chrono::steady_clock::now();
+
+	std::cout << "\n[ RUN " << position << '/' << total << " ] " << name << '\n';
+
+	try {
+		test();
+	} catch(const std::exception& error) {
+		++failures;
+		std::cout << "    [EXCEPTION] " << error.what() << '\n';
+	} catch(...) {
+		++failures;
+		std::cout << "    [EXCEPTION] unknown exception\n";
+	}
+
+	const auto elapsed = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - started).count();
+	const auto testChecks = checksRun - checksBefore;
+	const auto testFailedChecks = checksFailed - failedChecksBefore;
+
+	if(failures != failuresBefore) {
+		++testsFailed;
+		std::cout << "[ FAILED  ] " << name;
+	} else {
+		std::cout << "[       OK ] " << name;
+	}
+
+	std::cout << " (" << testChecks << " checks, " << testFailedChecks
+		<< " failed, " << std::fixed << std::setprecision(2) << elapsed
+		<< " ms)\n";
 }
 
 void pumpMessages() {
@@ -467,20 +517,35 @@ void testLiveAccessibilityValidation() {
 }
 
 void runHeadlessTests() {
-	testApplicationMessageProcessing();
-	testDpiMath();
-	testSystemSettings();
-	testAccessibilityContract();
-	testControlContracts();
-	testInputEventContracts();
-	testVirtualTreeSelection();
-	testFileDialogContracts();
-	testMessageContracts();
+	const unsigned total = 9;
+	unsigned position = 0;
+
+	std::cout << "\n=== Headless framework tests ===\n";
+	runTest(++position, total, "testApplicationMessageProcessing",
+		testApplicationMessageProcessing);
+	runTest(++position, total, "testDpiMath", testDpiMath);
+	runTest(++position, total, "testSystemSettings", testSystemSettings);
+	runTest(++position, total, "testAccessibilityContract",
+		testAccessibilityContract);
+	runTest(++position, total, "testControlContracts", testControlContracts);
+	runTest(++position, total, "testInputEventContracts",
+		testInputEventContracts);
+	runTest(++position, total, "testVirtualTreeSelection",
+		testVirtualTreeSelection);
+	runTest(++position, total, "testFileDialogContracts",
+		testFileDialogContracts);
+	runTest(++position, total, "testMessageContracts", testMessageContracts);
 }
 
 void runLiveValidationTests() {
-	testLiveDpiAndSettingsValidation();
-	testLiveAccessibilityValidation();
+	const unsigned total = 2;
+	unsigned position = 0;
+
+	std::cout << "\n=== Live Windows validation tests ===\n";
+	runTest(++position, total, "testLiveDpiAndSettingsValidation",
+		testLiveDpiAndSettingsValidation);
+	runTest(++position, total, "testLiveAccessibilityValidation",
+		testLiveAccessibilityValidation);
 }
 
 bool hasArgument(int argc, char* argv[], const char* value) {
@@ -499,19 +564,36 @@ int dwtMain(dwt::Application&) {
 }
 
 int main(int argc, char* argv[]) {
+	std::cout << "LibDWT FrameworkTests\n"
+		<< "Verbose progress reporting enabled\n";
+
 	dwt::Application::init();
 
 	runHeadlessTests();
-	if(hasArgument(argc, argv, "--live-validation")) {
+	const bool liveValidation = hasArgument(argc, argv, "--live-validation");
+	if(liveValidation) {
 		runLiveValidationTests();
+	} else {
+		std::cout << "\n=== Live Windows validation tests ===\n"
+			<< "[  SKIPPED ] Pass --live-validation to run these tests.\n";
 	}
 
 	dwt::Application::uninit();
 
+	std::cout << "\n=== Framework test summary ===\n"
+		<< "Test functions: " << testsRun << " total, "
+		<< (testsRun - testsFailed) << " passed, " << testsFailed
+		<< " failed\n"
+		<< "Checks:         " << checksRun << " total, "
+		<< (checksRun - checksFailed) << " passed, " << checksFailed
+		<< " failed\n"
+		<< "Live tests:     " << (liveValidation ? "enabled" : "skipped")
+		<< '\n';
+
 	if(failures) {
-		std::cerr << failures << " framework test(s) failed\n";
+		std::cout << "[ FAILED ] " << failures << " framework failure(s)\n";
 		return 1;
 	}
-	std::cout << "All framework tests passed\n";
+	std::cout << "[ PASSED ] All framework tests passed\n";
 	return 0;
 }
