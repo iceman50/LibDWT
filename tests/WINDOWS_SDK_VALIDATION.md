@@ -26,12 +26,43 @@ Expected result:
 - Single-monitor systems can run the automated checks. Real monitor-transition
   validation still requires the manual pass below.
 
+The normal MSVC and MinGW test targets also run the visible validation
+application in non-interactive lifecycle-check mode:
+
+```powershell
+FrameworkValidation.exe --self-test
+```
+
+This mode constructs the complete validation UI, verifies the DPI and UIA
+provider invariants, closes it through the normal message pump, and returns a
+nonzero exit code on failure. It does not display the window or change system
+settings.
+
+## Visible Validation Application
+
+Build and launch one of these staged binaries:
+
+```powershell
+Builds\MSVC\Debug\FrameworkValidation.exe
+Builds\MinGW-w64\Debug\FrameworkValidation.exe
+```
+
+The application provides visible `TableTree`, `VirtualTree`, `TabView`,
+`ScrolledContainer`, and `Splitter` surfaces together with a bounded, read-only event log. Use
+**Run safe checks** to validate HWND, DPI, system-metric, monitor, and UIA root
+provider invariants. The checks are read-only and do not synthesize DPI changes
+or alter Windows settings.
+
+Keep the application open for the manual passes below. Record the event-log
+entries around each transition and note the compiler/configuration used.
+
 ## Manual Multi-Monitor DPI Pass
 
 Use a Per-Monitor V2 manifest build on a machine with at least two monitors set
 to different scale factors.
 
 - Open a representative sample with native controls and custom controls.
+- Keep `FrameworkValidation` open as the common diagnostic surface.
 - Move the top-level window between monitors.
 - Confirm `WM_DPICHANGED` applies the suggested bounds and layout remains
   coherent after each move.
@@ -45,6 +76,8 @@ to different scale factors.
 Use Inspect, Accessibility Insights, or another UIA client.
 
 - Verify custom containers appear in the fragment tree.
+- Start at the `LibDWT Framework Validation` root and verify its three main
+  logical-item surfaces and scrolling tab.
 - Verify `TableTree`, `VirtualTree`, and `TabView` expose logical children with
   names, bounds, focus, selection, expansion, and invocation where applicable.
 - Verify `Splitter` exposes `RangeValue` and `ScrolledContainer` exposes

@@ -1,7 +1,7 @@
 # Windows SDK Feature Audit
 
 Audit date: 2026-06-14
-Last updated: 2026-06-19
+Last updated: 2026-06-20
 
 This audit compares LibDWT's public widget APIs with the desktop Win32 API
 surface available from Windows 7 through Windows 11. The local Windows SDK used
@@ -32,8 +32,8 @@ Items without an explicit status marker remain unimplemented.
 
 | Area | Status | Added | Remaining |
 | --- | --- | --- | --- |
-| Per-monitor DPI | **Partial** | Per-Monitor V2 manifests, runtime and scoped thread awareness, per-widget DPI queries and scaling, DPI-aware metrics/system parameters/window adjustment, suggested bounds, typed DPI events, child after-parent handling, pre-layout resource callbacks, automatic font recreation, icon/image-list resize helpers, automatic image-list policies for Button/Table/Tree/ToolBar/TabView, and headless DPI contract tests | Remaining owner-drawn caches and direct bitmap/icon policies, plus live multi-monitor transition tests |
-| UI Automation | **Partial** | `IRawElementProviderSimple` plus fragment/root and logical-item navigation, native child-provider bridging, properties/events/structure notifications, `Splitter` RangeValue, `ScrolledContainer` Scroll, TableTree/VirtualTree/TabView selection, expansion, invocation, focus, bounds and hit-testing, and logical-item contract tests | Additional semantic patterns, live UIA client validation, text-scaling checks, and visual high-contrast audits |
+| Per-monitor DPI | **Partial** | Per-Monitor V2 manifests, runtime and scoped thread awareness, per-widget DPI queries and scaling, DPI-aware metrics/system parameters/window adjustment, suggested bounds, typed DPI events, child after-parent handling, pre-layout resource callbacks, automatic font recreation, icon/image-list resize helpers, automatic image-list policies for Button/Table/Tree/ToolBar/TabView, headless DPI contract tests, and a visible event-logging validation application | Remaining owner-drawn caches and direct bitmap/icon policies, plus live multi-monitor transition results |
+| UI Automation | **Partial** | `IRawElementProviderSimple` plus fragment/root and logical-item navigation, native child-provider bridging, properties/events/structure notifications, `Splitter` RangeValue, `ScrolledContainer` Scroll, TableTree/VirtualTree/TabView selection, expansion, invocation, focus, bounds and hit-testing, logical-item contract tests, and visible UIA validation surfaces | Additional semantic patterns, live external-client validation, text-scaling checks, and visual high-contrast audits |
 | Modern file dialogs | **Partial** | `IFileOpenDialog`/`IFileSaveDialog` backends for load, save, and folder selection; filters, filesystem paths, long paths, custom places, shell-item places/results, multiple shell-item results, client GUIDs, events, raw customization hooks, typed custom-control helpers, options, and `FOS_PICKFOLDERS` | Live validation of library and virtual-folder selections |
 | Task dialogs | **Added** | `TaskDialogIndirect` wrapper with common/custom buttons, command links, radio buttons, verification, expanded/footer text, icons, progress modes, callbacks, and callback-based live updates | Convenience APIs for hyperlinks and typed live progress/text updates |
 
@@ -74,6 +74,8 @@ Items without an explicit status marker remain unimplemented.
    - **Added:** Opt-in live validation through
      `FrameworkTests --live-validation` plus the
      `tests/WINDOWS_SDK_VALIDATION.md` checklist.
+   - **Added:** A visible `FrameworkValidation` surface with bounded event
+     logging and a non-interactive lifecycle self-test.
    - **Remaining:** Live multi-monitor transition tests and policies for
      remaining direct bitmap/icon and owner-drawn caches.
    - Earliest relevant versions: Windows 8.1 for per-monitor DPI and Windows 10
@@ -97,6 +99,8 @@ Items without an explicit status marker remain unimplemented.
    - **Added:** Opt-in live provider-return validation through
      `FrameworkTests --live-validation` plus the
      `tests/WINDOWS_SDK_VALIDATION.md` checklist.
+   - **Added:** Visible TableTree, VirtualTree, TabView, and ScrolledContainer
+     surfaces for validation with external UIA clients.
    - **Added:** Typed theme, system-color, and system-settings notifications,
      including current high-contrast and client-area-animation state.
    - **Added:** Keyboard audit and missing keyboard scrolling support for

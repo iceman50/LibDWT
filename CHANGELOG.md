@@ -6,6 +6,9 @@ All notable changes to LibDWT are documented in this file.
 
 ### Added
 
+- Added a visible `FrameworkValidation` application for manual DPI, UI
+  Automation, high-contrast, text-scaling, and scrolling validation, with a
+  bounded event log and non-interactive lifecycle self-test for build targets.
 - Added `Application::processMessages()` for keeping the UI responsive during
   lengthy work on the GUI thread by processing pending messages and callbacks.
 - Added checkbox support to `dwt::Tree`.
@@ -122,6 +125,10 @@ All notable changes to LibDWT are documented in this file.
 
 ### Changed
 
+- MSVC Release static-library objects now use self-contained debug records,
+  avoiding fragile compiler-PDB dependencies when linking applications.
+- MSVC builds compile DWT once per configuration before building dependent
+  examples and tests.
 - Windows 7 is now the minimum supported Windows version.
 - Set `WINVER` and `_WIN32_WINNT` to `0x0601`.
 - Set `_WIN32_IE` to `0x0A00`.

@@ -100,6 +100,12 @@ try {
                 if ($PlatformToolset) {
                     $properties = "$properties;DwtPlatformToolset=$PlatformToolset"
                 }
+                if ($project -ne $dwtProject) {
+                    # dwt is built first for every configuration. Avoid rebuilding
+                    # the same project through every example/test reference,
+                    # especially for Clean;Build runs.
+                    $properties = "$properties;BuildProjectReferences=false"
+                }
                 & $msbuild $project "/m" "/nologo" "/verbosity:minimal" "/t:$target" $properties
                 if ($LASTEXITCODE -ne 0) {
                     throw "Build failed for $project ($configuration|$platform)."
@@ -114,6 +120,16 @@ try {
                 & $testExecutable
                 if ($LASTEXITCODE -ne 0) {
                     throw "Tests failed ($configuration|$platform)."
+                }
+
+                $validationExecutable = Join-Path $exampleProjectsRoot "FrameworkValidation\build\$platform\$configuration\FrameworkValidation.exe"
+                if (-not (Test-Path $validationExecutable)) {
+                    throw "Validation executable not found: $validationExecutable"
+                }
+                Write-Host "Running $validationExecutable --self-test"
+                & $validationExecutable --self-test
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Framework validation self-test failed ($configuration|$platform)."
                 }
             }
         }

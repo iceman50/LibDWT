@@ -196,12 +196,12 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 | Sorting | ✅ Added | Complete |
 | Item/part rectangles | ✅ Added | Complete |
 | Accessibility IDs | ✅ Added | Complete |
-| Live UI validation | ❌ Missing | Multi-monitor transitions, focus restoration |
-| Live accessibility validation | ❌ Missing | Screen reader testing, high-contrast verification |
+| Live UI validation | ⚠️ Partial | Visible harness added; multi-monitor results remain |
+| Live accessibility validation | ⚠️ Partial | UIA surfaces added; external-client and high-contrast results remain |
 
 **Implementation notes:**
 - File: [dwt/include/dwt/widgets/Tree.h](dwt/include/dwt/widgets/Tree.h)
-- Missing: Live testing and validation harness
+- Added: Visible `FrameworkValidation` harness and lifecycle self-test
 
 #### 2.5 VirtualTree
 **Status:** Partial (80% complete)
@@ -215,16 +215,14 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 | Sorting | ✅ Added | Complete |
 | Accessibility IDs | ✅ Added | Complete |
 | Events/notifications | ✅ Added | Complete |
-| Native multiselect storage | ⚠️ Partial | Model-backed but needs testing |
-| TVI_SORT implementation | ❌ Missing | Line 461: Not implemented |
-| Expand code | ❌ Incomplete | Lines 597, 627, 650: Partially stubbed |
-| Live UI validation | ❌ Missing | Multi-select behavior, focus handling |
+| Native multiselect storage | ✅ Added | Model-backed with framework tests |
+| TVI_SORT implementation | ✅ Added | Virtual insertion and child sorting supported |
+| Expand code | ✅ Added | Expand/collapse behavior implemented and tested |
+| Live UI validation | ⚠️ Partial | Visible VirtualTree surface added; manual results remain |
 
 **Implementation notes:**
 - File: [dwt/include/dwt/widgets/VirtualTree.h](dwt/include/dwt/widgets/VirtualTree.h)
 - File: [dwt/src/widgets/VirtualTree.cpp](dwt/src/widgets/VirtualTree.cpp)
-- TODO at line 461: `TVI_SORT` not implemented
-- TODOs at lines 597, 627, 650: Expand behavior incomplete
 
 #### 2.6 Taskbar
 **Status:** Partial (85% complete)
@@ -543,12 +541,13 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 - Icon/image-list resize helpers
 - Pre-layout resource callbacks
 - Headless DPI contract tests
+- Visible `FrameworkValidation` event-logging harness
+- Automated validation lifecycle self-test for MSVC and MinGW
 
 **What's Missing:**
 - ❌ Live multi-monitor transition tests (DPI change on monitor switch)
 - ❌ Owner-drawn cache policies for remaining controls
 - ❌ Direct bitmap/icon policies for custom controls
-- ❌ Live validation harness
 
 **Implementation files:**
 - [dwt/include/dwt/util/win32/Dpi.h](dwt/include/dwt/util/win32/Dpi.h)
@@ -662,8 +661,6 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 | [MDIFrame.cpp](dwt/src/widgets/MDIFrame.cpp#L38) | 38 | P3 | Fix caption | Caption display issue |
 | [Menu.cpp](dwt/src/widgets/Menu.cpp#L353,#L694) | 353, 694 | P2 | Support embedded HBITMAPs in menu items | Custom menu images limited |
 | [ToolBar.h](dwt/include/dwt/widgets/ToolBar.h#L47) | 47 | P2 | Support multiple bitmaps | Mixed icon sizes |
-| [VirtualTree.cpp](dwt/src/widgets/VirtualTree.cpp#L461) | 461 | P2 | TVI_SORT not implemented | Sorting not available |
-| [VirtualTree.cpp](dwt/src/widgets/VirtualTree.cpp#L597,#L627,#L650) | 597,627,650 | P2 | Expand code incomplete | Tree expansion issues |
 | [TableTree.cpp](dwt/src/widgets/TableTree.cpp#L101) | 101 | P2 | LVM_SETITEM not implemented | Limited item updates |
 | [TableTree.cpp](dwt/src/widgets/TableTree.cpp#L338,#L341,#L344) | 338,341,344 | P2 | Non-callback mode limited | Text/image/data not editable |
 
@@ -742,7 +739,7 @@ The audit does not include dedicated audio playback APIs. However, Windows 7-11 
 1. Button: Image-list getter, text-margin, focus/hot notifications
 2. ToolTip: Balloon styles, tracking APIs, per-tool flags
 3. DateTime/MonthCalendar: Calendar ID, day-state APIs
-4. VirtualTree: TVI_SORT, expand code, live validation
+4. VirtualTree: complete live UI and external accessibility validation
 5. TableTree: LVM_SETITEM, non-callback modes
 
 ### Phase 3: Feature Expansion (2-3 weeks)
@@ -792,7 +789,7 @@ The audit does not include dedicated audio playback APIs. However, Windows 7-11 
 ## 9. RECOMMENDATIONS
 
 ### Immediate Actions (Next Sprint)
-1. **Fix VirtualTree TODOs** (TVI_SORT, expand code)
+1. **Run VirtualTree live UI and external accessibility validation**
 2. **Complete TableTree non-callback modes**
 3. **Add Button image-list getter**
 4. **Add ToolTip balloon styles**

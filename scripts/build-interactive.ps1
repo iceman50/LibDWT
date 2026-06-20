@@ -161,7 +161,10 @@ function Publish-Artifacts {
         return
     }
 
-    $filesToPublish = @($Files | Where-Object { $_ -and $_.Exists })
+    $retiredArtifacts = @("WindowsSdkValidation.exe", "WindowsSdkValidation.pdb")
+    $filesToPublish = @($Files | Where-Object {
+        $_ -and $_.Exists -and $retiredArtifacts -notcontains $_.Name
+    })
     if ($filesToPublish.Count -eq 0) {
         throw "No build artifacts were found to stage in $Destination."
     }
