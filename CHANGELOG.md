@@ -125,6 +125,9 @@ All notable changes to LibDWT are documented in this file.
 
 ### Changed
 
+- `TabView::Seed::closeable` can now disable tab-strip close affordances and
+  close gestures; `FrameworkValidation` uses it and relies on normal nested
+  layout propagation to remain stable while resizing.
 - MSVC Release static-library objects now use self-contained debug records,
   avoiding fragile compiler-PDB dependencies when linking applications.
 - MSVC builds compile DWT once per configuration before building dependent

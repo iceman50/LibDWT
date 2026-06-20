@@ -238,7 +238,9 @@ int dwtMain(dwt::Application& app) {
 	tableTree->insertChild(2000, 2002);
 	tableTree->expand(2000);
 
-	auto* tabs = WidgetCreator<TabView>::create(grid, TabView::Seed(160, false, true));
+	TabView::Seed tabSeed(160, false, true);
+	tabSeed.closeable = false;
+	auto* tabs = WidgetCreator<TabView>::create(grid, tabSeed);
 	tabs->setAccessibleName(_T("Validation tab view"));
 
 	auto* accessibilityPage = WidgetCreator<Grid>::create(tabs, Grid::Seed(4, 1));
@@ -313,6 +315,12 @@ int dwtMain(dwt::Application& app) {
 		Label::Seed(_T("Keyboard focus and bounds should remain coherent.")));
 	leftPane->setWidget(leftLabel, 0, 0);
 	rightPane->setWidget(rightLabel, 0, 0);
+	// Materialize the splitter before the hidden page is laid out asynchronously.
+	splitterContainer->layout();
+	for(auto splitters = splitterContainer->getChildren<Splitter>();
+		splitters.first != splitters.second; ++splitters.first) {
+		(*splitters.first)->setVisible(true);
+	}
 	splitterPage->setWidget(splitterContainer, 0, 0);
 	tabs->add(splitterPage);
 	tabs->setActive(accessibilityPage);
@@ -395,24 +403,8 @@ int dwtMain(dwt::Application& app) {
 			_T(", high contrast=") + (event.highContrast ? _T("on") : _T("off")));
 	});
 
-	auto layout = [window, grid, tabs, accessibilityPage, scrollingPage,
-		splitterPage, splitterContainer, leftPane, rightPane, scrolled,
-		scrollContent] {
+	auto layout = [window, grid] {
 		grid->resize(dwt::Rectangle(window->getClientSize()));
-		grid->layout();
-		static_cast<dwt::Widget*>(tabs)->layout();
-		accessibilityPage->layout();
-		scrollingPage->layout();
-		splitterPage->layout();
-		splitterContainer->layout();
-		leftPane->layout();
-		rightPane->layout();
-		auto splitters = splitterContainer->getChildren<Splitter>();
-		for(auto i = splitters.first; i != splitters.second; ++i) {
-			(*i)->setVisible(true);
-		}
-		scrolled->layout();
-		scrollContent->layout();
 	};
 	window->onSized([layout](const dwt::SizedEvent&) {
 		layout();
@@ -442,6 +434,18 @@ int dwtMain(dwt::Application& app) {
 	appendLog(log,
 		_T("Tip: run Accessibility Insights or Inspect while interacting with each pane."));
 	if(selfTest) {
+		const dwt::Rectangle resizeCases[] = {
+			dwt::Rectangle(60, 60, 900, 600),
+			dwt::Rectangle(60, 60, 500, 350),
+			dwt::Rectangle(60, 60, 1400, 900),
+			dwt::Rectangle(60, 60, 320, 240),
+			dwt::Rectangle(60, 60, 1280, 820)
+		};
+		for(const auto& bounds : resizeCases) {
+			window->resize(bounds);
+			app.processMessages();
+		}
+		appendLog(log, _T("Resize lifecycle checks complete."));
 		const bool passed = runSafeChecks(window, grid, tableTree, virtualTree,
 			tabs, splitterContainer, log);
 		window->close();
