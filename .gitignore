@@ -20,6 +20,7 @@
 /projects/**/build/
 /examples/**/build/
 /dwt/**/build/
+/Builds/
 
 # CMake / Ninja / other generators
 CMakeFiles/
