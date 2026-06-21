@@ -4,6 +4,7 @@
 
 #include <dwt/resources/Font.h>
 #include <dwt/resources/Icon.h>
+#include <dwt/resources/ImageList.h>
 #include <dwt/widgets/Button.h>
 #include <dwt/widgets/CheckBox.h>
 #include <dwt/widgets/ColorDialog.h>
@@ -13,11 +14,13 @@
 #include <dwt/widgets/FolderDialog.h>
 #include <dwt/widgets/FontDialog.h>
 #include <dwt/widgets/Grid.h>
+#include <dwt/widgets/GroupBox.h>
 #include <dwt/widgets/Header.h>
 #include <dwt/widgets/Label.h>
 #include <dwt/widgets/Link.h>
 #include <dwt/widgets/LoadDialog.h>
 #include <dwt/widgets/MessageBox.h>
+#include <dwt/widgets/Menu.h>
 #include <dwt/widgets/MonthCalendar.h>
 #include <dwt/widgets/Notification.h>
 #include <dwt/widgets/ProgressBar.h>
@@ -27,6 +30,8 @@
 #include <dwt/widgets/SaveDialog.h>
 #include <dwt/widgets/ScrolledContainer.h>
 #include <dwt/widgets/Slider.h>
+#include <dwt/widgets/Splitter.h>
+#include <dwt/widgets/SplitterContainer.h>
 #include <dwt/widgets/Spinner.h>
 #include <dwt/widgets/StatusBar.h>
 #include <dwt/widgets/Table.h>
@@ -62,11 +67,15 @@ using dwt::FolderDialog;
 using dwt::FontDialog;
 using dwt::Grid;
 using dwt::GridInfo;
+using dwt::GroupBox;
 using dwt::Header;
+using dwt::ImageList;
+using dwt::ImageListPtr;
 using dwt::Label;
 using dwt::Link;
 using dwt::LoadDialog;
 using dwt::MonthCalendar;
+using dwt::Menu;
 using dwt::Notification;
 using dwt::ProgressBar;
 using dwt::RadioButton;
@@ -75,6 +84,8 @@ using dwt::RichTextBox;
 using dwt::SaveDialog;
 using dwt::ScrolledContainer;
 using dwt::Slider;
+using dwt::Splitter;
+using dwt::SplitterContainer;
 using dwt::Spinner;
 using dwt::StatusBar;
 using dwt::Table;
@@ -178,6 +189,50 @@ dwt::FontPtr createExampleFont(unsigned dpi = 96) {
 	return dwt::FontPtr(new dwt::Font(lf));
 }
 
+dwt::IconPtr loadIcon(unsigned resourceId, const dwt::Point& size) {
+	return dwt::IconPtr(new dwt::Icon(resourceId, size));
+}
+
+ImageListPtr makeImageList(const dwt::Point& size,
+	const std::vector<unsigned>& resourceIds)
+{
+	ImageListPtr images(new ImageList(size));
+	for(auto id : resourceIds) {
+		dwt::Icon icon(id, size);
+		images->add(icon);
+	}
+	return images;
+}
+
+void configurePageGrid(Grid::ObjectType grid, size_t rows, size_t columns) {
+	grid->setSpacing(8);
+	for(size_t row = 0; row < rows; ++row) {
+		grid->row(row).mode = GridInfo::FILL;
+		grid->row(row).align = GridInfo::STRETCH;
+	}
+	for(size_t column = 0; column < columns; ++column) {
+		grid->column(column).mode = GridInfo::FILL;
+		grid->column(column).align = GridInfo::STRETCH;
+	}
+}
+
+void populateImageTable(Table::ObjectType table, int view,
+	const ImageListPtr& smallImages, const ImageListPtr& largeImages)
+{
+	table->addColumn(_T("Widget"), 180);
+	table->addColumn(_T("Category"), 130);
+	table->addColumn(_T("Purpose"), 260);
+	table->setSmallImageList(smallImages);
+	table->setNormalImageList(largeImages);
+	table->setFullRowSelect(true);
+	table->setAlwaysShowSelection(true);
+	table->setView(view);
+	table->insert({ _T("Button"), _T("Input"), _T("Push, command-link, split, and image variants") }, 1, -1, 5);
+	table->insert({ _T("Table"), _T("Data"), _T("Report, icon, small-icon, list, tile, and grouped views") }, 2, -1, 8);
+	table->insert({ _T("RichTextBox"), _T("Text"), _T("Formatted RTF editing and display") }, 3, -1, 4);
+	table->insert({ _T("SplitterContainer"), _T("Layout"), _T("Resizable multi-pane layouts") }, 4, -1, 9);
+}
+
 void setRichSummary(RichTextBox::ObjectType richText) {
 	const char* rtf =
 		"{\\rtf1\\ansi\\ansicpg1252\\deff0"
@@ -192,7 +247,7 @@ void setRichSummary(RichTextBox::ObjectType richText) {
 		"}"
 		"\\viewkind4\\uc1\\pard\\sa120\\sl280\\slmult1\\f0\\fs20\\cf1 "
 		"\\b RichTextBox Example\\b0\\par "
-		"\\cf2 Grid-based layout with a broad collection of controls.\\cf1\\par\\par "
+		"\\cf2 Categorized gallery covering the concrete DWT controls and native view styles.\\cf1\\par\\par "
 		"\\b Text formatting showcase\\b0\\par "
 		"Regular, \\b bold\\b0, \\i italic\\i0, \\ul underline\\ul0, and \\strike strikeout\\strike0 text.\\par "
 		"\\cf3 Colorized text\\cf1, \\cf4 semantic highlights\\cf1, and \\highlight6 highlighted regions\\highlight0.\\par "
@@ -247,18 +302,37 @@ void configureGrid(Grid::ObjectType grid) {
 int dwtMain(dwt::Application& app) {
 	const dwt::tstring appId = _T("LibDWT.MultiControlExample");
 	dwt::Taskbar::setCurrentAppId(appId);
+	const bool selfTest = _tcsstr(::GetCommandLine(), _T("--self-test")) != nullptr;
 	const bool clearJumpListOnStart = _tcsstr(::GetCommandLine(), _T("--clear-jump-list")) != nullptr;
 	const bool openTaskbarOnStart = _tcsstr(::GetCommandLine(), _T("--taskbar")) != nullptr;
 	if(clearJumpListOnStart) {
 		dwt::Taskbar::deleteJumpList(appId);
 	}
 
-	Window::Seed seed(_T("DWT MultiControlExample - Grid Showcase"));
+	Window::Seed seed(_T("DWT MultiControlExample - Complete Control Gallery"));
 	seed.location = dwt::Rectangle(70, 70, 1400, 900);
 	auto* window = WidgetCreator<Window>::create(seed);
 	dwt::Taskbar::setWindowAppId(window, appId);
 	auto uiFont = createExampleFont(window->getDpi());
 	window->setFont(uiFont);
+	const auto smallIconSize = window->scale(dwt::Point(16, 16));
+	const auto largeIconSize = window->scale(dwt::Point(32, 32));
+	const std::vector<unsigned> sharedIconIds = {
+		IDI_DWT_BALL_GREEN, IDI_DWT_BALLOON, IDI_DWT_BALL_RED,
+		IDI_DWT_EXIT, IDI_DWT_GET_STARTED, IDI_DWT_LEFT,
+		IDI_DWT_PAUSE, IDI_DWT_PLAY, IDI_DWT_REFRESH,
+		IDI_DWT_RIGHT, IDI_DWT_UP
+	};
+	auto smallImages = makeImageList(smallIconSize, sharedIconIds);
+	auto largeImages = makeImageList(largeIconSize, sharedIconIds);
+	auto iconGreen = loadIcon(IDI_DWT_BALL_GREEN, smallIconSize);
+	auto iconBalloon = loadIcon(IDI_DWT_BALLOON, smallIconSize);
+	auto iconRed = loadIcon(IDI_DWT_BALL_RED, smallIconSize);
+	auto iconExit = loadIcon(IDI_DWT_EXIT, smallIconSize);
+	auto iconGetStarted = loadIcon(IDI_DWT_GET_STARTED, smallIconSize);
+	auto iconPause = loadIcon(IDI_DWT_PAUSE, smallIconSize);
+	auto iconPlay = loadIcon(IDI_DWT_PLAY, smallIconSize);
+	auto iconRefresh = loadIcon(IDI_DWT_REFRESH, smallIconSize);
 
 	auto* grid = WidgetCreator<Grid>::create(window, Grid::Seed(8, 4));
 	configureGrid(grid);
@@ -267,7 +341,7 @@ int dwtMain(dwt::Application& app) {
 	auto* toolbar = WidgetCreator<ToolBar>::create(rebar, ToolBar::Seed());
 
 	auto* labelInput = WidgetCreator<Label>::create(grid, Label::Seed(_T("Input:")));
-	auto* textInput = WidgetCreator<TextBox>::create(grid, TextBox::Seed(_T("Grid layout with all major controls")));
+	auto* textInput = WidgetCreator<TextBox>::create(grid, TextBox::Seed(_T("Complete DWT control gallery with shared example icons")));
 	auto* buttonRun = WidgetCreator<Button>::create(grid,
 		Button::Seed(_T("Modern Controls"), BS_COMMANDLINK));
 	auto* checkOption = WidgetCreator<CheckBox>::create(grid, CheckBox::Seed(_T("Enable Option")));
@@ -301,14 +375,167 @@ int dwtMain(dwt::Application& app) {
 		TVS_EX_EXCLUSIONCHECKBOXES | TVS_EX_DIMMEDCHECKBOXES;
 	auto* tree = WidgetCreator<Tree>::create(grid, treeSeed);
 
-	auto* tableTree = WidgetCreator<TableTree>::create(grid, TableTree::Seed(tableSeed));
+	// The lower half is a categorized, non-closeable gallery. Keeping each
+	// category in its own container prevents unrelated controls from fighting
+	// over layout and notification routing.
+	TabView::Seed gallerySeed(150, false, true);
+	gallerySeed.closeable = false;
+	gallerySeed.font = uiFont;
+	auto* galleryTabs = WidgetCreator<TabView>::create(grid, gallerySeed);
+
+	auto* buttonsPage = WidgetCreator<Grid>::create(galleryTabs, Grid::Seed(1, 2));
+	buttonsPage->setText(_T("Buttons"));
+	configurePageGrid(buttonsPage, 1, 2);
+	auto* buttonGroup = WidgetCreator<GroupBox>::create(buttonsPage,
+		GroupBox::Seed(_T("Button controls")));
+	auto* buttonGrid = buttonGroup->addChild(Grid::Seed(5, 2));
+	configurePageGrid(buttonGrid, 5, 2);
+	auto* pushButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Push button"), BS_PUSHBUTTON));
+	auto* defaultButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Default button"), BS_DEFPUSHBUTTON));
+	auto* commandButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Get started"), BS_COMMANDLINK));
+	commandButton->setNote(_T("Command-link note with a shared icon"));
+	auto* defaultCommandButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Default command"), BS_DEFCOMMANDLINK));
+	defaultCommandButton->setNote(_T("Default command-link variant"));
+	auto* splitButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Split action"), BS_SPLITBUTTON));
+	auto* defaultSplitButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Default split"), BS_DEFSPLITBUTTON));
+	auto* imageButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Refresh"), BS_PUSHBUTTON));
+	imageButton->setImageList(smallImages, BUTTON_IMAGELIST_ALIGN_LEFT,
+		dwt::Rectangle(4, 2, 4, 2));
+	auto* shieldButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Administrative action"), BS_PUSHBUTTON));
+	shieldButton->setElevationRequired();
+	auto* iconButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(dwt::tstring(), BS_PUSHBUTTON | BS_ICON));
+	iconButton->setImage(iconPlay);
+	auto* disabledButton = WidgetCreator<Button>::create(buttonGrid,
+		Button::Seed(_T("Disabled button"), BS_PUSHBUTTON));
+	disabledButton->setEnabled(false);
+	buttonGrid->setWidget(pushButton, 0, 0);
+	buttonGrid->setWidget(defaultButton, 0, 1);
+	buttonGrid->setWidget(commandButton, 1, 0);
+	buttonGrid->setWidget(defaultCommandButton, 1, 1);
+	buttonGrid->setWidget(splitButton, 2, 0);
+	buttonGrid->setWidget(defaultSplitButton, 2, 1);
+	buttonGrid->setWidget(imageButton, 3, 0);
+	buttonGrid->setWidget(shieldButton, 3, 1);
+	buttonGrid->setWidget(iconButton, 4, 0);
+	buttonGrid->setWidget(disabledButton, 4, 1);
+
+	auto* choiceGroup = WidgetCreator<GroupBox>::create(buttonsPage,
+		GroupBox::Seed(_T("Check boxes and radio buttons with images")));
+	auto* choiceGrid = choiceGroup->addChild(Grid::Seed(6, 1));
+	configurePageGrid(choiceGrid, 6, 1);
+	auto* imageCheck = WidgetCreator<CheckBox>::create(choiceGrid,
+		CheckBox::Seed(_T("Use shared green icon")));
+	imageCheck->setImageList(smallImages, BUTTON_IMAGELIST_ALIGN_LEFT,
+		dwt::Rectangle(3, 1, 4, 1));
+	imageCheck->setChecked();
+	auto* secondCheck = WidgetCreator<CheckBox>::create(choiceGrid,
+		CheckBox::Seed(_T("Enable notifications")));
+	secondCheck->setImage(iconBalloon);
+	auto* imageRadioA = WidgetCreator<RadioButton>::create(choiceGrid,
+		RadioButton::Seed(_T("Play mode")));
+	imageRadioA->setImageList(smallImages, BUTTON_IMAGELIST_ALIGN_LEFT,
+		dwt::Rectangle(3, 1, 4, 1));
+	auto* imageRadioB = WidgetCreator<RadioButton>::create(choiceGrid,
+		RadioButton::Seed(_T("Pause mode")));
+	auto* choiceDescription = WidgetCreator<Label>::create(choiceGrid,
+		Label::Seed(_T("The images come from the repository-level res folder and are embedded by both toolchains.")));
+	choiceGrid->setWidget(imageCheck, 0, 0);
+	choiceGrid->setWidget(secondCheck, 1, 0);
+	choiceGrid->setWidget(imageRadioA, 2, 0);
+	choiceGrid->setWidget(imageRadioB, 3, 0);
+	choiceGrid->setWidget(choiceDescription, 4, 0, 2, 1);
+	buttonsPage->setWidget(buttonGroup, 0, 0);
+	buttonsPage->setWidget(choiceGroup, 0, 1);
+
+	auto* listPage = WidgetCreator<Grid>::create(galleryTabs, Grid::Seed(2, 3));
+	listPage->setText(_T("List Views"));
+	configurePageGrid(listPage, 2, 3);
+	Table::Seed imageTableSeed;
+	imageTableSeed.font = uiFont;
+	auto* groupedTable = WidgetCreator<Table>::create(listPage, imageTableSeed);
+	groupedTable->addColumn(_T("Control"), 180);
+	groupedTable->addColumn(_T("State"), 130);
+	groupedTable->addColumn(_T("Description"), 280);
+	groupedTable->setSmallImageList(smallImages);
+	groupedTable->setGroupImageList(smallImages);
+	groupedTable->setFullRowSelect(true);
+	groupedTable->setGridLines(true);
+	groupedTable->setGroups({ _T("Input controls"), _T("Data and layout controls") });
+	groupedTable->insert({ _T("Button family"), _T("Ready"), _T("Push, command-link, split, image, and shield") }, 11, 0, 7);
+	groupedTable->insert({ _T("CheckBox / RadioButton"), _T("Ready"), _T("Selection controls with shared imagery") }, 12, 0, 0);
+	groupedTable->insert({ _T("Table / Tree"), _T("Ready"), _T("Grouped rows, headers, images, and hierarchy") }, 13, 1, 8);
+	groupedTable->insert({ _T("SplitterContainer"), _T("Ready"), _T("Live resizable text panes") }, 14, 1, 9);
+	LVGROUP inputGroup = { };
+	inputGroup.cbSize = sizeof(inputGroup);
+	inputGroup.mask = LVGF_SUBTITLE | LVGF_FOOTER | LVGF_TASK | LVGF_STATE;
+	inputGroup.pszSubtitle = const_cast<LPTSTR>(_T("Native group header, title image, subtitle, and collapsible state"));
+	inputGroup.pszFooter = const_cast<LPTSTR>(_T("2 input demonstrations"));
+	inputGroup.pszTask = const_cast<LPTSTR>(_T("Open Buttons tab"));
+	inputGroup.stateMask = LVGS_COLLAPSIBLE;
+	inputGroup.state = LVGS_COLLAPSIBLE;
+	groupedTable->setGroupInfo(0, inputGroup);
+	LVGROUP dataGroup = inputGroup;
+	dataGroup.pszSubtitle = const_cast<LPTSTR>(_T("Views and containers using the same image resources"));
+	dataGroup.pszFooter = const_cast<LPTSTR>(_T("2 data demonstrations"));
+	dataGroup.pszTask = const_cast<LPTSTR>(_T("Open Hierarchy tab"));
+	groupedTable->setGroupInfo(1, dataGroup);
+
+	auto* iconTable = WidgetCreator<Table>::create(listPage, imageTableSeed);
+	auto* smallIconTable = WidgetCreator<Table>::create(listPage, imageTableSeed);
+	auto* listTable = WidgetCreator<Table>::create(listPage, imageTableSeed);
+	auto* tileTable = WidgetCreator<Table>::create(listPage, imageTableSeed);
+	populateImageTable(iconTable, LV_VIEW_ICON, smallImages, largeImages);
+	populateImageTable(smallIconTable, LV_VIEW_SMALLICON, smallImages, largeImages);
+	populateImageTable(listTable, LV_VIEW_LIST, smallImages, largeImages);
+	populateImageTable(tileTable, LV_VIEW_TILE, smallImages, largeImages);
+	listPage->setWidget(groupedTable, 0, 0, 1, 2);
+	listPage->setWidget(iconTable, 0, 2);
+	listPage->setWidget(smallIconTable, 1, 0);
+	listPage->setWidget(listTable, 1, 1);
+	listPage->setWidget(tileTable, 1, 2);
+
+	auto* hierarchyPage = WidgetCreator<Grid>::create(galleryTabs, Grid::Seed(1, 2));
+	hierarchyPage->setText(_T("Hierarchy"));
+	configurePageGrid(hierarchyPage, 1, 2);
+
+	auto* tableTree = WidgetCreator<TableTree>::create(hierarchyPage, TableTree::Seed(tableSeed));
 	Tree::Seed virtualTreeSeed;
 	virtualTreeSeed.font = uiFont;
 	virtualTreeSeed.checkBoxes = true;
 	virtualTreeSeed.tvExStyle = treeSeed.tvExStyle;
-	auto* virtualTree = WidgetCreator<VirtualTree>::create(grid, VirtualTree::Seed(virtualTreeSeed));
+	auto* virtualTree = WidgetCreator<VirtualTree>::create(hierarchyPage, VirtualTree::Seed(virtualTreeSeed));
+	hierarchyPage->setWidget(tableTree, 0, 0);
+	hierarchyPage->setWidget(virtualTree, 0, 1);
 
-	auto* scrolled = WidgetCreator<ScrolledContainer>::create(grid, ScrolledContainer::Seed());
+	auto* layoutPage = WidgetCreator<Grid>::create(galleryTabs, Grid::Seed(1, 1));
+	layoutPage->setText(_T("Text + Layout"));
+	configurePageGrid(layoutPage, 1, 1);
+	auto* splitterContainer = WidgetCreator<SplitterContainer>::create(layoutPage,
+		SplitterContainer::Seed(0.58, false));
+	auto* textPane = splitterContainer->addChild(Grid::Seed(2, 1));
+	textPane->setSpacing(6);
+	textPane->row(0).mode = GridInfo::AUTO;
+	textPane->row(1).mode = GridInfo::FILL;
+	textPane->row(1).align = GridInfo::STRETCH;
+	textPane->column(0).mode = GridInfo::FILL;
+	textPane->column(0).align = GridInfo::STRETCH;
+	auto* richLabel = WidgetCreator<Label>::create(textPane,
+		Label::Seed(_T("RichTextBox (left) and scrollable TextBox / MonthCalendar content (right)")));
+	auto* layoutRichText = WidgetCreator<RichTextBox>::create(textPane, RichTextBox::Seed());
+	textPane->setWidget(richLabel, 0, 0);
+	textPane->setWidget(layoutRichText, 1, 0);
+	auto* scrollPane = splitterContainer->addChild(Grid::Seed(1, 1));
+	configurePageGrid(scrollPane, 1, 1);
+	auto* scrolled = WidgetCreator<ScrolledContainer>::create(scrollPane, ScrolledContainer::Seed());
 	auto* scrolledGrid = scrolled->addChild(Grid::Seed(5, 1));
 	scrolledGrid->setSpacing(6);
 	scrolledGrid->row(0).mode = GridInfo::AUTO;
@@ -334,9 +561,22 @@ int dwtMain(dwt::Application& app) {
 	scrolledGrid->setWidget(scrollLabel4, 3, 0);
 	scrolledGrid->setWidget(monthCalendar, 4, 0);
 	scrolledGrid->layout();
+	scrollPane->setWidget(scrolled, 0, 0);
+	layoutPage->setWidget(splitterContainer, 0, 0);
+	splitterContainer->layout();
+	for(auto splitters = splitterContainer->getChildren<Splitter>();
+		splitters.first != splitters.second; ++splitters.first) {
+		(*splitters.first)->setVisible(true);
+	}
 
 	dwt::IconPtr taskbarIcon(new dwt::Icon(IDI_MULTI_TRAY, dwt::Point(16, 16)));
-	auto* taskbarTabs = WidgetCreator<TabView>::create(grid, TabView::Seed(160, false, true));
+	auto* windowsPage = WidgetCreator<Grid>::create(galleryTabs, Grid::Seed(1, 1));
+	windowsPage->setText(_T("Windows 7+"));
+	configurePageGrid(windowsPage, 1, 1);
+	TabView::Seed taskbarTabSeed(160, false, true);
+	taskbarTabSeed.closeable = false;
+	taskbarTabSeed.font = uiFont;
+	auto* taskbarTabs = WidgetCreator<TabView>::create(windowsPage, taskbarTabSeed);
 	taskbarTabs->initTaskbar(window);
 
 	auto* summaryPage = WidgetCreator<Grid>::create(taskbarTabs, Grid::Seed(1, 1));
@@ -386,6 +626,14 @@ int dwtMain(dwt::Application& app) {
 	if(openTaskbarOnStart) {
 		taskbarTabs->setActive(taskbarPage);
 	}
+	windowsPage->setWidget(taskbarTabs, 0, 0);
+
+	galleryTabs->add(buttonsPage, iconPlay);
+	galleryTabs->add(listPage, iconRefresh);
+	galleryTabs->add(hierarchyPage, iconGetStarted);
+	galleryTabs->add(layoutPage, iconBalloon);
+	galleryTabs->add(windowsPage, iconGreen);
+	galleryTabs->setActive(openTaskbarOnStart ? windowsPage : buttonsPage);
 
 	auto* status = WidgetCreator<StatusBar>::create(window, StatusBar::Seed(2, 1, true));
 	status->setSize(0, 420);
@@ -427,7 +675,7 @@ int dwtMain(dwt::Application& app) {
 	notification->create(Notification::Seed(trayIcon, _T("DWT MultiControlExample notification")));
 	notification->setGuid(notificationGuid);
 	notification->setTooltip(_T("DWT MultiControlExample notification"));
-	notification->setVisible(true);
+	notification->setVisible(!selfTest);
 	notification->onIconClicked([status, notification] {
 		auto rect = notification->getRect();
 		setStatus(status, _T("Tray icon at ") + std::to_wstring(rect.x()) +
@@ -545,7 +793,7 @@ int dwtMain(dwt::Application& app) {
 	table->setView(LV_VIEW_DETAILS);
 	table->setHoverTime(350);
 	table->setOutlineColor(RGB(0, 102, 204));
-	table->insert({ _T("Grid"), _T("9x4"), _T("Main responsive layout") }, 101);
+	table->insert({ _T("Grid / TabView"), _T("Categorized"), _T("Responsive overview and five gallery pages") }, 101);
 	table->insert({ _T("Rebar/Toolbar"), _T("Top row"), _T("Dialog and notify actions") }, 102);
 	table->insert({ _T("TableTree"), _T("Hierarchy"), _T("Parent-child list entries") }, 103);
 	table->insert({ _T("VirtualTree"), _T("Large trees"), _T("Lazy tree structure") }, 104);
@@ -603,6 +851,7 @@ int dwtMain(dwt::Application& app) {
 	}
 
 	setRichSummary(richText);
+	setRichSummary(layoutRichText);
 
 	auto syncingRange = std::make_shared<bool>(false);
 	auto marqueeActive = std::make_shared<bool>(false);
@@ -765,6 +1014,31 @@ int dwtMain(dwt::Application& app) {
 	};
 
 	buttonRun->onClicked(showModernControls);
+	pushButton->onClicked([status] { setStatus(status, _T("Push button clicked")); });
+	defaultButton->onClicked([status] { setStatus(status, _T("Default button clicked")); });
+	commandButton->onClicked(showModernControls);
+	defaultCommandButton->onClicked(showModernControls);
+	splitButton->onClicked([status] { setStatus(status, _T("Split button primary action")); });
+	splitButton->onDropDown([status](const RECT&) {
+		setStatus(status, _T("Split button drop-down opened"));
+	});
+	defaultSplitButton->onClicked([status] { setStatus(status, _T("Default split primary action")); });
+	defaultSplitButton->onDropDown([status](const RECT&) {
+		setStatus(status, _T("Default split drop-down opened"));
+	});
+	imageButton->onClicked([status] { setStatus(status, _T("Image-list button clicked")); });
+	shieldButton->onClicked([status] { setStatus(status, _T("Elevation-required button clicked")); });
+	iconButton->onClicked([status] { setStatus(status, _T("Icon-only button clicked")); });
+	imageCheck->onClicked([imageCheck, status] {
+		setStatus(status, imageCheck->getChecked() ?
+			_T("Image checkbox checked") : _T("Image checkbox cleared"));
+	});
+	secondCheck->onClicked([secondCheck, status] {
+		setStatus(status, secondCheck->getChecked() ?
+			_T("Notifications enabled") : _T("Notifications disabled"));
+	});
+	imageRadioA->onClicked([status] { setStatus(status, _T("Play radio selected")); });
+	imageRadioB->onClicked([status] { setStatus(status, _T("Pause radio selected")); });
 	buttonRun->onPointerDown([status](const dwt::PointerEvent& event) {
 		setStatus(status, _T("Pointer ") + pointerTypeName(event.type) +
 			_T(" down, ID ") + std::to_wstring(event.id));
@@ -951,17 +1225,67 @@ int dwtMain(dwt::Application& app) {
 		.setTitle(_T("Choose a folder with IFileOpenDialog"))
 		.setClientGuid(folderDialogGuid);
 
-	toolbar->addButton("msg", -1, _T("Message"), true, 0, [status, &messageBox] {
+	Menu::Seed menuSeed(true, smallIconSize, uiFont);
+	menuSeed.popup = false;
+	auto menuBar = WidgetCreator<Menu>::create(window, menuSeed);
+	auto* fileMenu = menuBar->appendPopup(_T("&File"), iconGetStarted);
+	fileMenu->appendItem(_T("&Open..."), [status, &loadDialog] {
+		dwt::tstring path;
+		if(loadDialog.open(path)) {
+			setStatus(status, _T("Opened: ") + path);
+		}
+	}, iconGetStarted);
+	fileMenu->appendItem(_T("&Save..."), [status, &saveDialog] {
+		dwt::tstring path;
+		if(saveDialog.open(path)) {
+			setStatus(status, _T("Saved to: ") + path);
+		}
+	}, iconGreen);
+	fileMenu->appendSeparator();
+	fileMenu->appendItem(_T("E&xit"), [window] { window->postMessage(WM_CLOSE); }, iconExit);
+	auto* viewMenu = menuBar->appendPopup(_T("&Showcase"), iconRefresh);
+	viewMenu->appendItem(_T("&Buttons"), [galleryTabs, buttonsPage] {
+		galleryTabs->setActive(buttonsPage);
+	}, iconPlay);
+	viewMenu->appendItem(_T("&List Views"), [galleryTabs, listPage] {
+		galleryTabs->setActive(listPage);
+	}, iconRefresh);
+	viewMenu->appendItem(_T("&Hierarchy"), [galleryTabs, hierarchyPage] {
+		galleryTabs->setActive(hierarchyPage);
+	}, iconGetStarted);
+	viewMenu->appendItem(_T("&Text + Layout"), [galleryTabs, layoutPage] {
+		galleryTabs->setActive(layoutPage);
+	}, iconBalloon);
+	viewMenu->appendItem(_T("&Windows 7+"), [galleryTabs, windowsPage] {
+		galleryTabs->setActive(windowsPage);
+	}, iconGreen);
+	auto* toolsMenu = menuBar->appendPopup(_T("&Tools"), iconBalloon);
+	toolsMenu->appendItem(_T("Modern &Controls..."), showModernControls, iconPlay, true, true);
+	toolsMenu->appendItem(_T("&Message Box..."), [status, &messageBox] {
+		messageBox.show(_T("Menu action triggered."), _T("DWT MessageBox"),
+			dwt::MessageBox::BOX_OK, dwt::MessageBox::BOX_ICONINFORMATION);
+		setStatus(status, _T("MessageBox opened from menu"));
+	}, iconBalloon);
+	auto* helpMenu = menuBar->appendPopup(_T("&Help"), iconGreen);
+	helpMenu->appendItem(_T("&About"), [status, &messageBox] {
+		messageBox.show(_T("Every concrete LibDWT control is demonstrated directly or through a launcher."),
+			_T("DWT Control Gallery"), dwt::MessageBox::BOX_OK,
+			dwt::MessageBox::BOX_ICONINFORMATION);
+		setStatus(status, _T("About dialog opened"));
+	}, iconGreen);
+	menuBar->setMenu();
+
+	toolbar->addButton("msg", iconBalloon, dwt::IconPtr(), _T("Message"), true, 0, [status, &messageBox] {
 		messageBox.show(_T("Toolbar action triggered."), _T("DWT MessageBox"), dwt::MessageBox::BOX_OK, dwt::MessageBox::BOX_ICONINFORMATION);
 		setStatus(status, _T("MessageBox opened"));
 	});
-	toolbar->addButton("task", -1, _T("Task Dialog"), true, 0, showModernControls);
-	toolbar->addButton("color", -1, _T("Color"), true, 0, [status, &colorDialog, &colorParams] {
+	toolbar->addButton("task", iconPlay, dwt::IconPtr(), _T("Task Dialog"), true, 0, showModernControls);
+	toolbar->addButton("color", iconGreen, dwt::IconPtr(), _T("Color"), true, 0, [status, &colorDialog, &colorParams] {
 		if(colorDialog.open(colorParams)) {
 			setStatus(status, _T("Color selected"));
 		}
 	});
-	toolbar->addButton("font", -1, _T("Font"), true, 0, [status, &fontDialog] {
+	toolbar->addButton("font", iconGetStarted, dwt::IconPtr(), _T("Font"), true, 0, [status, &fontDialog] {
 		LOGFONT lf = {};
 		lf.lfHeight = 18;
 		_tcscpy(lf.lfFaceName, _T("Segoe UI"));
@@ -970,13 +1294,13 @@ int dwtMain(dwt::Application& app) {
 			setStatus(status, _T("Font selected"));
 		}
 	});
-	toolbar->addButton("open", -1, _T("Open"), true, 0, [status, &loadDialog] {
+	toolbar->addButton("open", iconGetStarted, dwt::IconPtr(), _T("Open"), true, 0, [status, &loadDialog] {
 		dwt::tstring file;
 		if(loadDialog.open(file)) {
 			setStatus(status, _T("Opened: ") + file);
 		}
 	});
-	toolbar->addButton("shell", -1, _T("Shell Item"), true, 0, [status, &loadDialog] {
+	toolbar->addButton("shell", iconRefresh, dwt::IconPtr(), _T("Shell Item"), true, 0, [status, &loadDialog] {
 		dwt::util::win32::FileDialogResult result;
 		if(loadDialog.openShellItem(result)) {
 			dwt::tstring name;
@@ -986,19 +1310,19 @@ int dwtMain(dwt::Application& app) {
 			setStatus(status, _T("Shell item: ") + name);
 		}
 	});
-	toolbar->addButton("save", -1, _T("Save"), true, 0, [status, &saveDialog] {
+	toolbar->addButton("save", iconGreen, dwt::IconPtr(), _T("Save"), true, 0, [status, &saveDialog] {
 		dwt::tstring file;
 		if(saveDialog.open(file)) {
 			setStatus(status, _T("Saved to: ") + file);
 		}
 	});
-	toolbar->addButton("folder", -1, _T("Folder"), true, 0, [status, &folderDialog] {
+	toolbar->addButton("folder", iconGetStarted, dwt::IconPtr(), _T("Folder"), true, 0, [status, &folderDialog] {
 		dwt::tstring dir;
 		if(folderDialog.open(dir)) {
 			setStatus(status, _T("Folder: ") + dir);
 		}
 	});
-	toolbar->addButton("notify", -1, _T("Notify"), true, 0, [status, notification, balloonIcon] {
+	toolbar->addButton("notify", iconBalloon, dwt::IconPtr(), _T("Notify"), true, 0, [status, notification, balloonIcon] {
 		Notification::MessageOptions options;
 		options.callback = [status] {
 			setStatus(status, _T("Balloon clicked"));
@@ -1056,12 +1380,11 @@ int dwtMain(dwt::Application& app) {
 	grid->setWidget(header, 5, 0, 1, 4);
 	grid->setWidget(table, 6, 0, 1, 2);
 	grid->setWidget(tree, 6, 2, 1, 2);
-	grid->setWidget(tableTree, 7, 0);
-	grid->setWidget(virtualTree, 7, 1);
-	grid->setWidget(scrolled, 7, 2);
-	grid->setWidget(taskbarTabs, 7, 3);
-	auto layout = [window, grid, rebar, scrolled, scrolledGrid, taskbarTabs,
-		summaryPage, taskbarPage, status]
+	grid->setWidget(galleryTabs, 7, 0, 1, 4);
+	auto layout = [window, grid, rebar, galleryTabs, buttonsPage, buttonGroup,
+		buttonGrid, choiceGroup, choiceGrid, listPage, hierarchyPage, layoutPage,
+		splitterContainer, textPane, scrollPane, scrolled, scrolledGrid,
+		windowsPage, taskbarTabs, summaryPage, taskbarPage, status]
 	{
 		auto client = window->getClientSize();
 		auto statusSize = status->getPreferredSize();
@@ -1087,8 +1410,21 @@ int dwtMain(dwt::Application& app) {
 
 		grid->layout();
 		rebar->refresh();
+		static_cast<dwt::Widget*>(galleryTabs)->layout();
+		buttonsPage->layout();
+		buttonGroup->layout();
+		buttonGrid->layout();
+		choiceGroup->layout();
+		choiceGrid->layout();
+		listPage->layout();
+		hierarchyPage->layout();
+		layoutPage->layout();
+		splitterContainer->layout();
+		textPane->layout();
+		scrollPane->layout();
 		scrolled->layout();
 		scrolledGrid->layout();
+		windowsPage->layout();
 		static_cast<dwt::Widget*>(taskbarTabs)->layout();
 		summaryPage->layout();
 		taskbarPage->layout();
@@ -1116,6 +1452,14 @@ int dwtMain(dwt::Application& app) {
 		status,
 		rebar,
 		toolbar,
+		galleryTabs,
+		buttonGroup,
+		buttonGrid,
+		choiceGroup,
+		choiceGrid,
+		splitterContainer,
+		textPane,
+		scrollPane,
 		labelInput,
 		textInput,
 		buttonRun,
@@ -1134,6 +1478,11 @@ int dwtMain(dwt::Application& app) {
 		tree,
 		tableTree,
 		virtualTree,
+		groupedTable,
+		iconTable,
+		smallIconTable,
+		listTable,
+		tileTable,
 		scrolled,
 		scrolledGrid,
 		taskbarTabs,
@@ -1147,15 +1496,55 @@ int dwtMain(dwt::Application& app) {
 		taskbarClipDemo,
 		taskbarTabDemo,
 		richText,
+		layoutRichText,
+		pushButton,
+		defaultButton,
+		commandButton,
+		defaultCommandButton,
+		splitButton,
+		defaultSplitButton,
+		imageButton,
+		shieldButton,
+		iconButton,
+		disabledButton,
+		imageCheck,
+		secondCheck,
+		imageRadioA,
+		imageRadioB,
+		choiceDescription,
+		richLabel,
 	};
 	for(auto* control : visibleControls) {
 		if(control) {
+			control->setFont(uiFont);
 			control->setVisible(true);
 		}
 	}
 
 	layout();
 	setStatus(status, _T("Ready"));
+	if(selfTest) {
+		auto splitters = splitterContainer->getChildren<Splitter>();
+		const bool selfTestPassed = smallImages->size() == sharedIconIds.size() &&
+			largeImages->size() == sharedIconIds.size() &&
+			groupedTable->getGroupCount() == 2 &&
+			groupedTable->isGrouped() &&
+			iconTable->getView() == LV_VIEW_ICON &&
+			smallIconTable->getView() == LV_VIEW_SMALLICON &&
+			listTable->getView() == LV_VIEW_LIST &&
+			tileTable->getView() == LV_VIEW_TILE &&
+			galleryTabs->getChildren().size() == 5 &&
+			splitters.first != splitters.second;
+		for(auto* page : { buttonsPage, listPage, hierarchyPage, layoutPage, windowsPage }) {
+			galleryTabs->setActive(page);
+			static_cast<dwt::Widget*>(galleryTabs)->layout();
+			page->layout();
+			app.processMessages();
+		}
+		window->close();
+		app.processMessages();
+		return selfTestPassed ? 0 : 2;
+	}
 
 	window->setVisible(true);
 	window->setFocus();

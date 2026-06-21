@@ -1,3 +1,14 @@
 #pragma once
 
 #define IDI_MULTI_TRAY 101
+#define IDI_DWT_BALL_GREEN 102
+#define IDI_DWT_BALLOON 103
+#define IDI_DWT_BALL_RED 104
+#define IDI_DWT_EXIT 105
+#define IDI_DWT_GET_STARTED 106
+#define IDI_DWT_LEFT 107
+#define IDI_DWT_PAUSE 108
+#define IDI_DWT_PLAY 109
+#define IDI_DWT_REFRESH 110
+#define IDI_DWT_RIGHT 111
+#define IDI_DWT_UP 112

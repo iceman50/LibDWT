@@ -183,6 +183,19 @@ function Publish-Artifacts {
         Copy-Item -LiteralPath $file.FullName -Destination $Destination -Force
         Write-Host ("  + {0}" -f $file.Name)
     }
+
+    # Keep the repository-level example icons beside every staged toolchain.
+    # MultiControlExample embeds them, while other examples may load the same
+    # stable res\<name>.ico paths at runtime.
+    $repositoryRoot = Split-Path -Parent $PSScriptRoot
+    $resourceSource = Join-Path $repositoryRoot "res"
+    if (Test-Path $resourceSource) {
+        $resourceDestination = Join-Path $Destination "res"
+        New-Item -ItemType Directory -Path $resourceDestination -Force | Out-Null
+        Copy-Item -Path (Join-Path $resourceSource "*.ico") `
+            -Destination $resourceDestination -Force
+        Write-Host "  + res\*.ico"
+    }
 }
 
 function Publish-MSVCArtifacts {

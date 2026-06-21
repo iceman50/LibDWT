@@ -47,6 +47,7 @@ MANIFEST_RC := common-controls-v6.rc
 MANIFEST_OBJ := $(OBJ_DIR)/projects/mingw-w64/common-controls-v6.res.o
 MULTI_ICON_RC := $(ROOT)/examples/MultiControlExample/resources.rc
 MULTI_ICON_OBJ := $(OBJ_DIR)/examples/MultiControlExample/resources.res.o
+SHARED_ICON_FILES := $(wildcard $(ROOT)/res/*.ico)
 
 INCLUDES := -I$(ROOT)/dwt/include
 COMMON_DEFINES := \
@@ -100,9 +101,10 @@ all: x86-debug x86-release x64-debug x64-release
 
 build: $(DWT_LIB) $(MULTI_EXE) $(RICH_EXE) $(CUSTOM_EXE) $(VALIDATION_EXE) $(TEST_EXE)
 
-test: $(TEST_EXE) $(VALIDATION_EXE)
+test: $(TEST_EXE) $(VALIDATION_EXE) $(MULTI_EXE)
 	.\$(subst /,\,$(TEST_EXE))
-	.\$(subst /,\,$(VALIDATION_EXE)) --self-test
+	start "" /wait ".\$(subst /,\,$(VALIDATION_EXE))" --self-test
+	start "" /wait ".\$(subst /,\,$(MULTI_EXE))" --self-test
 
 x86-debug:
 	$(MAKE) build ARCH=x86 CONFIG=debug
@@ -151,7 +153,7 @@ $(MANIFEST_OBJ): $(MANIFEST_RC) ../windows-common.manifest
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(RC) -O coff -i $(MANIFEST_RC) -o $@
 
-$(MULTI_ICON_OBJ): $(MULTI_ICON_RC) $(ROOT)/examples/MultiControlExample/resources/tray.ico $(ROOT)/examples/MultiControlExample/resource.h
+$(MULTI_ICON_OBJ): $(MULTI_ICON_RC) $(ROOT)/examples/MultiControlExample/resources/tray.ico $(ROOT)/examples/MultiControlExample/resource.h $(SHARED_ICON_FILES)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(RC) -O coff -i $(MULTI_ICON_RC) -o $@
 

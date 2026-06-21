@@ -6,6 +6,10 @@ All notable changes to LibDWT are documented in this file.
 
 ### Added
 
+- Reworked `MultiControlExample` into a non-closeable, categorized control
+  gallery with the complete native button and list-view mode matrices, grouped
+  image lists, group headers, menus, rich text, splitters, and shared root-level
+  icon resources for MSVC and MinGW-w64 builds.
 - Added a visible `FrameworkValidation` application for manual DPI, UI
   Automation, high-contrast, text-scaling, and scrolling validation, with a
   bounded event log and non-interactive lifecycle self-test for build targets.

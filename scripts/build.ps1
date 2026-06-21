@@ -127,9 +127,21 @@ try {
                     throw "Validation executable not found: $validationExecutable"
                 }
                 Write-Host "Running $validationExecutable --self-test"
-                & $validationExecutable --self-test
-                if ($LASTEXITCODE -ne 0) {
+                $validationProcess = Start-Process -FilePath $validationExecutable `
+                    -ArgumentList "--self-test" -WindowStyle Hidden -Wait -PassThru
+                if ($validationProcess.ExitCode -ne 0) {
                     throw "Framework validation self-test failed ($configuration|$platform)."
+                }
+
+                $multiControlExecutable = Join-Path $exampleProjectsRoot "MultiControlExample\build\$platform\$configuration\MultiControlExample.exe"
+                if (-not (Test-Path $multiControlExecutable)) {
+                    throw "Multi-control self-test executable not found: $multiControlExecutable"
+                }
+                Write-Host "Running $multiControlExecutable --self-test"
+                $multiControlProcess = Start-Process -FilePath $multiControlExecutable `
+                    -ArgumentList "--self-test" -WindowStyle Hidden -Wait -PassThru
+                if ($multiControlProcess.ExitCode -ne 0) {
+                    throw "Multi-control gallery self-test failed ($configuration|$platform)."
                 }
             }
         }
