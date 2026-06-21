@@ -310,6 +310,29 @@ void testVirtualTreeSelection() {
 	treeSeed.tvExStyle = TVS_EX_MULTISELECT;
 	auto* tree = WidgetCreator<VirtualTree>::create(window, VirtualTree::Seed(treeSeed));
 	tree->resize(dwt::Rectangle(0, 0, 320, 240));
+	tree->addColumn(_T("Virtual item"), 180);
+
+	auto treeFont = tree->getFont();
+	auto* header = tree->getHeader();
+	check(treeFont && treeFont->handle(), "virtual tree has a default GUI font");
+	check(reinterpret_cast<HFONT>(::SendMessage(tree->treeHandle(),
+		WM_GETFONT, 0, 0)) ==
+		treeFont->handle(), "virtual tree body receives the composite font");
+	check(header != nullptr, "virtual tree column header is created");
+	check(header && reinterpret_cast<HFONT>(header->sendMessage(WM_GETFONT)) ==
+		treeFont->handle(),
+		"virtual tree header inherits the composite font");
+
+	auto updatedLogFont = treeFont->getLogFont();
+	updatedLogFont.lfWeight = FW_BOLD;
+	FontPtr updatedFont(new Font(updatedLogFont));
+	tree->setFont(updatedFont);
+	check(reinterpret_cast<HFONT>(::SendMessage(tree->treeHandle(),
+		WM_GETFONT, 0, 0)) ==
+		updatedFont->handle(), "virtual tree body updates its font");
+	check(header && reinterpret_cast<HFONT>(header->sendMessage(WM_GETFONT)) ==
+		updatedFont->handle(),
+		"virtual tree header updates its font");
 
 	auto root = tree->insert(_T("Root"), TVI_ROOT, TVI_LAST, 1, true);
 	auto first = tree->insert(_T("First"), root, TVI_LAST, 2, false);

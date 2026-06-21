@@ -294,8 +294,12 @@ public:
 
 	/// @todo should not be public
 	HWND treeHandle() const { return tree->handle(); }
+	/// Returns the embedded column header, creating it when necessary.
+	HeaderPtr getHeader();
 
 protected:
+	void setFontImpl();
+
 	// Constructor Taking pointer to parent
 	explicit Tree( Widget * parent );
 
@@ -314,8 +318,6 @@ private:
 	HeaderPtr header;
 
 	std::map<HTREEITEM, std::vector<tstring>> texts;
-
-	HeaderPtr getHeader();
 
 	// aspects::Data
 	LPARAM getDataImpl(HTREEITEM item);

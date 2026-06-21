@@ -98,9 +98,10 @@ void Tree::create( const Seed & cs )
 		return draw(x);
 	});
 
-	if(cs.font) {
-		setFont(cs.font);
-	}
+	// Establish a real default GUI font on the composite and forward it to the
+	// native tree. Without this, a header created later can inherit a null
+	// WM_GETFONT value and fall back to the legacy system stock font.
+	setFont(cs.font);
 	onDpiResourcesChanged([this](const DpiResourceEvent& event) {
 		if(itsNormalImageList) {
 			setNormalImageList(itsNormalImageList->resized(
@@ -112,6 +113,13 @@ void Tree::create( const Seed & cs )
 		}
 	});
 	layout();
+}
+
+void Tree::setFontImpl() {
+	BaseType::setFontImpl();
+	if(header) {
+		header->setFont(getFont());
+	}
 }
 
 HTREEITEM Tree::insert(const tstring& text, HTREEITEM parentItem, HTREEITEM insertAfter,

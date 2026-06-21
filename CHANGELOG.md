@@ -125,6 +125,8 @@ All notable changes to LibDWT are documented in this file.
 
 ### Changed
 
+- Tree and VirtualTree now initialize and propagate their default or assigned
+  font to both the native tree body and the embedded column header.
 - `TabView::Seed::closeable` can now disable tab-strip close affordances and
   close gestures; `FrameworkValidation` uses it and relies on normal nested
   layout propagation to remain stable while resizing.
