@@ -446,6 +446,17 @@ int dwtMain(dwt::Application& app) {
 			app.processMessages();
 		}
 		appendLog(log, _T("Resize lifecycle checks complete."));
+		const double splitterPositions[] = {
+			0.05, 0.95, 0.15, 0.85, 0.25, 0.75, 0.35, 0.65, 0.5
+		};
+		for(unsigned pass = 0; pass < 8; ++pass) {
+			for(auto position : splitterPositions) {
+				splitterContainer->setSplitter(0, position);
+				splitterContainer->layout();
+				app.processMessages();
+			}
+		}
+		appendLog(log, _T("Splitter repaint stress checks complete."));
 		const bool passed = runSafeChecks(window, grid, tableTree, virtualTree,
 			tabs, splitterContainer, log);
 		window->close();

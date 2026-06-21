@@ -9,6 +9,7 @@
 #include <dwt/util/win32/FileDialog.h>
 #include <dwt/widgets/Header.h>
 #include <dwt/widgets/Table.h>
+#include <dwt/widgets/TableTree.h>
 #include <dwt/widgets/Notification.h>
 #include <dwt/widgets/Tree.h>
 #include <dwt/widgets/VirtualTree.h>
@@ -368,6 +369,100 @@ void testVirtualTreeSelection() {
 	window->close();
 }
 
+void testTableTreeNativeItems() {
+	using namespace dwt;
+
+	Window::Seed windowSeed(_T("FrameworkTests TableTree"));
+	windowSeed.style &= ~WS_VISIBLE;
+	auto* window = WidgetCreator<Window>::create(windowSeed);
+
+	Table::Seed tableSeed;
+	tableSeed.style &= ~WS_VISIBLE;
+	auto* table = WidgetCreator<TableTree>::create(window,
+		TableTree::Seed(tableSeed));
+	table->addColumn(_T("Name"), 160);
+	table->addColumn(_T("Value"), 160);
+
+	table->insert({ _T("Parent"), _T("Root value") }, 100);
+	table->insert({ _T("Child"), _T("Native value") }, 200);
+	table->setIcon(1, 0, 7);
+	check(table->size() == 2, "table tree native rows insert");
+
+	table->insertChild(100, 200);
+	check(table->size() == 1 && table->findData(200) == -1,
+		"table tree collapsed child is hidden without duplication");
+	table->expand(100);
+	auto childRow = table->findData(200);
+	check(table->size() == 2 && childRow >= 0,
+		"table tree native child expands once");
+	check(table->getText(childRow, 0) == _T("Child") &&
+		table->getText(childRow, 1) == _T("Native value"),
+		"table tree native text survives expansion");
+	LVITEM image = { LVIF_IMAGE, childRow };
+	check(ListView_GetItem(table->handle(), &image) && image.iImage == 7,
+		"table tree native image survives expansion");
+	table->expand(100);
+	check(table->size() == 2, "table tree repeated expansion is idempotent");
+
+	table->setText(childRow, 0, _T("Updated child"));
+	table->setText(childRow, 1, _T("Updated value"));
+	table->setData(childRow, 201);
+	check(table->findData(200) == -1 && table->findData(201) >= 0,
+		"table tree LVM_SETITEM remaps item data");
+	table->setData(table->findData(100), 101);
+	check(table->findData(100) == -1 && table->findData(101) >= 0,
+		"table tree parent data remaps its hierarchy");
+	table->collapse(101);
+	check(table->size() == 1, "table tree updated child collapses");
+	table->collapse(101);
+	check(table->size() == 1, "table tree repeated collapse is idempotent");
+	table->expand(101);
+	childRow = table->findData(201);
+	check(childRow >= 0 && table->getText(childRow, 0) == _T("Updated child") &&
+		table->getText(childRow, 1) == _T("Updated value"),
+		"table tree LVM_SETITEM text survives collapse and expansion");
+	image = { LVIF_IMAGE, childRow };
+	check(ListView_GetItem(table->handle(), &image) && image.iImage == 7,
+		"table tree updated identity retains its image");
+	bool hierarchyStable = true;
+	for(unsigned iteration = 0; iteration < 64; ++iteration) {
+		table->collapse(101);
+		hierarchyStable &= table->size() == 1;
+		table->expand(101);
+		hierarchyStable &= table->size() == 2 && table->findData(201) >= 0;
+	}
+	check(hierarchyStable, "table tree repeated hierarchy transitions remain stable");
+
+	table->addCallback(Message(WM_NOTIFY, LVN_GETDISPINFO),
+		[table](const MSG& msg, LRESULT&) -> bool {
+			auto* info = reinterpret_cast<NMLVDISPINFO*>(msg.lParam);
+			if(!info || info->hdr.hwndFrom != table->handle()) {
+				return false;
+			}
+			if((info->item.mask & LVIF_TEXT) && info->item.pszText &&
+				info->item.cchTextMax > 0) {
+				const auto* value = info->item.lParam == 301 ?
+					_T("Callback child") : _T("Callback parent");
+				_tcsncpy_s(info->item.pszText, info->item.cchTextMax, value, _TRUNCATE);
+			}
+			if(info->item.mask & LVIF_IMAGE) {
+				info->item.iImage = I_IMAGENONE;
+			}
+			return true;
+		});
+	table->insert(LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE, -1,
+		LPSTR_TEXTCALLBACK, 0, 0, I_IMAGECALLBACK, 300);
+	table->insert(LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE, -1,
+		LPSTR_TEXTCALLBACK, 0, 0, I_IMAGECALLBACK, 301);
+	table->insertChild(300, 301);
+	table->expand(300);
+	auto callbackRow = table->findData(301);
+	check(callbackRow >= 0 && table->getText(callbackRow, 0) ==
+		_T("Callback child"), "table tree callback rows remain compatible");
+
+	window->close();
+}
+
 void testFileDialogContracts() {
 	using namespace dwt::util::win32;
 
@@ -540,7 +635,7 @@ void testLiveAccessibilityValidation() {
 }
 
 void runHeadlessTests() {
-	const unsigned total = 9;
+	const unsigned total = 10;
 	unsigned position = 0;
 
 	std::cout << "\n=== Headless framework tests ===\n";
@@ -555,6 +650,8 @@ void runHeadlessTests() {
 		testInputEventContracts);
 	runTest(++position, total, "testVirtualTreeSelection",
 		testVirtualTreeSelection);
+	runTest(++position, total, "testTableTreeNativeItems",
+		testTableTreeNativeItems);
 	runTest(++position, total, "testFileDialogContracts",
 		testFileDialogContracts);
 	runTest(++position, total, "testMessageContracts", testMessageContracts);

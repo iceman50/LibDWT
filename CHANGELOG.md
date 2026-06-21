@@ -74,6 +74,10 @@ All notable changes to LibDWT are documented in this file.
 - Added typed Tree selected-state helpers and model-backed VirtualTree
   multiselect storage, enumeration, selected counts, hidden-node preservation,
   and framework behavior tests.
+- Added native `TableTree` text, image, and data persistence across hierarchy
+  collapse/expand operations, including `LVM_SETITEM`/`LVM_SETITEMTEXT`
+  updates, identity remapping, idempotent transitions, and callback-mode
+  compatibility tests.
 - Added taskbar progress state and value APIs.
 - Added notification icon version 4, focus, icon rectangle, keyboard selection,
   and popup lifecycle support.
@@ -125,6 +129,8 @@ All notable changes to LibDWT are documented in this file.
 
 ### Changed
 
+- SplitterContainer drag layout now discards stale pane pixels and synchronously
+  repaints child panes, preventing text trails during rapid splitter movement.
 - Tree and VirtualTree now initialize and propagate their default or assigned
   font to both the native tree body and the embedded column header.
 - `TabView::Seed::closeable` can now disable tab-strip close affordances and

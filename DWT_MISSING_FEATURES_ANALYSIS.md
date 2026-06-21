@@ -661,8 +661,6 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 | [MDIFrame.cpp](dwt/src/widgets/MDIFrame.cpp#L38) | 38 | P3 | Fix caption | Caption display issue |
 | [Menu.cpp](dwt/src/widgets/Menu.cpp#L353,#L694) | 353, 694 | P2 | Support embedded HBITMAPs in menu items | Custom menu images limited |
 | [ToolBar.h](dwt/include/dwt/widgets/ToolBar.h#L47) | 47 | P2 | Support multiple bitmaps | Mixed icon sizes |
-| [TableTree.cpp](dwt/src/widgets/TableTree.cpp#L101) | 101 | P2 | LVM_SETITEM not implemented | Limited item updates |
-| [TableTree.cpp](dwt/src/widgets/TableTree.cpp#L338,#L341,#L344) | 338,341,344 | P2 | Non-callback mode limited | Text/image/data not editable |
 
 ---
 
@@ -740,7 +738,7 @@ The audit does not include dedicated audio playback APIs. However, Windows 7-11 
 2. ToolTip: Balloon styles, tracking APIs, per-tool flags
 3. DateTime/MonthCalendar: Calendar ID, day-state APIs
 4. VirtualTree: complete live UI and external accessibility validation
-5. TableTree: LVM_SETITEM, non-callback modes
+5. âœ… COMPLETED: TableTree LVM_SETITEM and non-callback modes
 
 ### Phase 3: Feature Expansion (2-3 weeks)
 1. CheckBox/RadioButton: Three-state support
@@ -790,10 +788,9 @@ The audit does not include dedicated audio playback APIs. However, Windows 7-11 
 
 ### Immediate Actions (Next Sprint)
 1. **Run VirtualTree live UI and external accessibility validation**
-2. **Complete TableTree non-callback modes**
-3. **Add Button image-list getter**
-4. **Add ToolTip balloon styles**
-5. **Implement DateTime day-state APIs**
+2. **Add Button image-list getter**
+3. **Add ToolTip balloon styles**
+4. **Implement DateTime day-state APIs**
 
 ### Short-term (Next 2 Sprints)
 1. Run live validation harness for DPI multi-monitor transitions
