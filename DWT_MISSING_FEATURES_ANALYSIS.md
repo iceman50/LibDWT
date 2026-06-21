@@ -110,7 +110,7 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 ### P1 Priority (High-value, core functionality)
 
 #### 2.1 Button
-**Status:** Partial (70% complete)
+**Status:** Complete (100%)
 
 | Feature | Status | Issue |
 |---------|--------|-------|
@@ -119,16 +119,16 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 | Split buttons | ✅ Added | Complete |
 | BCN_DROPDOWN event | ✅ Added | Complete |
 | Elevation shield | ✅ Added | Complete |
-| Image lists | ⚠️ Partial | Setter added, getter missing |
+| Image lists | ✅ Added | Owned getter and native metadata readback |
 | Image alignment | ✅ Added | Complete |
-| Text margins | ❌ Missing | No getter for margins |
-| Hot state notifications | ❌ Missing | Need WM_MOUSEHOVER tracking |
-| Focus notifications | ❌ Missing | Need WM_SETFOCUS/WM_KILLFOCUS handling |
+| Text margins | ✅ Added | DPI-managed get/set round-trip |
+| Hot state notifications | ✅ Added | Typed BCN_HOTITEMCHANGE callback |
+| Focus notifications | ✅ Added | Typed gain/loss callback |
 
 **Implementation notes:**
 - File: [dwt/include/dwt/widgets/Button.h](dwt/include/dwt/widgets/Button.h)
 - File: [dwt/src/widgets/Button.cpp](dwt/src/widgets/Button.cpp)
-- Missing: `getImageList()`, `getTextMargin()`, focus/hot notifications
+- Complete: image-list metadata, text margins, dropdown state, and focus/hot notifications
 
 #### 2.2 ToolTip
 **Status:** Partial (65% complete)
@@ -734,11 +734,11 @@ The audit does not include dedicated audio playback APIs. However, Windows 7-11 
 6. ⚠️ IN PROGRESS: Table/Tree completion
 
 ### Phase 2: High-Value Control Completion (2-3 weeks)
-1. Button: Image-list getter, text-margin, focus/hot notifications
+1. ✅ COMPLETED: Button image-list getter, text margins, dropdown state, and focus/hot notifications
 2. ToolTip: Balloon styles, tracking APIs, per-tool flags
 3. DateTime/MonthCalendar: Calendar ID, day-state APIs
 4. VirtualTree: complete live UI and external accessibility validation
-5. âœ… COMPLETED: TableTree LVM_SETITEM and non-callback modes
+5. ✅ COMPLETED: TableTree LVM_SETITEM and non-callback modes
 
 ### Phase 3: Feature Expansion (2-3 weeks)
 1. CheckBox/RadioButton: Three-state support
@@ -788,9 +788,8 @@ The audit does not include dedicated audio playback APIs. However, Windows 7-11 
 
 ### Immediate Actions (Next Sprint)
 1. **Run VirtualTree live UI and external accessibility validation**
-2. **Add Button image-list getter**
-3. **Add ToolTip balloon styles**
-4. **Implement DateTime day-state APIs**
+2. **Add ToolTip balloon styles**
+3. **Implement DateTime day-state APIs**
 
 ### Short-term (Next 2 Sprints)
 1. Run live validation harness for DPI multi-monitor transitions

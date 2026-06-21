@@ -42,7 +42,7 @@ Items without an explicit status marker remain unimplemented.
 | Area | Status | Added | Remaining |
 | --- | --- | --- | --- |
 | Pointer/input | **Added** | Typed `WM_POINTER` down, update, up, enter, leave, wheel, horizontal wheel, capture-changed, and cancellation events with pointer ID, type, position, flags, history, touch details, pen pressure/tilt/rotation, capture helpers, typed `WM_TOUCH`, typed `WM_GESTURE`, and gesture configuration | No remaining item from the original P1 audit |
-| Button | **Partial** | Command-link styles through seeds, note get/set, elevation shield, aligned image lists, split configuration, and `BCN_DROPDOWN` | Image-list getter, text-margin getter, explicit dropdown-state helpers, and hot/focus notifications |
+| Button | **Added** | Command-link styles through seeds, note get/set, elevation shield, aligned image-list set/get metadata, DPI-managed text margins, split/dropdown state, and typed dropdown/hot/focus notifications | No remaining item from the original Button audit |
 | ProgressBar | **Added** | Marquee mode/speed, normal/error/paused states, colors, and non-mutating cached step retrieval | No remaining item from the original P1 audit |
 | Table/ListView | **Added** | View and tile get/set, empty markup, footer information/items/rectangles/link events, complete group info/metrics/state/focus operations, `LVITEMINDEX` state/iteration/rectangles, insertion marks and colors, work areas, hot item/cursor, hover time, outline color, selected column, background image, geometry, image-list getters, and drag/activate/key/change/label-edit events | No remaining item from the original P1 audit |
 | Tree/VirtualTree | **Partial** | Native Tree extended styles and checkbox states, multiselect enumeration/counting, item-change/info-tip/label-edit/async-draw/drag/key events, public TreeView custom-draw hook, drag images, insertion marks/colors, indentation, scroll/autoscroll settings, tooltips, sorting, item/part rectangles and accessibility IDs; VirtualTree translates applicable states, geometry, sorting, IDs and events, with model-backed multiselect storage/enumeration and framework behavior tests | Remaining live UI/accessibility validation for VirtualTree multiselect behavior |
@@ -230,11 +230,11 @@ not require runtime fallback paths:
 
 - **Added:** Command-link and default-command-link styles through `Button::Seed`.
 - **Added:** Command-link note get/set.
-- **Partial:** Split-button configuration and `BCN_DROPDOWN`; explicit
-  drop-down-state helpers remain.
+- **Added:** Split-button configuration, `BCN_DROPDOWN`, and explicit
+  drop-down-state helpers.
 - **Added:** Elevation shield.
-- **Partial:** Button image-list setter with alignment; getter remains.
-- **Remaining:** Text-margin getter and richer hot/focus notifications.
+- **Added:** Button image-list setter/getter with alignment and margin metadata.
+- **Added:** DPI-managed text-margin get/set and typed hot/focus notifications.
 
 ### CheckBox and RadioButton
 

@@ -55,6 +55,9 @@ All notable changes to LibDWT are documented in this file.
   configuration helpers to the mouse aspect.
 - Added command-link notes, elevation shields, image lists, split-button
   configuration, and dropdown events to `Button`.
+- Completed Button image-list metadata readback, DPI-managed text margins,
+  split-button dropdown state, and typed hot/focus notifications, with stable
+  fallback state for hosts without an active common-controls v6 context.
 - Added marquee, normal/error/paused state, and color APIs to `ProgressBar`.
 - Added Tree extended styles, multiselect enumeration, double buffering, and
   item-changing notifications.

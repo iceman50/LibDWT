@@ -89,8 +89,17 @@ public:
 	void setImageList(const ImageListPtr& images,
 		UINT alignment = BUTTON_IMAGELIST_ALIGN_LEFT,
 		const Rectangle& margin = Rectangle());
+	ImageListPtr getImageList() const { return imageList; }
+	bool getImageListInfo(BUTTON_IMAGELIST& info) const;
+	void setTextMargin(const Rectangle& margin);
+	Rectangle getTextMargin() const;
 	void setSplitInfo(const BUTTON_SPLITINFO& info);
+	void setDropDownState(bool dropped = true);
+	bool getDropDownState() const;
 	void onDropDown(std::function<void (const RECT&)> f);
+	void onHotChanged(std::function<void (bool, DWORD)> f);
+	void onFocusChanged(std::function<void (bool)> f);
+	bool isHot() const;
 
 	virtual Point getPreferredSize();
 
@@ -106,6 +115,11 @@ private:
 	friend class ChainingDispatcher;
 	static const TCHAR windowClass[];
 	ImageListPtr imageList;
+	UINT imageAlignment;
+	Rectangle imageMargin;
+	Rectangle textMargin;
+	bool dropDownState;
+	bool nativeDropDownState;
 
 	// aspects::Clickable
 	static Message getClickMessage();

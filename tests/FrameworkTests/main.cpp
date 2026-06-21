@@ -8,6 +8,7 @@
 #include <dwt/util/win32/Dpi.h>
 #include <dwt/util/win32/FileDialog.h>
 #include <dwt/widgets/Header.h>
+#include <dwt/widgets/Button.h>
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/TableTree.h>
 #include <dwt/widgets/Notification.h>
@@ -266,6 +267,73 @@ void testControlContracts() {
 	check(notificationOptions.realTime && notificationOptions.respectQuietTime &&
 		notificationOptions.largeIcon && notificationOptions.noSound,
 		"notification message options value contract");
+}
+
+void testButtonCompletion() {
+	using namespace dwt;
+
+	Window::Seed windowSeed(_T("FrameworkTests Button"));
+	windowSeed.style &= ~WS_VISIBLE;
+	auto* window = WidgetCreator<Window>::create(windowSeed);
+	auto* button = WidgetCreator<Button>::create(window,
+		Button::Seed(_T("Completed button"), BS_SPLITBUTTON));
+
+	ImageListPtr images(new ImageList(Point(16, 16)));
+	const dwt::Rectangle imageMargin(1, 2, 3, 4);
+	button->setImageList(images, BUTTON_IMAGELIST_ALIGN_RIGHT, imageMargin);
+	BUTTON_IMAGELIST imageInfo = { };
+	check(button->getImageList() == images,
+		"button returns its owned image list");
+	check(button->getImageListInfo(imageInfo) &&
+		imageInfo.himl == images->handle() &&
+		imageInfo.uAlign == BUTTON_IMAGELIST_ALIGN_RIGHT &&
+		dwt::Rectangle(imageInfo.margin) == imageMargin,
+		"button image-list alignment and margins round-trip");
+
+	const dwt::Rectangle textMargin(2, 3, 5, 7);
+	button->setTextMargin(textMargin);
+	check(button->getTextMargin() == textMargin,
+		"button text margins round-trip");
+
+	bool focused = false;
+	unsigned focusChanges = 0;
+	button->onFocusChanged([&](bool value) {
+		focused = value;
+		++focusChanges;
+	});
+	button->sendMessage(WM_COMMAND, MAKEWPARAM(0, BN_SETFOCUS),
+		reinterpret_cast<LPARAM>(button->handle()));
+	check(focused && focusChanges == 1,
+		"button focus-gained notification");
+	button->sendMessage(WM_COMMAND, MAKEWPARAM(0, BN_KILLFOCUS),
+		reinterpret_cast<LPARAM>(button->handle()));
+	check(!focused && focusChanges == 2,
+		"button focus-lost notification");
+
+	bool hot = false;
+	DWORD hotFlags = 0;
+	button->onHotChanged([&](bool value, DWORD flags) {
+		hot = value;
+		hotFlags = flags;
+	});
+	NMBCHOTITEM hotItem = { };
+	hotItem.hdr.hwndFrom = button->handle();
+	hotItem.hdr.code = BCN_HOTITEMCHANGE;
+	hotItem.dwFlags = HICF_MOUSE | HICF_ENTERING;
+	button->sendMessage(WM_NOTIFY, 0, reinterpret_cast<LPARAM>(&hotItem));
+	check(hot && (hotFlags & HICF_MOUSE) && (hotFlags & HICF_ENTERING),
+		"button hot-enter notification and reason flags");
+	hotItem.dwFlags = HICF_MOUSE | HICF_LEAVING;
+	button->sendMessage(WM_NOTIFY, 0, reinterpret_cast<LPARAM>(&hotItem));
+	check(!hot && (hotFlags & HICF_LEAVING),
+		"button hot-leave notification");
+
+	button->setDropDownState(true);
+	check(button->getDropDownState(), "button dropdown state set and read back");
+	button->setDropDownState(false);
+	check(!button->getDropDownState(), "button dropdown state clears");
+
+	window->close();
 }
 
 void testInputEventContracts() {
@@ -635,7 +703,7 @@ void testLiveAccessibilityValidation() {
 }
 
 void runHeadlessTests() {
-	const unsigned total = 10;
+	const unsigned total = 11;
 	unsigned position = 0;
 
 	std::cout << "\n=== Headless framework tests ===\n";
@@ -646,6 +714,7 @@ void runHeadlessTests() {
 	runTest(++position, total, "testAccessibilityContract",
 		testAccessibilityContract);
 	runTest(++position, total, "testControlContracts", testControlContracts);
+	runTest(++position, total, "testButtonCompletion", testButtonCompletion);
 	runTest(++position, total, "testInputEventContracts",
 		testInputEventContracts);
 	runTest(++position, total, "testVirtualTreeSelection",
