@@ -6,6 +6,14 @@ All notable changes to LibDWT are documented in this file.
 
 ### Added
 
+- Added a repository-wide Win32 utility tranche: rectangle operations; GDI
+  object metadata; region composition; scoped canvas state, clipping, drawing,
+  and blitting; widget coordinate, invalidation, update, and placement helpers;
+  and practical completion APIs for CheckBox, ComboBox, TextBox, Spinner,
+  ToolTip, StatusBar, ToolBar, and Rebar.
+- Added framework coverage for the new geometry, GDI, canvas, window, and
+  common-control utilities, and enabled the common-controls v6 manifest for the
+  MSVC framework test executable.
 - Added application initialization/module queries, explicit widget redraw
   helpers, unique timer IDs, and batched steady Rich Edit insertion.
 - Reworked `MultiControlExample` into a non-closeable, categorized control

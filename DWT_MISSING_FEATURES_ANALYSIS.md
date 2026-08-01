@@ -1,5 +1,12 @@
 # DWT Missing Features & Implementation Gaps Analysis
 
+> **2026-08-01 utility update:** The geometry/GDI/canvas/window helpers and the
+> CheckBox, ComboBox, TextBox, Spinner, StatusBar, ToolTip, ToolBar, and Rebar
+> utility gaps described here have been substantially addressed. See
+> [WIN32_UTILITY_AUDIT.md](WIN32_UTILITY_AUDIT.md) for the current per-surface
+> status and remaining recommendations. This older document remains useful for
+> the larger missing-widget and specialist-feature backlog.
+
 **Analysis Date:** 2026-06-18  
 **Audit Reference:** WINDOWS_SDK_FEATURE_AUDIT.md (Updated 2026-06-19)  
 **Codebase:** LibDWT 46 widgets + framework
@@ -347,7 +354,7 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 | Metrics | ❌ Missing | TB_GETMETRICS, TB_SETMETRICS |
 | Padding | ❌ Missing | TB_SETPADDING |
 | Button size | ❌ Missing | TB_GETBUTTONSIZE, TB_SETBUTTONSIZE |
-| Bitmap size | ❌ Missing | TB_SETBITMAPSIZE, TB_GETBITMAPSIZE |
+| Bitmap size | ✅ Added | TB_SETBITMAPSIZE; Win32 has no TB_GETBITMAPSIZE message |
 | Max/ideal size | ❌ Missing | TB_GETIDEALSIZE |
 | Text-row limits | ❌ Missing | TB_SETMAXTEXTROWS |
 | Hot item | ❌ Missing | TB_GETHOTITEM, TB_SETHOTITEM |
@@ -375,7 +382,7 @@ DWT has **strong coverage** of P0 frameworks and P1 controls, but significant ga
 | Image/background | ❌ Missing | REBARBANDINFO image list integration |
 | Header/ideal/integral size | ❌ Missing | Sizing constraints |
 | Child constraints | ❌ Missing | Child min/max dimensions |
-| Extended styles | ❌ Missing | RBS_EX_* styles |
+| Extended styles | ✅ Query added | RB_SETEXTENDEDSTYLE is documented as unimplemented |
 | Borders | ❌ Missing | Border configuration |
 | Band/bar rectangles | ❌ Missing | RB_GETBANDBORDERS, RB_GETRECT |
 | Row count/height | ❌ Missing | RB_GETROWCOUNT, RB_GETROWHEIGHT |

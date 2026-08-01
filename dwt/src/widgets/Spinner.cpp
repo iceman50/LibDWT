@@ -33,6 +33,9 @@
 
 #include <dwt/util/check.h>
 
+#include <algorithm>
+#include <limits>
+
 namespace dwt {
 
 const TCHAR Spinner::windowClass[] = UPDOWN_CLASS;
@@ -63,6 +66,14 @@ void Spinner::setRange(int minimum, int maximum) {
 	sendMessage(UDM_SETRANGE32, static_cast<WPARAM>(minimum), static_cast<LPARAM>(maximum));
 }
 
+std::pair<int, int> Spinner::getRange() const {
+	int minimum = 0;
+	int maximum = 0;
+	sendMessage(UDM_GETRANGE32, reinterpret_cast<WPARAM>(&minimum),
+		reinterpret_cast<LPARAM>(&maximum));
+	return std::make_pair(minimum, maximum);
+}
+
 void Spinner::assignBuddy(Control* buddy) {
 	dwtassert(buddy && buddy->handle() && buddy->getParent() == getParent(), "A spinner and its buddy must have the same parent");
 	assignBuddy_(buddy);
@@ -83,8 +94,53 @@ int Spinner::getValue() {
 	return static_cast<int>(sendMessage(UDM_GETPOS32));
 }
 
+bool Spinner::tryGetValue(int& value) const {
+	BOOL error = FALSE;
+	value = static_cast<int>(sendMessage(UDM_GETPOS32, 0,
+		reinterpret_cast<LPARAM>(&error)));
+	return error == FALSE;
+}
+
 int Spinner::setValue(int v) {
 	return static_cast<int>(sendMessage(UDM_SETPOS32, 0, v));
+}
+
+int Spinner::getBase() const {
+	return static_cast<int>(sendMessage(UDM_GETBASE));
+}
+
+int Spinner::setBase(int base) {
+	return static_cast<int>(sendMessage(UDM_SETBASE, base));
+}
+
+std::vector<UDACCEL> Spinner::getAcceleration() const {
+	const auto countResult = sendMessage(UDM_GETACCEL);
+	if(countResult <= 0) {
+		return std::vector<UDACCEL>();
+	}
+	const auto count = static_cast<size_t>(countResult);
+	std::vector<UDACCEL> result(count);
+	if(count) {
+		const auto copied = static_cast<size_t>(sendMessage(UDM_GETACCEL,
+			count, reinterpret_cast<LPARAM>(result.data())));
+		result.resize((std::min)(count, copied));
+	}
+	return result;
+}
+
+bool Spinner::setAcceleration(const std::vector<UDACCEL>& acceleration) {
+	return !acceleration.empty() &&
+		acceleration.size() <= static_cast<size_t>((std::numeric_limits<UINT>::max)()) &&
+		sendMessage(UDM_SETACCEL,
+		acceleration.size(), reinterpret_cast<LPARAM>(acceleration.data())) != FALSE;
+}
+
+bool Spinner::getUnicodeFormat() const {
+	return sendMessage(UDM_GETUNICODEFORMAT) != FALSE;
+}
+
+bool Spinner::setUnicodeFormat(bool unicode) {
+	return sendMessage(UDM_SETUNICODEFORMAT, unicode ? TRUE : FALSE) != FALSE;
 }
 
 void Spinner::onUpdate(UpdateF f) {

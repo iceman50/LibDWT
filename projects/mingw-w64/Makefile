@@ -145,9 +145,9 @@ $(VALIDATION_EXE): $(VALIDATION_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
 	$(CXX) $(LDFLAGS) -o $@ $(VALIDATION_OBJ) $(MANIFEST_OBJ) $(DWT_LIB) $(LDLIBS)
 
-$(TEST_EXE): $(TEST_OBJ) $(DWT_LIB)
+$(TEST_EXE): $(TEST_OBJ) $(MANIFEST_OBJ) $(DWT_LIB)
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
-	$(CXX) -Wl,--major-subsystem-version,6,--minor-subsystem-version,1 -o $@ $(TEST_OBJ) $(DWT_LIB) $(LDLIBS)
+	$(CXX) -Wl,--major-subsystem-version,6,--minor-subsystem-version,1 -o $@ $(TEST_OBJ) $(MANIFEST_OBJ) $(DWT_LIB) $(LDLIBS)
 
 $(MANIFEST_OBJ): $(MANIFEST_RC) ../windows-common.manifest
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"

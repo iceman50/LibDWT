@@ -1,20 +1,31 @@
 #include <dwt/Accessibility.h>
 #include <dwt/Application.h>
+#include <dwt/CanvasClasses.h>
 #include <dwt/Events.h>
 #include <dwt/Message.h>
 #include <dwt/Taskbar.h>
 #include <dwt/Widget.h>
 #include <dwt/WidgetCreator.h>
+#include <dwt/resources/Bitmap.h>
+#include <dwt/resources/Brush.h>
+#include <dwt/resources/Pen.h>
+#include <dwt/resources/Region.h>
 #include <dwt/util/win32/Dpi.h>
 #include <dwt/util/win32/FileDialog.h>
 #include <dwt/widgets/Header.h>
 #include <dwt/widgets/Button.h>
 #include <dwt/widgets/ComboBox.h>
+#include <dwt/widgets/CheckBox.h>
 #include <dwt/widgets/Grid.h>
 #include <dwt/widgets/RichTextBox.h>
+#include <dwt/widgets/Rebar.h>
+#include <dwt/widgets/Spinner.h>
+#include <dwt/widgets/StatusBar.h>
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/TableTree.h>
 #include <dwt/widgets/TextBox.h>
+#include <dwt/widgets/ToolBar.h>
+#include <dwt/widgets/ToolTip.h>
 #include <dwt/widgets/Notification.h>
 #include <dwt/widgets/Tree.h>
 #include <dwt/widgets/VirtualTree.h>
@@ -340,6 +351,179 @@ void testBackportedSafetyContracts() {
 		"batched Rich Edit insertion reports ordered ranges");
 	check(rich->isReadOnly() && rich->getTextLimit() == 64,
 		"batched Rich Edit insertion restores control state");
+
+	window->close();
+	pumpMessages();
+}
+
+void testWin32UtilityContracts() {
+	using namespace dwt;
+
+	const dwt::Rectangle reversed(10, 10, -6, -8);
+	check(reversed.empty() && reversed.normalized() == dwt::Rectangle(4, 2, 6, 8),
+		"rectangle emptiness and normalization");
+	check(dwt::Rectangle(0, 0, 10, 10).intersection(
+		dwt::Rectangle(5, 4, 10, 10)) == dwt::Rectangle(5, 4, 5, 6),
+		"rectangle intersection");
+	check(dwt::Rectangle(2, 3, 4, 5).offset(Point(3, -1)) ==
+		dwt::Rectangle(5, 2, 4, 5), "rectangle offset");
+	check(dwt::Rectangle(2, 3, 4, 5).inflate(2, 1) ==
+		dwt::Rectangle(0, 2, 8, 7), "rectangle inflation");
+
+	LOGPEN logicalPen = { PS_SOLID, { 1, 0 }, RGB(10, 20, 30) };
+	Pen pen(logicalPen);
+	const auto returnedPen = pen.getLogPen();
+	check(returnedPen.lopnStyle == PS_SOLID &&
+		returnedPen.lopnColor == logicalPen.lopnColor,
+		"logical pen creation and readback");
+
+	LOGBRUSH logicalBrush = { BS_HATCHED, RGB(40, 50, 60), HS_CROSS };
+	Brush hatch(logicalBrush);
+	const auto returnedBrush = hatch.getLogBrush();
+	check(returnedBrush.lbStyle == BS_HATCHED &&
+		returnedBrush.lbColor == logicalBrush.lbColor &&
+		returnedBrush.lbHatch == HS_CROSS,
+		"logical brush creation and readback");
+
+	Region first(dwt::Rectangle(0, 0, 10, 10));
+	Region second(dwt::Rectangle(5, 5, 10, 10));
+	auto overlap = first.combine(second, Region::Intersect);
+	auto combined = first.combine(second, Region::Union);
+	check(overlap->getBounds() == dwt::Rectangle(5, 5, 5, 5) &&
+		overlap->contains(Point(7, 7)) && !overlap->contains(Point(2, 2)),
+		"region intersection and point queries");
+	check(combined->getBounds() == dwt::Rectangle(0, 0, 15, 15) &&
+		combined->intersects(dwt::Rectangle(12, 12, 2, 2)),
+		"region union and rectangle query");
+	overlap->offset(Point(2, 3));
+	check(overlap->getBounds() == dwt::Rectangle(7, 8, 5, 5),
+		"region offset");
+
+	HDC screen = ::GetDC(nullptr);
+	check(screen != nullptr, "screen device context for canvas validation");
+	if(screen) {
+		CompatibleCanvas source(screen);
+		CompatibleCanvas destination(screen);
+		Bitmap sourceBitmap(::CreateCompatibleBitmap(screen, 24, 24));
+		Bitmap destinationBitmap(::CreateCompatibleBitmap(screen, 24, 24));
+		::ReleaseDC(nullptr, screen);
+
+		check(sourceBitmap.getInfo().bmWidth == 24 &&
+			sourceBitmap.getInfo().bmHeight == 24,
+			"bitmap metadata readback");
+
+		auto sourceSelection = source.select(sourceBitmap);
+		auto destinationSelection = destination.select(destinationBitmap);
+		Brush fillBrush(RGB(120, 30, 10));
+		source.fill(dwt::Rectangle(0, 0, 24, 24), fillBrush);
+		check(destination.bitBlt(dwt::Rectangle(0, 0, 24, 24), source,
+			Point(0, 0)) && destination.getPixel(4, 4) == RGB(120, 30, 10),
+			"canvas bit-block transfer");
+
+		destination.moveTo(2, 3);
+		{
+			auto state = destination.save();
+			destination.moveTo(8, 9);
+			Region clip(dwt::Rectangle(1, 1, 10, 10));
+			destination.selectClip(&clip);
+			check(destination.getClipBounds() == dwt::Rectangle(1, 1, 10, 10),
+				"canvas clipping region");
+		}
+		check(destination.getCurrentPosition() == Point(2, 3),
+			"canvas saved state restores drawing position");
+	}
+
+	Window::Seed windowSeed(_T("FrameworkTests Win32 Utilities"));
+	windowSeed.style &= ~WS_VISIBLE;
+	windowSeed.location = dwt::Rectangle(40, 40, 360, 260);
+	auto* window = WidgetCreator<Window>::create(windowSeed);
+	const auto screenOrigin = window->clientToScreen(Point());
+	check(window->screenToClient(screenOrigin) == Point(),
+		"widget client/screen coordinate round-trip");
+	const auto placement = window->getWindowPlacement();
+	check(placement.length == sizeof(WINDOWPLACEMENT) &&
+		window->setWindowPlacement(placement), "widget placement round-trip");
+	check(window->invalidate(dwt::Rectangle(0, 0, 20, 20), false),
+		"widget rectangle invalidation");
+	dwt::Rectangle updateRectangle;
+	check(window->getUpdateRect(updateRectangle) && !updateRectangle.empty(),
+		"widget update rectangle query");
+	check(window->validate(), "widget validation helper");
+
+	auto* checkBox = WidgetCreator<CheckBox>::create(window,
+		CheckBox::Seed(_T("Three state"), CheckBox::Seed::ThreeState));
+	checkBox->setState(CheckBox::Indeterminate);
+	check(checkBox->isIndeterminate(), "three-state checkbox state");
+
+	auto* combo = WidgetCreator<ComboBox>::create(window, ComboBox::Seed());
+	combo->addValue(_T("first"));
+	combo->addValue(_T("second"));
+	combo->setHorizontalExtent(240);
+	check(combo->getHorizontalExtent() == 240 && combo->getInfo().hwndCombo,
+		"combo box extent and native information");
+	const auto minimumSet = combo->setMinimumVisibleItems(2);
+	const auto minimumVisible = combo->getMinimumVisibleItems();
+	check(minimumSet && minimumVisible == 2,
+		"combo box minimum visible items");
+
+	TextBox::Seed textSeed(_T("5"));
+	textSeed.style |= ES_MULTILINE;
+	auto* text = WidgetCreator<TextBox>::create(window, textSeed);
+	text->setMargins(Point(4, 6));
+	text->setPassword(true, _T('#'));
+	check(text->getMargins() == Point(4, 6) &&
+		text->getPasswordCharacter() == _T('#'),
+		"text box margins and password character");
+	check(text->setTabStops({ 16, 32 }), "text box tab stops");
+	text->setSelection(0, 1);
+	text->replaceSelection(_T("7"));
+	check(text->canUndo() && text->undo(), "text box undo helpers");
+	text->clearUndo();
+	check(!text->canUndo(), "text box undo reset");
+
+	auto* spinner = WidgetCreator<Spinner>::create(window,
+		Spinner::Seed(-10, 10, text));
+	int spinnerValue = 0;
+	const auto spinnerRange = spinner->getRange();
+	check(spinnerRange.first == -10 && spinnerRange.second == 10 &&
+		spinner->tryGetValue(spinnerValue),
+		"spinner range and validated value");
+	std::vector<UDACCEL> acceleration = { { 0, 1 }, { 2, 5 } };
+	check(spinner->setAcceleration(acceleration) &&
+		spinner->getAcceleration().size() == acceleration.size(),
+		"spinner acceleration table");
+
+	auto* status = WidgetCreator<StatusBar>::create(window, StatusBar::Seed());
+	status->setText(0, _T("Ready"));
+	check(status->getText(0) == _T("Ready") && !status->getPartRect(0).empty(),
+		"status bar text and part rectangle readback");
+	status->setSimpleText(_T("Simple"));
+	status->setSimple();
+	check(status->isSimple(), "status bar simple mode");
+	status->setSimple(false);
+
+	auto* toolbar = WidgetCreator<ToolBar>::create(window, ToolBar::Seed());
+	check(toolbar->getPreferredSize() == Point(),
+		"empty toolbar preferred size");
+	toolbar->setPadding(Point(5, 4));
+	check(toolbar->getPadding() == Point(5, 4), "toolbar padding round-trip");
+
+	auto* rebar = WidgetCreator<Rebar>::create(window, Rebar::Seed());
+	rebar->add(toolbar);
+	rebar->refresh();
+	check(rebar->indexOf(toolbar) == 0 && rebar->getRowCount() >= 1,
+		"rebar band lookup and row query");
+
+	auto* tooltip = WidgetCreator<ToolTip>::create(window, ToolTip::Seed());
+	const auto toolAdded = tooltip->addTool(text, LPSTR_TEXTCALLBACK,
+		TTF_SUBCLASS | TTF_CENTERTIP);
+	check(toolAdded && tooltip->getToolCount() == 1,
+		"tooltip per-tool flags and count");
+	tooltip->setMaxTipWidth(300);
+	check(tooltip->getMaxTipWidth() == 300, "tooltip maximum width readback");
+	tooltip->removeTool(text);
+	check(tooltip->getToolCount() == 0, "tooltip tool removal");
+	tooltip->close();
 
 	window->close();
 	pumpMessages();
@@ -779,7 +963,7 @@ void testLiveAccessibilityValidation() {
 }
 
 void runHeadlessTests() {
-	const unsigned total = 12;
+	const unsigned total = 13;
 	unsigned position = 0;
 
 	std::cout << "\n=== Headless framework tests ===\n";
@@ -792,6 +976,8 @@ void runHeadlessTests() {
 	runTest(++position, total, "testControlContracts", testControlContracts);
 	runTest(++position, total, "testBackportedSafetyContracts",
 		testBackportedSafetyContracts);
+	runTest(++position, total, "testWin32UtilityContracts",
+		testWin32UtilityContracts);
 	runTest(++position, total, "testButtonCompletion", testButtonCompletion);
 	runTest(++position, total, "testInputEventContracts",
 		testInputEventContracts);

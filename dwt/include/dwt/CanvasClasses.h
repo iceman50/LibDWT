@@ -279,6 +279,27 @@ public:
 	Canvas(const Canvas&) = delete;
 	Canvas& operator=(const Canvas&) = delete;
 
+	/** Saved device-context state that is restored when this object is destroyed. */
+	class State {
+	public:
+		State(const State&) = delete;
+		State& operator=(const State&) = delete;
+		State(State&& other) noexcept;
+		State& operator=(State&& other) noexcept;
+		~State();
+
+	private:
+		friend class Canvas;
+		explicit State(Canvas& canvas);
+		void restore() noexcept;
+
+		Canvas* canvas;
+		int savedState;
+	};
+
+	/** Save all restorable device-context attributes for this scope. */
+	State save();
+
 	/** select a new resource (brush / font / pen / etc).
 	* @return object that restores the previous resource when destroyed.
 	*/
@@ -295,6 +316,9 @@ public:
 	/** HORZRES, VERTRES give pixels
 	  */
 	int getDeviceCaps( int nIndex );
+
+	/** Return the current drawing position. */
+	Point getCurrentPosition() const;
 
 	/// Moves to a X,Y point.  (But does not draw).
 	/** Moves to x,y in the Device Context of the object.
@@ -345,6 +369,12 @@ public:
 	  */
 	void polygon( POINT points[], unsigned count );
 
+	/** Draw connected line segments without filling them. */
+	void polyline(const std::vector<Point>& points);
+
+	/** Draw one or more cubic Bezier curves. */
+	void polyBezier(const std::vector<Point>& points);
+
 	/// Draws an ellipse in the Device Context.
 	/** Draws an ellipse from (left, top) to (right, bottom).
 	  */
@@ -367,6 +397,9 @@ public:
 	  */
 	void rectangle( const dwt::Rectangle & rect );
 
+	/** Draw a rounded rectangle using the current pen and brush. */
+	void roundRectangle(const dwt::Rectangle& rect, const Point& ellipseSize);
+
 	/// Fills a Rectangle in the Device Context with the given brush.
 	/** Fills a Rectangle from (left, top) to (right, bottom).
 	  */
@@ -379,6 +412,9 @@ public:
 
 	/** Fills "region" with "brush". */
 	void fill(const Region& region, const Brush& brush);
+
+	/** Draw a one-unit frame around a rectangle. */
+	void frame(const Rectangle& rect, const Brush& brush);
 
 	/// Sets the pixel at (x,y) to be pixcolor. Returns the old pixel color.
 	/** Sets the pixel at (x,y) to be pixcol
@@ -409,6 +445,19 @@ public:
 
 	/// invert the colors in the specified region; see the InvertRgn doc for more information.
 	void invert(const Region& region);
+	void invert(const Rectangle& rectangle);
+
+	/** Select, intersect, or exclude portions of the device-context clipping region. */
+	int selectClip(const Region* region = nullptr);
+	int intersectClip(const Rectangle& rectangle);
+	int excludeClip(const Rectangle& rectangle);
+	Rectangle getClipBounds(int* complexity = nullptr) const;
+
+	/** Copy pixels between canvases. */
+	bool bitBlt(const Rectangle& destination, const Canvas& source,
+		const Point& sourcePosition, DWORD operation = SRCCOPY);
+	bool stretchBlt(const Rectangle& destination, const Canvas& source,
+		const Rectangle& sourceRectangle, DWORD operation = SRCCOPY);
 
 	void drawIcon(const IconPtr& icon, const Rectangle& rectangle);
 

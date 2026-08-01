@@ -211,8 +211,18 @@ void TextBox::setText(const tstring& txt) {
 	}
 }
 
-void TextBox::setCue(const tstring& text) {
-	Edit_SetCueBannerTextFocused(handle(), text.c_str(), TRUE);
+void TextBox::setCue(const tstring& text, bool showWhileFocused) {
+	Edit_SetCueBannerTextFocused(handle(), text.c_str(),
+		showWhileFocused ? TRUE : FALSE);
+}
+
+tstring TextBox::getCue(unsigned capacity) const {
+	if(!capacity) {
+		return tstring();
+	}
+	std::vector<TCHAR> buffer(capacity, _T('\0'));
+	return sendMessage(EM_GETCUEBANNER, reinterpret_cast<WPARAM>(buffer.data()),
+		static_cast<LPARAM>(buffer.size())) ? tstring(buffer.data()) : tstring();
 }
 
 tstring TextBox::getLine(int line) {
@@ -258,6 +268,10 @@ tstring TextBox::textUnderCursor(const ScreenCoordinate& p, bool includeSpaces) 
 void TextBox::showPopup(const tstring& title, const tstring& text, int icon) {
 	EDITBALLOONTIP tip { sizeof(EDITBALLOONTIP), title.c_str(), text.c_str(), icon };
 	Edit_ShowBalloonTip(handle(), &tip);
+}
+
+bool TextBox::hidePopup() {
+	return sendMessage(EM_HIDEBALLOONTIP) != FALSE;
 }
 
 tstring TextBox::getSelection() const

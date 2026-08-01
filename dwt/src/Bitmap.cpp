@@ -46,7 +46,8 @@ Bitmap::Bitmap(HBITMAP bitmap, bool own) : ResourceType(bitmap, own)
 }
 
 Bitmap::Bitmap(unsigned resourceId, unsigned flags) :
-	Bitmap(reinterpret_cast<HBITMAP>(::LoadImage(Application::getModuleHandle(), MAKEINTRESOURCE(resourceId), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION)))
+	Bitmap(reinterpret_cast<HBITMAP>(::LoadImage(Application::getModuleHandle(),
+		MAKEINTRESOURCE(resourceId), IMAGE_BITMAP, 0, 0, flags)))
 {
 }
 
@@ -74,6 +75,12 @@ Point Bitmap::getSize(HBITMAP bitmap)
 	::GetObject(bitmap, sizeof(BITMAP), &bm);
 
 	return Point(bm.bmWidth, bm.bmHeight);
+}
+
+BITMAP Bitmap::getInfo() const {
+	BITMAP bitmap = { };
+	::GetObject(handle(), sizeof(bitmap), &bitmap);
+	return bitmap;
 }
 
 BitmapPtr Bitmap::resize(const Point& newSize) const {

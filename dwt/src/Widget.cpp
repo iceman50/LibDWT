@@ -139,6 +139,85 @@ bool Widget::redrawWindow(const Rectangle& rect, UINT flags) {
 	return ::RedrawWindow(handle(), &rc, nullptr, flags) != FALSE;
 }
 
+Point Widget::clientToScreen(const Point& point) const {
+	auto result = point.toPOINT();
+	if(!::ClientToScreen(handle(), &result)) {
+		throw Win32Exception("Unable to convert client coordinates to screen coordinates");
+	}
+	return Point(result);
+}
+
+Rectangle Widget::clientToScreen(const Rectangle& rectangle) const {
+	const auto first = clientToScreen(rectangle.pos);
+	const auto second = clientToScreen(Point(rectangle.right(), rectangle.bottom()));
+	return Rectangle(first, second - first);
+}
+
+Point Widget::screenToClient(const Point& point) const {
+	auto result = point.toPOINT();
+	if(!::ScreenToClient(handle(), &result)) {
+		throw Win32Exception("Unable to convert screen coordinates to client coordinates");
+	}
+	return Point(result);
+}
+
+Rectangle Widget::screenToClient(const Rectangle& rectangle) const {
+	const auto first = screenToClient(rectangle.pos);
+	const auto second = screenToClient(Point(rectangle.right(), rectangle.bottom()));
+	return Rectangle(first, second - first);
+}
+
+bool Widget::invalidate(bool erase) {
+	return ::InvalidateRect(handle(), nullptr, erase ? TRUE : FALSE) != FALSE;
+}
+
+bool Widget::invalidate(const Rectangle& rectangle, bool erase) {
+	const auto rect = rectangle.toRECT();
+	return ::InvalidateRect(handle(), &rect, erase ? TRUE : FALSE) != FALSE;
+}
+
+bool Widget::validate() {
+	return ::ValidateRect(handle(), nullptr) != FALSE;
+}
+
+bool Widget::validate(const Rectangle& rectangle) {
+	const auto rect = rectangle.toRECT();
+	return ::ValidateRect(handle(), &rect) != FALSE;
+}
+
+bool Widget::update() {
+	return ::UpdateWindow(handle()) != FALSE;
+}
+
+bool Widget::getUpdateRect(Rectangle& rectangle, bool erase) const {
+	RECT rect = { 0 };
+	const auto pending = ::GetUpdateRect(handle(), &rect, erase ? TRUE : FALSE) != FALSE;
+	rectangle = Rectangle(rect);
+	return pending;
+}
+
+bool Widget::isMinimized() const {
+	return ::IsIconic(handle()) != FALSE;
+}
+
+bool Widget::isMaximized() const {
+	return ::IsZoomed(handle()) != FALSE;
+}
+
+WINDOWPLACEMENT Widget::getWindowPlacement() const {
+	WINDOWPLACEMENT placement = { sizeof(WINDOWPLACEMENT) };
+	if(!::GetWindowPlacement(handle(), &placement)) {
+		throw Win32Exception("Unable to retrieve window placement");
+	}
+	return placement;
+}
+
+bool Widget::setWindowPlacement(const WINDOWPLACEMENT& placement) {
+	auto value = placement;
+	value.length = sizeof(WINDOWPLACEMENT);
+	return ::SetWindowPlacement(handle(), &value) != FALSE;
+}
+
 Widget* Widget::getRoot() const {
 	return hwnd_cast<Widget*>(::GetAncestor(handle(), GA_ROOT));
 }

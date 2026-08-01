@@ -60,7 +60,7 @@ Region::Region(const std::vector<Point>& points, PolyFillMode mode)
 	init(region, true);
 }
 
-RegionPtr Region::transform(const PXFORM pxform) const {
+RegionPtr Region::transform(const XFORM* transform) const {
 	DWORD bytes = ::GetRegionData(handle(), 0, NULL);
 	if(!bytes)
 		throw Win32Exception("1st GetRegionData in Region::transform failed");
@@ -70,11 +70,69 @@ RegionPtr Region::transform(const PXFORM pxform) const {
 		throw Win32Exception("2nd GetRegionData in Region::transform failed");
 
 	HRGN transformed = ::ExtCreateRegion(
-		pxform, bytes, reinterpret_cast<PRGNDATA>(data.data()));
+		transform, bytes, reinterpret_cast<PRGNDATA>(data.data()));
 	if(!transformed)
 		throw Win32Exception("ExtCreateRegion in Region::transform failed");
 
 	return RegionPtr(new Region(transformed));
+}
+
+RegionPtr Region::transform(const XFORM& transform) const {
+	return this->transform(&transform);
+}
+
+int Region::getType() const {
+	RECT bounds = { 0 };
+	const auto result = ::GetRgnBox(handle(), &bounds);
+	if(result == ERROR) {
+		throw Win32Exception("Unable to query region bounds");
+	}
+	return result;
+}
+
+Rectangle Region::getBounds() const {
+	RECT bounds = { 0 };
+	if(::GetRgnBox(handle(), &bounds) == ERROR) {
+		throw Win32Exception("Unable to query region bounds");
+	}
+	return Rectangle(bounds);
+}
+
+bool Region::empty() const {
+	return getType() == NULLREGION;
+}
+
+bool Region::contains(const Point& point) const {
+	return ::PtInRegion(handle(), point.x, point.y) != FALSE;
+}
+
+bool Region::intersects(const Rectangle& rectangle) const {
+	auto bounds = rectangle.normalized().toRECT();
+	return ::RectInRegion(handle(), &bounds) != FALSE;
+}
+
+bool Region::equals(const Region& other) const {
+	return ::EqualRgn(handle(), other.handle()) != FALSE;
+}
+
+int Region::offset(const Point& amount) {
+	const auto result = ::OffsetRgn(handle(), amount.x, amount.y);
+	if(result == ERROR) {
+		throw Win32Exception("Unable to offset region");
+	}
+	return result;
+}
+
+RegionPtr Region::combine(const Region& other, CombineMode mode) const {
+	auto destination = ::CreateRectRgn(0, 0, 0, 0);
+	if(!destination) {
+		throw Win32Exception("Unable to create combined region");
+	}
+	RegionPtr result(new Region(destination));
+	if(::CombineRgn(result->handle(), handle(), other.handle(), mode) == ERROR) {
+		throw Win32Exception("Unable to combine regions");
+	}
+	return result;
 }
 
 }

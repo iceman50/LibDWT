@@ -114,6 +114,97 @@ TextBoxPtr ComboBox::getTextBox() {
 	return textBox;
 }
 
+void ComboBox::showDropDown(bool show) {
+	sendMessage(CB_SHOWDROPDOWN, show ? TRUE : FALSE);
+}
+
+bool ComboBox::isDroppedDown() const {
+	return sendMessage(CB_GETDROPPEDSTATE) != FALSE;
+}
+
+int ComboBox::getDroppedWidth() const {
+	return static_cast<int>(sendMessage(CB_GETDROPPEDWIDTH));
+}
+
+int ComboBox::setDroppedWidth(int width) {
+	return static_cast<int>(sendMessage(CB_SETDROPPEDWIDTH, width));
+}
+
+Rectangle ComboBox::getDroppedRect() const {
+	RECT rectangle = { 0 };
+	return sendMessage(CB_GETDROPPEDCONTROLRECT, 0,
+		reinterpret_cast<LPARAM>(&rectangle)) ? Rectangle(rectangle) : Rectangle();
+}
+
+int ComboBox::getTopIndex() const {
+	return static_cast<int>(sendMessage(CB_GETTOPINDEX));
+}
+
+bool ComboBox::setTopIndex(int index) {
+	return sendMessage(CB_SETTOPINDEX, index) != CB_ERR;
+}
+
+int ComboBox::getHorizontalExtent() const {
+	return static_cast<int>(sendMessage(CB_GETHORIZONTALEXTENT));
+}
+
+void ComboBox::setHorizontalExtent(int width) {
+	sendMessage(CB_SETHORIZONTALEXTENT, width);
+}
+
+int ComboBox::getItemHeight(int index) const {
+	return static_cast<int>(sendMessage(CB_GETITEMHEIGHT, index));
+}
+
+bool ComboBox::setItemHeight(int height, int index) {
+	return sendMessage(CB_SETITEMHEIGHT, index, height) != CB_ERR;
+}
+
+std::pair<int, int> ComboBox::getEditSelection() const {
+	DWORD start = 0;
+	DWORD end = 0;
+	if(sendMessage(CB_GETEDITSEL, reinterpret_cast<WPARAM>(&start),
+		reinterpret_cast<LPARAM>(&end)) == CB_ERR)
+	{
+		return std::make_pair(-1, -1);
+	}
+	return std::make_pair(static_cast<int>(start), static_cast<int>(end));
+}
+
+bool ComboBox::setEditSelection(int start, int end) {
+	return sendMessage(CB_SETEDITSEL, 0, MAKELPARAM(start, end)) != CB_ERR;
+}
+
+LCID ComboBox::getLocale() const {
+	return static_cast<LCID>(sendMessage(CB_GETLOCALE));
+}
+
+LCID ComboBox::setLocale(LCID locale) {
+	return static_cast<LCID>(sendMessage(CB_SETLOCALE, locale));
+}
+
+int ComboBox::getMinimumVisibleItems() const {
+	return static_cast<int>(sendMessage(CB_GETMINVISIBLE));
+}
+
+bool ComboBox::setMinimumVisibleItems(int count) {
+	return sendMessage(CB_SETMINVISIBLE, count) != FALSE;
+}
+
+bool ComboBox::getExtendedUI() const {
+	return sendMessage(CB_GETEXTENDEDUI) != FALSE;
+}
+
+bool ComboBox::setExtendedUI(bool extended) {
+	return sendMessage(CB_SETEXTENDEDUI, extended ? TRUE : FALSE) != CB_ERR;
+}
+
+COMBOBOXINFO ComboBox::getInfo() const {
+	COMBOBOXINFO info = { sizeof(COMBOBOXINFO) };
+	::GetComboBoxInfo(handle(), &info);
+	return info;
+}
+
 Point ComboBox::getPreferredSize() {
 	UpdateCanvas c(this);
 	auto select(c.select(*getFont()));
