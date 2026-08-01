@@ -142,6 +142,8 @@ All notable changes to LibDWT are documented in this file.
   ownership, text and collection bounds, modal-dialog teardown, table sorting,
   grid/DPI layout, tray activation, status-bar sizing grips, and common dialog
   result handling.
+- Taskbar initialization now requests the base taskbar-list interface identifier,
+  restoring icon overlays and taskbar previews.
 - SplitterContainer drag layout now discards stale pane pixels and synchronously
   repaints child panes, preventing text trails during rapid splitter movement.
 - Tree and VirtualTree now initialize and propagate their default or assigned
