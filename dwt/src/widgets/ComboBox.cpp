@@ -34,6 +34,8 @@
 #include <dwt/WidgetCreator.h>
 #include <dwt/widgets/TextBox.h>
 
+#include <vector>
+
 namespace dwt {
 
 const TCHAR ComboBox::windowClass[] = WC_COMBOBOX;
@@ -63,10 +65,18 @@ void ComboBox::create( const Seed & cs ) {
 
 tstring ComboBox::getValue( int index ) {
 	// Uses CB_GETLBTEXTLEN and CB_GETLBTEXT
-	int txtLength = ComboBox_GetLBTextLen( handle(), index );
-	tstring retVal(txtLength, '\0');
-	ComboBox_GetLBText( handle(), index, &retVal[0] );
-	return retVal;
+	if(index < 0 || static_cast<size_t>(index) >= size()) {
+		return tstring();
+	}
+	const int txtLength = ComboBox_GetLBTextLen(handle(), index);
+	if(txtLength == CB_ERR || txtLength < 0) {
+		return tstring();
+	}
+	std::vector<TCHAR> buffer(static_cast<size_t>(txtLength) + 1, _T('\0'));
+	if(ComboBox_GetLBText(handle(), index, buffer.data()) == CB_ERR) {
+		return tstring();
+	}
+	return tstring(buffer.data(), static_cast<size_t>(txtLength));
 }
 
 int ComboBox::findString(const tstring& text) {
@@ -105,9 +115,6 @@ TextBoxPtr ComboBox::getTextBox() {
 }
 
 Point ComboBox::getPreferredSize() {
-	// Pixels between text and arrow
-	const int MARGIN = 2;
-
 	UpdateCanvas c(this);
 	auto select(c.select(*getFont()));
 	Point ret;
@@ -116,8 +123,13 @@ Point ComboBox::getPreferredSize() {
 		ret.x = std::max(ret.x, ext.x);
 	}
 
-	ret.x += ::GetSystemMetrics(SM_CYFIXEDFRAME) * 2 + ::GetSystemMetrics(SM_CXSMICON) + MARGIN;
-	ret.y = static_cast<long>(sendMessage(CB_GETITEMHEIGHT, static_cast<WPARAM>(-1), 0)) + ::GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
+	ret.x += getSystemMetric(SM_CXFIXEDFRAME) * 2 +
+		getSystemMetric(SM_CXVSCROLL) + scale(2);
+	const auto itemHeight = sendMessage(
+		CB_GETITEMHEIGHT, static_cast<WPARAM>(-1), 0);
+	ret.y = itemHeight == CB_ERR ? c.getTextExtent(_T("Mg")).y :
+		static_cast<long>(itemHeight);
+	ret.y += getSystemMetric(SM_CYFIXEDFRAME) * 2;
 	return ret;
 }
 

@@ -34,34 +34,71 @@
 #include <dwt/util/check.h>
 #include <dwt/widgets/Control.h>
 
+#include <cstring>
+#include <limits>
+
 namespace dwt { namespace Clipboard {
 
 void setData(const tstring& str, Control* w) {
 	dwtassert(w, "Clipboard::setData: invalid widget");
-
-	if(!::OpenClipboard(w->handle())) {
-		dwtWin32DebugFail("Clipboard::setData: OpenClipboard failed");
+	if(!w || !::IsWindow(w->handle())) {
 		return;
 	}
 
-	::EmptyClipboard();
+	const auto maxCharacters =
+		(std::numeric_limits<SIZE_T>::max)() / sizeof(TCHAR);
+	if(str.size() >= maxCharacters) {
+		dwtWin32DebugFail("Clipboard::setData: text is too large");
+		return;
+	}
 
-	auto handle = ::GlobalAlloc(GMEM_MOVEABLE, (str.size() + 1) * sizeof(TCHAR));
+	const SIZE_T bytes = (str.size() + 1) * sizeof(TCHAR);
+	auto handle = ::GlobalAlloc(GMEM_MOVEABLE, bytes);
 	if(!handle) {
-		::CloseClipboard();
+		dwtWin32DebugFail("Clipboard::setData: GlobalAlloc failed");
 		return;
 	}
 
 	auto buf = reinterpret_cast<TCHAR*>(::GlobalLock(handle));
-	_tcscpy_s(buf, str.size() + 1, str.c_str());
+	if(!buf) {
+		dwtWin32DebugFail("Clipboard::setData: GlobalLock failed");
+		::GlobalFree(handle);
+		return;
+	}
+	std::memcpy(buf, str.c_str(), bytes);
 	::GlobalUnlock(handle);
 
+	bool opened = false;
+	for(unsigned attempt = 0; attempt < 5 && !opened; ++attempt) {
+		opened = ::OpenClipboard(w->handle()) != FALSE;
+		if(!opened && attempt + 1 < 5) {
+			::Sleep(1);
+		}
+	}
+	if(!opened) {
+		dwtWin32DebugFail("Clipboard::setData: OpenClipboard failed");
+		::GlobalFree(handle);
+		return;
+	}
+
+	if(!::EmptyClipboard()) {
+		dwtWin32DebugFail("Clipboard::setData: EmptyClipboard failed");
+		::CloseClipboard();
+		::GlobalFree(handle);
+		return;
+	}
+
 #ifdef _UNICODE
-	::SetClipboardData(CF_UNICODETEXT, handle);
+	const auto format = CF_UNICODETEXT;
 #else
-	::SetClipboardData(CF_TEXT, handle);
+	const auto format = CF_TEXT;
 #endif
 
+	if(!::SetClipboardData(format, handle)) {
+		dwtWin32DebugFail("Clipboard::setData: SetClipboardData failed");
+		::GlobalFree(handle);
+	}
+	// On success, ownership of handle has transferred to the clipboard.
 	::CloseClipboard();
 }
 

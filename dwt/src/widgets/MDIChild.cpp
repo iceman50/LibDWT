@@ -30,6 +30,7 @@
 */
 
 #include <dwt/widgets/MDIChild.h>
+#include <dwt/Application.h>
 #include <dwt/DWTException.h>
 
 namespace dwt {
@@ -47,7 +48,7 @@ void MDIChild::createMDIChild( const Seed& cs ) {
 		cs.style,
 		cs.location.x(), cs.location.y(), cs.location.width(), cs.location.height(),
 		getParent()->handle(),
-		::GetModuleHandle(NULL),
+		Application::getModuleHandle(),
 		reinterpret_cast< LPARAM >( static_cast< Widget * >( this ) ) );
 
 	if (wnd == NULL) {

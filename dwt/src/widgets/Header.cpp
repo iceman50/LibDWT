@@ -82,7 +82,9 @@ void Header::create( const Header::Seed & cs ) {
 }
 
 Point Header::getPreferredSize() {
-	RECT rc = { 0, 0, ::GetSystemMetrics(SM_CXSCREEN), ::GetSystemMetrics(SM_CYSCREEN) };
+	const auto available = getParent() ?
+		getParent()->getClientSize() : getPrimaryDesktopSize();
+	RECT rc = { 0, 0, available.x, available.y };
 	WINDOWPOS wp = { 0 };
 	HDLAYOUT hl = { &rc, &wp };
 	if(Header_Layout(handle(), &hl)) {
@@ -132,9 +134,9 @@ void Header::applyFilterStyles() {
 		return;
 	}
 
-	auto font = getFont();
+	auto currentFont = getFont();
 	::EnumChildWindows(handle(), styleHeaderFilterChild,
-		reinterpret_cast<LPARAM>(font ? font->handle() : nullptr));
+		reinterpret_cast<LPARAM>(currentFont ? currentFont->handle() : nullptr));
 }
 
 void Header::setFontImpl() {
@@ -150,10 +152,10 @@ void Header::setFilterBar(bool value) {
 bool Header::handleMessage(const MSG& msg, LRESULT& retVal) {
 	auto handled = BaseType::handleMessage(msg, retVal);
 	if(msg.message == WM_PARENTNOTIFY && LOWORD(msg.wParam) == WM_CREATE) {
-		auto font = getFont();
+		auto currentFont = getFont();
 		if(HWND child = reinterpret_cast<HWND>(msg.lParam)) {
 			styleHeaderFilterChild(child,
-				reinterpret_cast<LPARAM>(font ? font->handle() : nullptr));
+				reinterpret_cast<LPARAM>(currentFont ? currentFont->handle() : nullptr));
 		}
 		applyFilterStyles();
 	} else if(msg.message == WM_THEMECHANGED || msg.message == WM_SETTINGCHANGE ||

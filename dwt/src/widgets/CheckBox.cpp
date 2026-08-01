@@ -47,9 +47,6 @@ CheckBox::Seed::Seed(const tstring& caption, DWORD style) :
 }
 
 Point CheckBox::getPreferredSize() {
-	// Pixels between icon and text
-	const int MARGIN = 4;
-
 	UpdateCanvas c(this);
 
 	auto select(c.select(*getFont()));
@@ -57,8 +54,11 @@ Point CheckBox::getPreferredSize() {
 	c.getTextMetrics(tmNew);
 
 	Point ret = c.getTextExtent(getText());
-	ret.y = std::max((int)tmNew.tmHeight, ::GetSystemMetrics(SM_CYSMICON));
-	ret.x += ::GetSystemMetrics(SM_CXSMICON) + MARGIN;
+	const int markSize = scale(15);
+	const int horizontalGap = scale(8);
+	const int verticalPadding = scale(4);
+	ret.y = std::max(static_cast<int>(tmNew.tmHeight), markSize) + verticalPadding;
+	ret.x += markSize + horizontalGap + scale(2);
 	return ret;
 }
 

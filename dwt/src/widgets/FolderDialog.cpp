@@ -150,7 +150,7 @@ bool FolderDialog::open(tstring& dir) {
 
 	auto dialogOptions = getModernOptions();
 	std::vector<tstring> paths;
-	if(!util::win32::showFileDialog(dialogOptions, paths)) {
+	if(!util::win32::showFileDialog(dialogOptions, paths) || paths.empty()) {
 		return false;
 	}
 	dir = paths.front();
@@ -165,7 +165,7 @@ bool FolderDialog::openShellItem(util::win32::FileDialogResult& result) {
 	dialogOptions.forceFilesystem = false;
 
 	std::vector<util::win32::FileDialogResult> results;
-	if(!util::win32::showFileDialogItems(dialogOptions, results)) {
+	if(!util::win32::showFileDialogItems(dialogOptions, results) || results.empty()) {
 		return false;
 	}
 	result = std::move(results.front());

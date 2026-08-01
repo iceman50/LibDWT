@@ -9,8 +9,12 @@
 #include <dwt/util/win32/FileDialog.h>
 #include <dwt/widgets/Header.h>
 #include <dwt/widgets/Button.h>
+#include <dwt/widgets/ComboBox.h>
+#include <dwt/widgets/Grid.h>
+#include <dwt/widgets/RichTextBox.h>
 #include <dwt/widgets/Table.h>
 #include <dwt/widgets/TableTree.h>
+#include <dwt/widgets/TextBox.h>
 #include <dwt/widgets/Notification.h>
 #include <dwt/widgets/Tree.h>
 #include <dwt/widgets/VirtualTree.h>
@@ -267,6 +271,78 @@ void testControlContracts() {
 	check(notificationOptions.realTime && notificationOptions.respectQuietTime &&
 		notificationOptions.largeIcon && notificationOptions.noSound,
 		"notification message options value contract");
+}
+
+void testBackportedSafetyContracts() {
+	using namespace dwt;
+
+	auto& application = Application::instance();
+	check(Application::isInitialized(),
+		"application initialization state is observable");
+	check(Application::getModuleHandle() != nullptr,
+		"DWT module handle is available");
+	check(!application.getModuleFileName().empty() &&
+		!application.getModulePath().empty(),
+		"DWT module filename and path are available");
+
+	Window::Seed windowSeed(_T("FrameworkTests Backports"));
+	windowSeed.style &= ~WS_VISIBLE;
+	auto* window = WidgetCreator<Window>::create(windowSeed);
+	check(window->redrawWindow(RDW_INVALIDATE) &&
+		window->redrawWindow(dwt::Rectangle(0, 0, 8, 8), RDW_INVALIDATE),
+		"widget redraw helpers accept full-window and rectangle requests");
+
+	const auto firstTimer = window->setTimer([] { return false; }, 60000);
+	const auto secondTimer = window->setTimer([] { return false; }, 60000);
+	check(firstTimer != 0 && secondTimer != 0 && firstTimer != secondTimer,
+		"default widget timers receive unique IDs");
+	window->setTimer({}, 0, firstTimer);
+	window->setTimer({}, 0, secondTimer);
+
+	auto* combo = WidgetCreator<ComboBox>::create(window, ComboBox::Seed());
+	check(combo->getValue(-1).empty() && combo->getValue(0).empty(),
+		"combo box rejects invalid item indexes");
+
+	TextBox::Seed textSeed;
+	textSeed.style |= ES_MULTILINE;
+	auto* text = WidgetCreator<TextBox>::create(window, textSeed);
+	text->setText(_T("first\r\nsecond"));
+	check(text->getLine(-1).empty() && text->getLine(0) == _T("first"),
+		"text box line retrieval validates indexes and preserves text");
+
+	auto* emptyGrid = WidgetCreator<Grid>::create(window, Grid::Seed(0, 0));
+	WidgetCreator<Button>::create(emptyGrid, Button::Seed(_T("Unassigned")));
+	emptyGrid->resize(dwt::Rectangle(0, 0, 100, 50));
+	emptyGrid->layout();
+	check(emptyGrid->getPreferredSize() == Point(),
+		"empty grid safely ignores unassignable children");
+
+	auto* table = WidgetCreator<Table>::create(window, Table::Seed());
+	bool rejectedEmptyRow = false;
+	try {
+		table->insert({}, 0);
+	} catch(const DWTException&) {
+		rejectedEmptyRow = true;
+	}
+	check(rejectedEmptyRow, "table rejects empty rows");
+	table->setColumnOrder({});
+	check(table->getColumnOrder().empty(),
+		"empty table column-order operations are safe");
+
+	auto* rich = WidgetCreator<RichTextBox>::create(window, RichTextBox::Seed());
+	rich->setReadOnly();
+	rich->setTextLimit(64);
+	const auto ranges = rich->addTextSteadyBatch({
+		_T("{\\urtf1 first}"), _T("{\\urtf1 second}") });
+	check(ranges.size() == 2 && ranges[0].first <= ranges[0].second &&
+		ranges[0].second <= ranges[1].first &&
+		ranges[1].first <= ranges[1].second,
+		"batched Rich Edit insertion reports ordered ranges");
+	check(rich->isReadOnly() && rich->getTextLimit() == 64,
+		"batched Rich Edit insertion restores control state");
+
+	window->close();
+	pumpMessages();
 }
 
 void testButtonCompletion() {
@@ -703,7 +779,7 @@ void testLiveAccessibilityValidation() {
 }
 
 void runHeadlessTests() {
-	const unsigned total = 11;
+	const unsigned total = 12;
 	unsigned position = 0;
 
 	std::cout << "\n=== Headless framework tests ===\n";
@@ -714,6 +790,8 @@ void runHeadlessTests() {
 	runTest(++position, total, "testAccessibilityContract",
 		testAccessibilityContract);
 	runTest(++position, total, "testControlContracts", testControlContracts);
+	runTest(++position, total, "testBackportedSafetyContracts",
+		testBackportedSafetyContracts);
 	runTest(++position, total, "testButtonCompletion", testButtonCompletion);
 	runTest(++position, total, "testInputEventContracts",
 		testInputEventContracts);

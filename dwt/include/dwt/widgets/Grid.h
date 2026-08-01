@@ -53,7 +53,8 @@ public:
 		STRETCH
 	};
 
-	GridInfo(int size_ = 0, Modes mode_ = AUTO, Align align_ = TOP_LEFT) : size(size_), mode(mode_), align(align_) { }
+	GridInfo(int size_ = 0, Modes mode_ = AUTO, Align align_ = TOP_LEFT) :
+		size(size_ > 0 ? static_cast<size_t>(size_) : 0), mode(mode_), align(align_) { }
 
 	/** Width or height */
 	size_t size;
@@ -135,7 +136,7 @@ private:
 		WidgetInfo(Control* w_, size_t row_, size_t column_, size_t rowSpan_, size_t colSpan_) :
 			w(w_), row(row_), column(column_), rowSpan(rowSpan_), colSpan(colSpan_), noResize(false) { }
 		WidgetInfo(Control* w_) :
-			w(w_), noResize(true) { }
+			w(w_), row(0), column(0), rowSpan(0), colSpan(0), noResize(true) { }
 
 		Control* w;
 
@@ -162,9 +163,11 @@ private:
 
 	Point getPreferredSize(size_t row, size_t column) const;
 
-	std::vector<size_t> calcSizes(const GridInfoList& x, const GridInfoList& y, size_t cur, bool row) const;
+	std::vector<size_t> calcSizes(const GridInfoList& x, const GridInfoList& y,
+		size_t cur, bool row, bool constrain) const;
 
 	Point actualSpacing() const;
+	size_t scaledSpacing() const;
 
 	WidgetInfo* getWidgetInfo(Control* w);
 

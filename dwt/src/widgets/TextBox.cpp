@@ -36,6 +36,9 @@
 #include <dwt/WidgetCreator.h>
 #include <dwt/util/check.h>
 
+#include <cstring>
+#include <limits>
+
 namespace dwt {
 
 TextBoxBase::TextBoxBase(Widget *parent, Dispatcher& dispatcher) :
@@ -213,11 +216,22 @@ void TextBox::setCue(const tstring& text) {
 }
 
 tstring TextBox::getLine(int line) {
-	tstring tmp;
-	tmp.resize(std::max(2, lineLength(lineIndex(line))));
+	if(line < 0 || static_cast<unsigned>(line) >= getLineCount()) {
+		return tstring();
+	}
+	const auto length = std::max(0, lineLength(lineIndex(line)));
+	const auto capacity = std::min(
+		static_cast<size_t>(length) + 1,
+		static_cast<size_t>((std::numeric_limits<WORD>::max)()));
+	tstring tmp(std::max<size_t>(capacity, 2), _T('\0'));
 
-	*reinterpret_cast<WORD*>(&tmp[0]) = static_cast<WORD>(tmp.size());
-	tmp.resize(sendMessage(EM_GETLINE, static_cast<WPARAM>(line), reinterpret_cast<LPARAM>(&tmp[0])));
+	const WORD maximum = static_cast<WORD>(tmp.size());
+	std::memcpy(tmp.data(), &maximum, sizeof(maximum));
+	const auto copied = sendMessage(
+		EM_GETLINE, static_cast<WPARAM>(line),
+		reinterpret_cast<LPARAM>(tmp.data()));
+	tmp.resize(std::min<size_t>(
+		copied > 0 ? static_cast<size_t>(copied) : 0, tmp.size()));
 	return tmp;
 }
 
@@ -295,8 +309,10 @@ Point TextBoxBase::getPreferredSize() {
 	c.getTextMetrics(tmNew);
 
 	Point ret = c.getTextExtent(getText());
-	ret.x += GetSystemMetrics(SM_CXEDGE) * 2;
-	ret.y = lines * tmNew.tmHeight + std::min(tmNew.tmHeight, tmSys.tmHeight) / 2 + GetSystemMetrics(SM_CYEDGE) * 2;
+	ret.x += getSystemMetric(SM_CXEDGE) * 2;
+	ret.y = lines * tmNew.tmHeight +
+		std::min(tmNew.tmHeight, tmSys.tmHeight) / 2 +
+		getSystemMetric(SM_CYEDGE) * 2;
 	return ret;
 }
 

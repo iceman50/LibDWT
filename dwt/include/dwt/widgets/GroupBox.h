@@ -104,9 +104,11 @@ private:
 	static const TCHAR windowClass[];
 
 	Point padding;
+	Point logicalPadding;
 
 	Rectangle shrink(const Rectangle& client);
 	Point expand(const Point& child);
+	void updatePadding();
 
 	void handleEnabled(bool enabled);
 };

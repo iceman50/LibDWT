@@ -38,6 +38,8 @@
 
 #include "Widget.h"
 
+#include <type_traits>
+
 namespace dwt {
 
 /// Helper creational class
@@ -55,14 +57,24 @@ public:
 	static typename WidgetType::ObjectType create( const typename WidgetType::Seed & cs )
 	{
 		typename WidgetType::ObjectType retVal(new WidgetType);
-		retVal->create( cs );
+		try {
+			retVal->create(cs);
+		} catch(...) {
+			destroyFailed(retVal);
+			throw;
+		}
 		return retVal;
 	}
 
 	static typename WidgetType::ObjectType create( Widget * parent, const typename WidgetType::Seed & cs )
 	{
 		typename WidgetType::ObjectType retVal(new WidgetType( parent ));
-		retVal->create( cs );
+		try {
+			retVal->create(cs);
+		} catch(...) {
+			destroyFailed(retVal);
+			throw;
+		}
 		return retVal;
 	}
 
@@ -70,14 +82,24 @@ public:
 	static typename WidgetType::ObjectType create( Widget * parent, ContainerType * container, const typename WidgetType::Seed & cs )
 	{
 		typename WidgetType::ObjectType retVal(new WidgetType( parent ));
-		retVal->create( container, cs );
+		try {
+			retVal->create(container, cs);
+		} catch(...) {
+			destroyFailed(retVal);
+			throw;
+		}
 		return retVal;
 	}
 
 	static typename WidgetType::ObjectType create( Widget * parent )
 	{
 		typename WidgetType::ObjectType retVal( new WidgetType( parent ) );
-		retVal->create();
+		try {
+			retVal->create();
+		} catch(...) {
+			destroyFailed(retVal);
+			throw;
+		}
 		return retVal;
 	}
 
@@ -85,8 +107,33 @@ public:
 	static typename WidgetType::ObjectType attach(Widget* parent, HWND hwnd)
 	{
 		typename WidgetType::ObjectType w(new WidgetType(parent));
-		w->setHandle(hwnd);
+		try {
+			w->setHandle(hwnd);
+		} catch(...) {
+			destroyFailed(w);
+			throw;
+		}
 		return w;
+	}
+
+private:
+	static void destroyFailed(typename WidgetType::ObjectType& widget) noexcept {
+		if(!widget) {
+			return;
+		}
+		if constexpr(std::is_pointer<typename WidgetType::ObjectType>::value) {
+			const auto window = widget->handle();
+			if(window && ::IsWindow(window)) {
+				::DestroyWindow(window);
+			} else {
+				delete widget;
+			}
+			widget = nullptr;
+		} else {
+			// Menu and Notification use unique ownership and non-HWND handles.
+			// Let their destructors release any partially-created native resource.
+			widget.reset();
+		}
 	}
 };
 

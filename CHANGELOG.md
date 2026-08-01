@@ -6,6 +6,8 @@ All notable changes to LibDWT are documented in this file.
 
 ### Added
 
+- Added application initialization/module queries, explicit widget redraw
+  helpers, unique timer IDs, and batched steady Rich Edit insertion.
 - Reworked `MultiControlExample` into a non-closeable, categorized control
   gallery with the complete native button and list-view mode matrices, grouped
   image lists, group headers, menus, rich text, splitters, and shared root-level
@@ -136,6 +138,10 @@ All notable changes to LibDWT are documented in this file.
 
 ### Changed
 
+- Hardened widget creation and callback exception boundaries, GDI and clipboard
+  ownership, text and collection bounds, modal-dialog teardown, table sorting,
+  grid/DPI layout, tray activation, status-bar sizing grips, and common dialog
+  result handling.
 - SplitterContainer drag layout now discards stale pane pixels and synchronously
   repaints child panes, preventing text trails during rapid splitter movement.
 - Tree and VirtualTree now initialize and propagate their default or assigned

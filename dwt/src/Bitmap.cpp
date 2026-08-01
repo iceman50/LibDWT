@@ -34,6 +34,7 @@
 */
 
 #include <dwt/resources/Bitmap.h>
+#include <dwt/Application.h>
 
 #include <dwt/CanvasClasses.h>
 #include <dwt/Point.h>
@@ -45,12 +46,12 @@ Bitmap::Bitmap(HBITMAP bitmap, bool own) : ResourceType(bitmap, own)
 }
 
 Bitmap::Bitmap(unsigned resourceId, unsigned flags) :
-	Bitmap(reinterpret_cast<HBITMAP>(::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(resourceId), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION)))
+	Bitmap(reinterpret_cast<HBITMAP>(::LoadImage(Application::getModuleHandle(), MAKEINTRESOURCE(resourceId), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION)))
 {
 }
 
 Bitmap::Bitmap(const tstring& filePath, unsigned flags) :
-	Bitmap(reinterpret_cast<HBITMAP>(::LoadImage(::GetModuleHandle(NULL), filePath.c_str(), IMAGE_BITMAP, 0, 0, flags | LR_LOADFROMFILE)))
+	Bitmap(reinterpret_cast<HBITMAP>(::LoadImage(nullptr, filePath.c_str(), IMAGE_BITMAP, 0, 0, flags | LR_LOADFROMFILE)))
 {
 }
 

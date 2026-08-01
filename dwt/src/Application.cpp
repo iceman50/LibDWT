@@ -40,7 +40,9 @@
 #include <dwt/util/check.h>
 #include <dwt/util/win32/Dpi.h>
 #include <dwt/widgets/Control.h>
+#include <algorithm>
 #include <assert.h>
+#include <vector>
 
 namespace dwt {
 
@@ -53,14 +55,13 @@ HANDLE Application::itsMutex = 0;
  Typically only called by WinMain or DllMain.
  */
 void Application::init() {
+#ifndef DWT_SHARED
 	util::win32::enablePerMonitorDpiAwareness();
-	itsInstance = new Application();
-
-	BOOL enable;
-	if(::SystemParametersInfo(SPI_GETUIEFFECTS, 0, &enable, 0) && !enable) {
-		enable = TRUE;
-		::SystemParametersInfo(SPI_SETUIEFFECTS, 0, &enable, 0);
+#endif
+	if(itsInstance) {
+		return;
 	}
+	itsInstance = new Application();
 
 	// Initializing Common Controls...
 	INITCOMMONCONTROLSEX init = {
@@ -115,6 +116,9 @@ void Application::removeWaitEvent(HANDLE hWaitEvent) {
 }
 
 void Application::uninit() {
+	if(!itsInstance) {
+		return;
+	}
 	delete itsInstance;
 	itsInstance = 0;
 	if (itsMutex) {
@@ -125,20 +129,59 @@ void Application::uninit() {
 
 Application& Application::instance() {
 	assert(itsInstance);
+	if(!itsInstance) {
+		throw DWTException("DWT application runtime is not initialized");
+	}
 	return *itsInstance;
 }
 
+bool Application::isInitialized() noexcept {
+	return itsInstance != nullptr;
+}
+
+HMODULE Application::getModuleHandle() noexcept {
+	HMODULE module = nullptr;
+	if(::GetModuleHandleEx(
+		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+			GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+		reinterpret_cast<LPCTSTR>(&itsInstance), &module))
+	{
+		return module;
+	}
+	return ::GetModuleHandle(nullptr);
+}
+
+namespace {
+
+tstring moduleFileName(HMODULE module) {
+	std::vector<TCHAR> buffer(1024);
+	for(;;) {
+		::SetLastError(ERROR_SUCCESS);
+		const auto length = ::GetModuleFileName(
+			module, buffer.data(), static_cast<DWORD>(buffer.size()));
+		if(length == 0) {
+			return tstring();
+		}
+		if(length < buffer.size()) {
+			return tstring(buffer.data(), length);
+		}
+		if(buffer.size() >= 32768) {
+			return tstring();
+		}
+		buffer.resize(std::min<size_t>(buffer.size() * 2, 32768));
+	}
+}
+
+}
+
 tstring Application::getModulePath() const {
-	TCHAR retVal[2049];
-	GetModuleFileName(0, retVal, 2048);
-	tstring retStr = retVal;
-	retStr = retStr.substr(0, retStr.find_last_of('\\') + 1);
-	return retStr;
+	auto fileName = moduleFileName(getModuleHandle());
+	const auto separator = fileName.find_last_of(_T("\\/"));
+	return separator == tstring::npos ? tstring() : fileName.substr(0, separator + 1);
 }
 
 tstring Application::getModuleFileName() const {
-	TCHAR retVal[2049];
-	return tstring(retVal, GetModuleFileName(0, retVal, 2048));
+	return moduleFileName(getModuleHandle());
 }
 
 void Application::run() {

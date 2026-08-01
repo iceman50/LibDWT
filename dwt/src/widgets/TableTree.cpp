@@ -138,15 +138,15 @@ void TableTree::insertChild(LPARAM parentParam, LPARAM child) {
 		children.erase(existingParent);
 	}
 
-	auto& parent = items[parentParam];
-	if(std::find(parent.children.begin(), parent.children.end(), child) ==
-		parent.children.end()) {
-		parent.children.push_back(child);
+	auto& parentItem = items[parentParam];
+	if(std::find(parentItem.children.begin(), parentItem.children.end(), child) ==
+		parentItem.children.end()) {
+		parentItem.children.push_back(child);
 	}
 	children[child] = parentParam;
 
 	auto childRow = findData(child);
-	if(parent.expanded) {
+	if(parentItem.expanded) {
 		if(childRow >= 0) {
 			sendMsg(LVM_DELETEITEM, childRow, 0);
 		}
@@ -170,23 +170,23 @@ void TableTree::eraseChild(LPARAM child) {
 void TableTree::collapse(LPARAM parentParam) {
 	util::HoldRedraw hold { this };
 
-	auto parent = items.find(parentParam);
-	if(parent == items.end() || !parent->second.expanded) {
+	auto parentItem = items.find(parentParam);
+	if(parentItem == items.end() || !parentItem->second.expanded) {
 		return;
 	}
 	auto pos = findData(parentParam);
 	if(pos < 0) {
 		return;
 	}
-	auto n = parent->second.children.size();
+	auto n = parentItem->second.children.size();
 
 	// assume children are all at the right pos.
 	for(size_t i = 0; i < n; ++i) {
 		sendMsg(LVM_DELETEITEM, pos + 1, 0);
 	}
 
-	parent->second.expanded = false;
-	parent->second.redrawGlyph(*this);
+	parentItem->second.expanded = false;
+	parentItem->second.redrawGlyph(*this);
 	raiseAccessibleStructureChanged();
 
 	// special case, see TableTreeTest
@@ -198,15 +198,15 @@ void TableTree::collapse(LPARAM parentParam) {
 void TableTree::expand(LPARAM parentParam) {
 	util::HoldRedraw hold { this };
 
-	auto parent = items.find(parentParam);
-	if(parent == items.end() || parent->second.expanded) {
+	auto parentItem = items.find(parentParam);
+	if(parentItem == items.end() || parentItem->second.expanded) {
 		return;
 	}
 	auto position = findData(parentParam);
 	if(position < 0) {
 		return;
 	}
-	for(auto child: parent->second.children) {
+	for(auto child: parentItem->second.children) {
 		if(findData(child) < 0) {
 			insertStoredRow(child, ++position, 2);
 		}
@@ -214,8 +214,8 @@ void TableTree::expand(LPARAM parentParam) {
 
 	resort();
 
-	parent->second.expanded = true;
-	parent->second.redrawGlyph(*this);
+	parentItem->second.expanded = true;
+	parentItem->second.redrawGlyph(*this);
 	raiseAccessibleStructureChanged();
 }
 
@@ -433,8 +433,10 @@ void TableTree::handleSetItem(LVITEM& lv, int itemIndex) {
 			items.find(newData) != items.end() || children.find(newData) != children.end());
 		if(hierarchyNeedsIdentity || duplicate) {
 			dwtDebugFail("TableTree hierarchy item data must be unique and non-null");
+#ifndef _DEBUG
 			lv.lParam = oldData;
 			newData = oldData;
+#endif
 		} else {
 			remapData(oldData, newData);
 		}
@@ -520,10 +522,10 @@ void TableTree::remapData(LPARAM oldData, LPARAM newData) {
 			}
 		}
 
-		auto parent = items.find(oldData);
-		if(parent != items.end()) {
-			auto value = std::move(parent->second);
-			items.erase(parent);
+		auto parentItem = items.find(oldData);
+		if(parentItem != items.end()) {
+			auto value = std::move(parentItem->second);
+			items.erase(parentItem);
 			if(newData) {
 				auto inserted = items.emplace(newData, std::move(value));
 				for(auto childData : inserted.first->second.children) {
@@ -599,10 +601,10 @@ void TableTree::configureAccessibility() {
 		return findData(value) >= 0 || children.find(value) != children.end() ||
 			items.find(value) != items.end();
 	};
-	provider.children = [this](accessibility::ItemId parent) {
+	provider.children = [this](accessibility::ItemId parentId) {
 		std::vector<accessibility::ItemId> result;
-		if(parent) {
-			auto found = items.find(static_cast<LPARAM>(parent));
+		if(parentId) {
+			auto found = items.find(static_cast<LPARAM>(parentId));
 			if(found != items.end() && found->second.expanded) {
 				for(auto child: found->second.children) {
 					result.push_back(static_cast<accessibility::ItemId>(child));

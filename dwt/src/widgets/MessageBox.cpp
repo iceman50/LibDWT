@@ -47,7 +47,9 @@ MessageBox::RetVal MessageBox::show(const tstring& message, const tstring& title
 		return RETBOX_CANCEL;
 	}
 
-	return static_cast<RetVal>(::MessageBox(getParent()->handle(), message.c_str(), title.c_str(), buttons | icon));
+	const auto flags = static_cast<UINT>(buttons) | static_cast<UINT>(icon);
+	return static_cast<RetVal>(::MessageBox(
+		getParent()->handle(), message.c_str(), title.c_str(), flags));
 }
 
 }

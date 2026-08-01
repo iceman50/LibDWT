@@ -126,7 +126,7 @@ public:
 	void closeMonthCalendar();
 	HWND getMonthCalendarHandle() const;
 	HFONT getMonthCalendarFont() const;
-	void setMonthCalendarFont(FontPtr font, bool redraw = true);
+	void setMonthCalendarFont(FontPtr monthCalendarFont, bool redraw = true);
 	DWORD setMonthCalendarStyle(DWORD style);
 	DWORD getMonthCalendarStyle() const;
 	DATETIMEPICKERINFO getPickerInfo() const;
@@ -290,9 +290,9 @@ inline HFONT DateTime::getMonthCalendarFont() const {
 	return reinterpret_cast<HFONT>(sendMessage(DTM_GETMCFONT));
 }
 
-inline void DateTime::setMonthCalendarFont(FontPtr font, bool redraw) {
+inline void DateTime::setMonthCalendarFont(FontPtr monthCalendarFont, bool redraw) {
 	sendMessage(DTM_SETMCFONT,
-		reinterpret_cast<WPARAM>(font ? font->handle() : nullptr),
+		reinterpret_cast<WPARAM>(monthCalendarFont ? monthCalendarFont->handle() : nullptr),
 		redraw ? TRUE : FALSE);
 }
 

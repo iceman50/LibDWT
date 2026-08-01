@@ -32,6 +32,7 @@
 #include <dwt/resources/Region.h>
 
 #include <algorithm>
+#include <limits>
 
 #include <dwt/DWTException.h>
 #include <dwt/Point.h>
@@ -44,9 +45,19 @@ Region::Region(const Rectangle& rect) : Region(::CreateRectRgn(rect.left(), rect
 
 Region::Region(const std::vector<Point>& points, PolyFillMode mode)
 {
+	if(points.size() > static_cast<size_t>((std::numeric_limits<int>::max)())) {
+		throw DWTException("Too many points in polygon region");
+	}
 	std::vector<POINT> tmp(points.size());
-  std::transform(points.begin(), points.end(), tmp.begin(), [](const Point& pt) { return pt.toPOINT(); });
-	init(::CreatePolygonRgn(&tmp[0], static_cast<int>(tmp.size()), mode), true);
+	std::transform(points.begin(), points.end(), tmp.begin(),
+		[](const Point& pt) { return pt.toPOINT(); });
+	const auto region = tmp.empty() ?
+		::CreateRectRgn(0, 0, 0, 0) :
+		::CreatePolygonRgn(tmp.data(), static_cast<int>(tmp.size()), mode);
+	if(!region) {
+		throw Win32Exception("Unable to create polygon region");
+	}
+	init(region, true);
 }
 
 RegionPtr Region::transform(const PXFORM pxform) const {
@@ -55,10 +66,11 @@ RegionPtr Region::transform(const PXFORM pxform) const {
 		throw Win32Exception("1st GetRegionData in Region::transform failed");
 
 	std::vector<char> data(bytes);
-	if(!::GetRegionData(handle(), bytes, reinterpret_cast<PRGNDATA>(&data[0])))
+	if(!::GetRegionData(handle(), bytes, reinterpret_cast<PRGNDATA>(data.data())))
 		throw Win32Exception("2nd GetRegionData in Region::transform failed");
 
-	HRGN transformed = ::ExtCreateRegion(pxform, bytes, reinterpret_cast<PRGNDATA>(&data[0]));
+	HRGN transformed = ::ExtCreateRegion(
+		pxform, bytes, reinterpret_cast<PRGNDATA>(data.data()));
 	if(!transformed)
 		throw Win32Exception("ExtCreateRegion in Region::transform failed");
 
