@@ -143,6 +143,17 @@ try {
                 if ($multiControlProcess.ExitCode -ne 0) {
                     throw "Multi-control gallery self-test failed ($configuration|$platform)."
                 }
+
+                $designerExecutable = Join-Path $exampleProjectsRoot "UIDesignerExample\build\$platform\$configuration\UIDesignerExample.exe"
+                if (-not (Test-Path $designerExecutable)) {
+                    throw "UI designer self-test executable not found: $designerExecutable"
+                }
+                Write-Host "Running $designerExecutable --self-test"
+                $designerProcess = Start-Process -FilePath $designerExecutable `
+                    -ArgumentList "--self-test" -WindowStyle Hidden -Wait -PassThru
+                if ($designerProcess.ExitCode -ne 0) {
+                    throw "UI designer self-test failed ($configuration|$platform) with exit code $($designerProcess.ExitCode)."
+                }
             }
         }
     }

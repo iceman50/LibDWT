@@ -6,6 +6,11 @@ All notable changes to LibDWT are documented in this file.
 
 ### Added
 
+- Added `UIDesignerExample`, an interactive grid-based form designer with a
+  27-widget child-control palette, reliable deletion and reselection, caption,
+  cell and span editing, row/column modes, sizes and alignment, widget-specific
+  generated LibDWT C++, a live preview window, and a comprehensive
+  non-interactive build self-test.
 - Added a repository-wide Win32 utility tranche: rectangle operations; GDI
   object metadata; region composition; scoped canvas state, clipping, drawing,
   and blitting; widget coordinate, invalidation, update, and placement helpers;
@@ -146,6 +151,8 @@ All notable changes to LibDWT are documented in this file.
 
 ### Changed
 
+- The main build script now defaults to the MinGW-w64 x64 Release configuration;
+  its toolchain and configuration menus remain available with `-Interactive`.
 - Hardened widget creation and callback exception boundaries, GDI and clipboard
   ownership, text and collection bounds, modal-dialog teardown, table sorting,
   grid/DPI layout, tray activation, status-bar sizing grips, and common dialog

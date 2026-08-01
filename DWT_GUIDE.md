@@ -34,6 +34,19 @@ The most important ideas are:
 
 The shipped projects build DWT as a static library (`dwt.lib` with MSVC or `libdwt.a` with MinGW-w64). The repository's supported build configurations use C++17, Unicode, and the Windows GUI subsystem.
 
+### Default build: MinGW-w64 x64 Release
+
+From the repository root:
+
+```powershell
+.\scripts\build-interactive.ps1
+```
+
+The default build compiles and tests the MinGW-w64 x64 Release configuration
+and stages its artifacts under `Builds/MinGW-w64/Release`. Add `-SkipTests` to
+build without running the validation programs, or add `-Interactive` to choose
+a different toolchain, configuration, clean mode, and test mode from menus.
+
 ### Build this repository with MSVC
 
 From the repository root:
@@ -42,7 +55,7 @@ From the repository root:
 .\scripts\build.ps1 -Configurations Release -Platforms x64
 ```
 
-The script builds the library, examples, and tests. Add `-SkipTests` to build without running the validation programs. The solution is also available at `projects/msvc/LibDWT.sln`.
+The MSVC script builds the library, examples, and tests. Add `-SkipTests` to build without running the validation programs. The solution is also available at `projects/msvc/LibDWT.sln`.
 
 ### Build this repository with MinGW-w64
 
@@ -1169,6 +1182,7 @@ The guide describes the supported public surface, while the headers remain the e
 - [examples/MDIExample/main.cpp](examples/MDIExample/main.cpp) demonstrates MDI frames/children, manual layout, custom controls, menus, accelerators, dialogs, and `onPainting`.
 - [examples/RichTextCapabilities/main.cpp](examples/RichTextCapabilities/main.cpp) focuses on Rich Edit text, formatting, links, selection, find, and raw `EN_LINK` handling.
 - [examples/FrameworkValidation/main.cpp](examples/FrameworkValidation/main.cpp) demonstrates grids, splitters, scrolling, virtual controls, DPI callbacks, pointer/touch/gesture input, and accessibility providers.
+- [examples/UIDesignerExample/main.cpp](examples/UIDesignerExample/main.cpp) demonstrates an interactive grid-based form designer with all grid-placeable DWT widgets, reliable delete/reselection, row and column spans, axis modes/sizes/alignment, widget-specific generated layout code, and live preview windows.
 - [tests/FrameworkTests/main.cpp](tests/FrameworkTests/main.cpp) provides small executable examples for lifecycle, layout, message, hierarchy, resource, and compatibility behavior.
 - Public headers are under [dwt/include/dwt](dwt/include/dwt), implementation is under [dwt/src](dwt/src), and build definitions are under [projects](projects).
 

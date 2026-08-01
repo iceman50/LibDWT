@@ -2,17 +2,20 @@
 
 <#
 .SYNOPSIS
-Interactively builds LibDWT for MSVC x64, MinGW-w64 x64, or both.
+Builds LibDWT for MinGW-w64 x64 Release by default.
 
 .DESCRIPTION
-With no arguments, this script presents menus for the toolchain, build
-configuration, clean mode, and test execution. Supplying both -Toolchain and
--Configuration skips the menus, making the same entry point suitable for CI.
-Completed executables, libraries, and debug symbols are staged under
-Builds\<compiler>\<configuration> at the repository root.
+With no arguments, this script builds and tests the MinGW-w64 x64 Release
+configuration. Use -Interactive to present menus for the toolchain, build
+configuration, clean mode, and test execution, or pass options directly for
+automation. Completed executables, libraries, and debug symbols are staged
+under Builds\<compiler>\<configuration> at the repository root.
 
 .EXAMPLE
 .\scripts\build-interactive.ps1
+
+.EXAMPLE
+.\scripts\build-interactive.ps1 -Interactive
 
 .EXAMPLE
 .\scripts\build-interactive.ps1 -Toolchain Both -Configuration Both -Clean
@@ -26,10 +29,10 @@ Builds\<compiler>\<configuration> at the repository root.
 
 param(
     [ValidateSet("MSVC", "MinGW", "Both")]
-    [string]$Toolchain,
+    [string]$Toolchain = "MinGW",
 
     [ValidateSet("Debug", "Release", "Both")]
-    [string]$Configuration,
+    [string]$Configuration = "Release",
 
     [string]$PlatformToolset = "",
 
@@ -39,7 +42,8 @@ param(
 
     [switch]$Clean,
     [switch]$SkipTests,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$Interactive
 )
 
 $ErrorActionPreference = "Stop"
@@ -343,9 +347,9 @@ function Invoke-MinGWBuild {
     }
 }
 
-$interactive = -not $Toolchain -or -not $Configuration
+$interactive = $Interactive.IsPresent
 
-if (-not $Toolchain) {
+if ($interactive -and -not $PSBoundParameters.ContainsKey("Toolchain")) {
     $Toolchain = Read-MenuChoice "Choose toolchain" @(
         [pscustomobject]@{ Key = "1"; Label = "MSVC x64"; Value = "MSVC" },
         [pscustomobject]@{ Key = "2"; Label = "MinGW-w64 x64"; Value = "MinGW" },
@@ -353,7 +357,7 @@ if (-not $Toolchain) {
     )
 }
 
-if (-not $Configuration) {
+if ($interactive -and -not $PSBoundParameters.ContainsKey("Configuration")) {
     $Configuration = Read-MenuChoice "Choose configuration" @(
         [pscustomobject]@{ Key = "1"; Label = "Debug"; Value = "Debug" },
         [pscustomobject]@{ Key = "2"; Label = "Release"; Value = "Release" },

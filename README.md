@@ -19,6 +19,15 @@ The bundled DWT sources trace back to the DC++ implementation of DWT. The upstre
 
 ## Building
 
+The default build uses MinGW-w64 x64 Release, runs its tests, and stages the
+results under `Builds/MinGW-w64/Release`:
+
+```powershell
+.\scripts\build-interactive.ps1
+```
+
+Pass `-Interactive` to select another toolchain or configuration.
+
 This repository includes build infrastructure for both:
 
 - MSVC via the Visual Studio solution under `projects/msvc`
