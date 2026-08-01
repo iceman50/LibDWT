@@ -1,168 +1,457 @@
+#Requires -Version 5.1
+
+<#
+.SYNOPSIS
+Builds LibDWT for MinGW-w64 x64 Release by default.
+
+.DESCRIPTION
+With no arguments, this script builds and tests the MinGW-w64 x64 Release
+configuration. Use -Interactive to present menus for the toolchain, build
+configuration, clean mode, and test execution, or pass options directly for
+automation. Completed executables, libraries, and debug symbols are staged
+under Builds\<compiler>\<configuration> at the repository root.
+
+.EXAMPLE
+.\scripts\build-interactive.ps1
+
+.EXAMPLE
+.\scripts\build-interactive.ps1 -Interactive
+
+.EXAMPLE
+.\scripts\build-interactive.ps1 -Toolchain Both -Configuration Both -Clean
+
+.EXAMPLE
+.\scripts\build-interactive.ps1 -Toolchain MinGW -Configuration Debug -SkipTests
+
+.EXAMPLE
+.\scripts\build-interactive.ps1 -Toolchain MinGW -Configuration Release -j 12
+#>
+
 param(
-    [string[]]$Configurations = @("Release"),
-    [string[]]$Platforms = @("x64"),
+    [ValidateSet("MSVC", "MinGW", "Both")]
+    [string]$Toolchain = "MinGW",
+
+    [ValidateSet("Debug", "Release", "Both")]
+    [string]$Configuration = "Release",
+
     [string]$PlatformToolset = "",
+
+    [Alias("j")]
+    [ValidateRange(1, 256)]
+    [int]$Jobs = [Environment]::ProcessorCount,
+
     [switch]$Clean,
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [switch]$DryRun,
+    [switch]$Interactive
 )
 
 $ErrorActionPreference = "Stop"
 
-$Configurations = @($Configurations | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-$Platforms = @($Platforms | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+function Read-MenuChoice {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Title,
 
-function Get-MSBuildPath {
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
-    if (Test-Path $vswhere) {
-        $latest = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
-        if ($latest) {
-            return $latest
+        [Parameter(Mandatory = $true)]
+        [object[]]$Options
+    )
+
+    while ($true) {
+        Write-Host ""
+        Write-Host $Title -ForegroundColor Cyan
+        foreach ($option in $Options) {
+            Write-Host ("  {0}) {1}" -f $option.Key, $option.Label)
+        }
+
+        $answer = (Read-Host "Select an option").Trim()
+        $selected = $Options | Where-Object { $_.Key -eq $answer } |
+            Select-Object -First 1
+        if ($selected) {
+            return $selected.Value
+        }
+
+        Write-Host "Invalid selection. Please try again." -ForegroundColor Yellow
+    }
+}
+
+function Read-JobCount {
+    param(
+        [int]$Default
+    )
+
+    while ($true) {
+        Write-Host ""
+        $answer = (Read-Host "MinGW-w64 parallel jobs [$Default]").Trim()
+        if (-not $answer) {
+            return $Default
+        }
+
+        $parsed = 0
+        if ([int]::TryParse($answer, [ref]$parsed) -and
+            $parsed -ge 1 -and $parsed -le 256) {
+            return $parsed
+        }
+
+        Write-Host "Enter a number from 1 through 256." -ForegroundColor Yellow
+    }
+}
+
+function Format-Command {
+    param(
+        [string]$Executable,
+        [string[]]$Arguments
+    )
+
+    $formattedArguments = @($Arguments | ForEach-Object {
+        if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
+    })
+    return (@($Executable) + $formattedArguments) -join " "
+}
+
+function Invoke-NativeBuildCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Executable,
+
+        [string[]]$Arguments = @(),
+
+        [Parameter(Mandatory = $true)]
+        [string]$WorkingDirectory
+    )
+
+    Write-Host -Object ("> {0}" -f (Format-Command $Executable $Arguments)) `
+        -ForegroundColor DarkGray
+    if ($DryRun) {
+        return
+    }
+
+    Push-Location $WorkingDirectory
+    try {
+        & $Executable @Arguments
+        if ($LASTEXITCODE -ne 0) {
+            throw "Command failed with exit code ${LASTEXITCODE}: $(Format-Command $Executable $Arguments)"
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Get-MinGWMakePath {
+    foreach ($candidate in @("mingw32-make.exe", "mingw32-make", "make.exe", "make")) {
+        $command = Get-Command $candidate -ErrorAction SilentlyContinue
+        if ($command) {
+            return $command.Source
         }
     }
 
-    $fromPath = Get-Command MSBuild.exe -ErrorAction SilentlyContinue
-    if ($fromPath) {
-        return $fromPath.Source
-    }
-
-    throw "MSBuild.exe not found. Install Visual Studio Build Tools or Visual Studio 2022."
+    throw "A Make executable was not found. Install MinGW-w64 and add mingw32-make to PATH."
 }
 
-function Get-DetectedPlatformToolset {
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
-    if (-not (Test-Path $vswhere)) {
-        return $null
+function Publish-Artifacts {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [object[]]$Files,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Destination
+    )
+
+    if ($DryRun) {
+        Write-Host -Object ("> Stage build artifacts in {0}" -f $Destination) `
+            -ForegroundColor DarkGray
+        return
     }
 
-    $vcToolsVersionFile = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find "VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" | Select-Object -First 1
-    if (-not $vcToolsVersionFile -or -not (Test-Path $vcToolsVersionFile)) {
-        return $null
+    $retiredArtifacts = @("WindowsSdkValidation.exe", "WindowsSdkValidation.pdb")
+    $filesToPublish = @($Files | Where-Object {
+        $_ -and $_.Exists -and $retiredArtifacts -notcontains $_.Name
+    })
+    if ($filesToPublish.Count -eq 0) {
+        throw "No build artifacts were found to stage in $Destination."
     }
 
-    $versionText = (Get-Content -Path $vcToolsVersionFile -TotalCount 1).Trim()
-    if (-not $versionText) {
-        return $null
+    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+
+    # The staging folders are flat. Remove previously staged binary files so a
+    # renamed or removed target cannot leave a stale artifact behind.
+    $artifactExtensions = @(".exe", ".dll", ".lib", ".a", ".pdb", ".exp")
+    Get-ChildItem -Path $Destination -File -ErrorAction SilentlyContinue |
+        Where-Object { $artifactExtensions -contains $_.Extension.ToLowerInvariant() } |
+        Remove-Item -Force
+
+    Write-Host ("Staging artifacts in {0}" -f $Destination) -ForegroundColor Green
+    foreach ($file in $filesToPublish) {
+        Copy-Item -LiteralPath $file.FullName -Destination $Destination -Force
+        Write-Host ("  + {0}" -f $file.Name)
     }
 
-    $version = [Version]$versionText
-    if ($version.Major -ge 15) { return "v150" }
-    if ($version.Major -eq 14 -and $version.Minor -ge 50) { return "v145" }
-    if ($version.Major -eq 14 -and $version.Minor -ge 30) { return "v143" }
-    if ($version.Major -eq 14 -and $version.Minor -ge 20) { return "v142" }
-    if ($version.Major -eq 14 -and $version.Minor -ge 10) { return "v141" }
-    return $null
+    # Keep the repository-level example icons beside every staged toolchain.
+    # MultiControlExample embeds them, while other examples may load the same
+    # stable res\<name>.ico paths at runtime.
+    $repositoryRoot = Split-Path -Parent $PSScriptRoot
+    $resourceSource = Join-Path $repositoryRoot "res"
+    if (Test-Path $resourceSource) {
+        $resourceDestination = Join-Path $Destination "res"
+        New-Item -ItemType Directory -Path $resourceDestination -Force | Out-Null
+        Copy-Item -Path (Join-Path $resourceSource "*.ico") `
+            -Destination $resourceDestination -Force
+        Write-Host "  + res\*.ico"
+    }
+}
+
+function Publish-MSVCArtifacts {
+    param(
+        [string]$Configuration,
+        [string]$RepositoryRoot,
+        [string]$ArtifactRoot
+    )
+
+    $destination = Join-Path $ArtifactRoot ("MSVC\{0}" -f $Configuration)
+    if ($DryRun) {
+        Publish-Artifacts @() $destination
+        return
+    }
+
+    $msvcRoot = Join-Path $RepositoryRoot "projects\msvc"
+    $sourceDirectories = @(
+        (Join-Path $msvcRoot "dwt\build\x64\$Configuration")
+    )
+
+    foreach ($group in @("examples", "tests")) {
+        $groupRoot = Join-Path $msvcRoot $group
+        if (Test-Path $groupRoot) {
+            $sourceDirectories += Get-ChildItem -Path $groupRoot -Directory |
+                ForEach-Object { Join-Path $_.FullName "build\x64\$Configuration" }
+        }
+    }
+
+    $extensions = @(".exe", ".dll", ".lib", ".pdb", ".exp")
+    $files = @($sourceDirectories | ForEach-Object {
+        if (Test-Path $_) {
+            Get-ChildItem -Path $_ -File | Where-Object {
+                $extensions -contains $_.Extension.ToLowerInvariant()
+            }
+        }
+    })
+
+    Publish-Artifacts $files $destination
+}
+
+function Publish-MinGWArtifacts {
+    param(
+        [string]$Configuration,
+        [string]$ProjectDirectory,
+        [string]$ArtifactRoot
+    )
+
+    $destination = Join-Path $ArtifactRoot ("MinGW-w64\{0}" -f $Configuration)
+    if ($DryRun) {
+        Publish-Artifacts @() $destination
+        return
+    }
+
+    $configurationName = $Configuration.ToLowerInvariant()
+    $configurationRoot = Join-Path $ProjectDirectory "build\x64\$configurationName"
+    $sourceDirectories = @(
+        (Join-Path $configurationRoot "bin"),
+        (Join-Path $configurationRoot "lib")
+    )
+    $extensions = @(".exe", ".dll", ".a")
+    $files = @($sourceDirectories | ForEach-Object {
+        if (Test-Path $_) {
+            Get-ChildItem -Path $_ -File | Where-Object {
+                $extensions -contains $_.Extension.ToLowerInvariant()
+            }
+        }
+    })
+
+    Publish-Artifacts $files $destination
+}
+
+function Invoke-MSVCBuild {
+    param(
+        [string[]]$Configurations,
+        [string]$BuildScript
+    )
+
+    Write-Host ""
+    Write-Host "=== MSVC x64 ===" -ForegroundColor Cyan
+
+    $arguments = @{
+        Configurations = $Configurations
+        Platforms = @("x64")
+        Clean = $Clean
+        SkipTests = $SkipTests
+    }
+    if ($PlatformToolset) {
+        $arguments.PlatformToolset = $PlatformToolset
+    }
+
+    $displayArguments = @(
+        "-Configurations", ($Configurations -join ","),
+        "-Platforms", "x64"
+    )
+    if ($Clean) { $displayArguments += "-Clean" }
+    if ($SkipTests) { $displayArguments += "-SkipTests" }
+    if ($PlatformToolset) {
+        $displayArguments += @("-PlatformToolset", $PlatformToolset)
+    }
+    Write-Host -Object ("> {0}" -f (Format-Command $BuildScript $displayArguments)) `
+        -ForegroundColor DarkGray
+
+    if (-not $DryRun) {
+        & $BuildScript @arguments
+    }
+}
+
+function Invoke-MinGWBuild {
+    param(
+        [string[]]$Configurations,
+        [string]$ProjectDirectory
+    )
+
+    Write-Host ""
+    Write-Host "=== MinGW-w64 x64 ===" -ForegroundColor Cyan
+
+    $make = if ($DryRun) {
+        $detected = Get-Command "mingw32-make.exe" -ErrorAction SilentlyContinue
+        if ($detected) { $detected.Source } else { "mingw32-make" }
+    } else {
+        Get-MinGWMakePath
+    }
+
+    Write-Host "Using Make: $make"
+    Write-Host "Parallel jobs: $Jobs"
+
+    # The Makefile clean target removes the complete MinGW build tree, so clean
+    # once before building multiple configurations rather than between them.
+    if ($Clean) {
+        Invoke-NativeBuildCommand $make @("clean") $ProjectDirectory
+    }
+
+    foreach ($item in $Configurations) {
+        $makeConfiguration = $item.ToLowerInvariant()
+        Write-Host ""
+        Write-Host "Building MinGW-w64 x64 $item" -ForegroundColor Green
+        $buildArguments = @("-j$Jobs", "build", "ARCH=x64", "CONFIG=$makeConfiguration")
+        Invoke-NativeBuildCommand $make $buildArguments $ProjectDirectory
+
+        if (-not $SkipTests) {
+            Write-Host "Running MinGW-w64 x64 $item tests" -ForegroundColor Green
+            $testArguments = @("-j$Jobs", "test", "ARCH=x64", "CONFIG=$makeConfiguration")
+            Invoke-NativeBuildCommand $make $testArguments $ProjectDirectory
+        }
+    }
+}
+
+$interactive = $Interactive.IsPresent
+
+if ($interactive -and -not $PSBoundParameters.ContainsKey("Toolchain")) {
+    $Toolchain = Read-MenuChoice "Choose toolchain" @(
+        [pscustomobject]@{ Key = "1"; Label = "MSVC x64"; Value = "MSVC" },
+        [pscustomobject]@{ Key = "2"; Label = "MinGW-w64 x64"; Value = "MinGW" },
+        [pscustomobject]@{ Key = "3"; Label = "Both toolchains"; Value = "Both" }
+    )
+}
+
+if ($interactive -and -not $PSBoundParameters.ContainsKey("Configuration")) {
+    $Configuration = Read-MenuChoice "Choose configuration" @(
+        [pscustomobject]@{ Key = "1"; Label = "Debug"; Value = "Debug" },
+        [pscustomobject]@{ Key = "2"; Label = "Release"; Value = "Release" },
+        [pscustomobject]@{ Key = "3"; Label = "Debug and Release"; Value = "Both" }
+    )
+}
+
+if ($interactive -and ($Toolchain -eq "MinGW" -or $Toolchain -eq "Both") -and
+    -not $PSBoundParameters.ContainsKey("Jobs")) {
+    $Jobs = Read-JobCount $Jobs
+}
+
+if ($interactive -and -not $PSBoundParameters.ContainsKey("Clean")) {
+    $Clean = (Read-MenuChoice "Choose build mode" @(
+        [pscustomobject]@{ Key = "1"; Label = "Incremental build"; Value = $false },
+        [pscustomobject]@{ Key = "2"; Label = "Clean then build"; Value = $true }
+    ))
+}
+
+if ($interactive -and -not $PSBoundParameters.ContainsKey("SkipTests")) {
+    $runTests = Read-MenuChoice "Run FrameworkTests after building?" @(
+        [pscustomobject]@{ Key = "1"; Label = "Yes"; Value = $true },
+        [pscustomobject]@{ Key = "2"; Label = "No"; Value = $false }
+    )
+    $SkipTests = -not $runTests
+}
+
+$configurations = if ($Configuration -eq "Both") {
+    @("Debug", "Release")
+} else {
+    @($Configuration)
+}
+
+$toolchains = if ($Toolchain -eq "Both") {
+    @("MSVC", "MinGW")
+} else {
+    @($Toolchain)
+}
+
+Write-Host ""
+Write-Host "=== Build plan ===" -ForegroundColor Cyan
+Write-Host ("Toolchains:     {0}" -f ($toolchains -join ", "))
+Write-Host "Architecture:   x64"
+Write-Host ("Configurations: {0}" -f ($configurations -join ", "))
+Write-Host "Artifacts:      Builds\<compiler>\<configuration>"
+if ($toolchains -contains "MinGW") {
+    Write-Host ("MinGW jobs:    {0}" -f $Jobs)
+}
+Write-Host ("Build mode:     {0}" -f $(if ($Clean) { "clean" } else { "incremental" }))
+Write-Host ("Tests:          {0}" -f $(if ($SkipTests) { "skip" } else { "run" }))
+Write-Host ("Execution:      {0}" -f $(if ($DryRun) { "dry run" } else { "build" }))
+
+if ($interactive) {
+    $confirmation = (Read-Host "Continue? [Y/n]").Trim()
+    if ($confirmation -and $confirmation -notmatch '^[Yy]$') {
+        Write-Host "Build cancelled."
+        return
+    }
 }
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$msbuild = Get-MSBuildPath
+$msvcBuildScript = Join-Path $PSScriptRoot "build.ps1"
+$mingwProjectDirectory = Join-Path $repoRoot "projects\mingw-w64"
+$artifactRoot = Join-Path $repoRoot "Builds"
 
-if (-not $PlatformToolset) {
-    $PlatformToolset = Get-DetectedPlatformToolset
+if (-not (Test-Path $msvcBuildScript)) {
+    throw "MSVC build script not found: $msvcBuildScript"
+}
+if (-not (Test-Path (Join-Path $mingwProjectDirectory "Makefile"))) {
+    throw "MinGW-w64 Makefile not found: $mingwProjectDirectory"
 }
 
-$dwtProject = Join-Path $repoRoot "projects\msvc\dwt\dwt.vcxproj"
-$exampleProjectsRoot = Join-Path $repoRoot "projects\msvc\examples"
-$exampleProjects = @()
-if (Test-Path $exampleProjectsRoot) {
-    $exampleProjects = Get-ChildItem -Path $exampleProjectsRoot -Recurse -Filter *.vcxproj -File | ForEach-Object { $_.FullName }
-}
-
-$testProjectsRoot = Join-Path $repoRoot "projects\msvc\tests"
-$testProjects = @()
-if (Test-Path $testProjectsRoot) {
-    $testProjects = Get-ChildItem -Path $testProjectsRoot -Recurse -Filter *.vcxproj -File | ForEach-Object { $_.FullName }
-}
-
-$projects = @($dwtProject) + $exampleProjects + $testProjects
-
-if ($projects.Count -eq 0) {
-    throw "No projects found to build."
-}
-
-$target = if ($Clean) { "Clean;Build" } else { "Build" }
-
-Write-Host "Using MSBuild: $msbuild"
-if ($PlatformToolset) {
-    Write-Host "Using platform toolset: $PlatformToolset"
-} else {
-    Write-Host "Using project default platform toolset."
-}
-Write-Host "Build target: $target"
-
-$buildStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 try {
-    foreach ($configuration in $Configurations) {
-        foreach ($platform in $Platforms) {
-            foreach ($project in $projects) {
-                Write-Host "Building $project ($configuration|$platform)"
-                $properties = "/p:Configuration=$configuration;Platform=$platform"
-                if ($PlatformToolset) {
-                    $properties = "$properties;DwtPlatformToolset=$PlatformToolset"
-                }
-                if ($project -ne $dwtProject) {
-                    # dwt is built first for every configuration. Avoid rebuilding
-                    # the same project through every example/test reference,
-                    # especially for Clean;Build runs.
-                    $properties = "$properties;BuildProjectReferences=false"
-                }
-                & $msbuild $project "/m" "/nologo" "/verbosity:minimal" "/t:$target" $properties
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Build failed for $project ($configuration|$platform)."
-                }
-            }
-            if (-not $SkipTests) {
-                $testExecutable = Join-Path $testProjectsRoot "FrameworkTests\build\$platform\$configuration\FrameworkTests.exe"
-                if (-not (Test-Path $testExecutable)) {
-                    throw "Test executable not found: $testExecutable"
-                }
-                Write-Host "Running $testExecutable"
-                & $testExecutable
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Tests failed ($configuration|$platform)."
-                }
-
-                $validationExecutable = Join-Path $exampleProjectsRoot "FrameworkValidation\build\$platform\$configuration\FrameworkValidation.exe"
-                if (-not (Test-Path $validationExecutable)) {
-                    throw "Validation executable not found: $validationExecutable"
-                }
-                Write-Host "Running $validationExecutable --self-test"
-                $validationProcess = Start-Process -FilePath $validationExecutable `
-                    -ArgumentList "--self-test" -WindowStyle Hidden -Wait -PassThru
-                if ($validationProcess.ExitCode -ne 0) {
-                    throw "Framework validation self-test failed ($configuration|$platform)."
-                }
-
-                $multiControlExecutable = Join-Path $exampleProjectsRoot "MultiControlExample\build\$platform\$configuration\MultiControlExample.exe"
-                if (-not (Test-Path $multiControlExecutable)) {
-                    throw "Multi-control self-test executable not found: $multiControlExecutable"
-                }
-                Write-Host "Running $multiControlExecutable --self-test"
-                $multiControlProcess = Start-Process -FilePath $multiControlExecutable `
-                    -ArgumentList "--self-test" -WindowStyle Hidden -Wait -PassThru
-                if ($multiControlProcess.ExitCode -ne 0) {
-                    throw "Multi-control gallery self-test failed ($configuration|$platform)."
-                }
-
-                $designerExecutable = Join-Path $exampleProjectsRoot "UIDesignerExample\build\$platform\$configuration\UIDesignerExample.exe"
-                if (-not (Test-Path $designerExecutable)) {
-                    throw "UI designer self-test executable not found: $designerExecutable"
-                }
-                Write-Host "Running $designerExecutable --self-test"
-                $designerProcess = Start-Process -FilePath $designerExecutable `
-                    -ArgumentList "--self-test" -WindowStyle Hidden -Wait -PassThru
-                if ($designerProcess.ExitCode -ne 0) {
-                    throw "UI designer self-test failed ($configuration|$platform) with exit code $($designerProcess.ExitCode)."
-                }
-            }
+    if ($toolchains -contains "MSVC") {
+        Invoke-MSVCBuild $configurations $msvcBuildScript
+        foreach ($item in $configurations) {
+            Publish-MSVCArtifacts $item $repoRoot $artifactRoot
+        }
+    }
+    if ($toolchains -contains "MinGW") {
+        Invoke-MinGWBuild $configurations $mingwProjectDirectory
+        foreach ($item in $configurations) {
+            Publish-MinGWArtifacts $item $mingwProjectDirectory $artifactRoot
         }
     }
 
-    Write-Host "All requested builds completed successfully."
+    Write-Host ""
+    Write-Host "All requested builds completed successfully." -ForegroundColor Green
 }
 finally {
-    $buildStopwatch.Stop()
-    $elapsed = $buildStopwatch.Elapsed
-    $formattedElapsed = "{0:00}:{1:00}:{2:00}.{3:000}" -f $elapsed.Hours, $elapsed.Minutes, $elapsed.Seconds, $elapsed.Milliseconds
+    $stopwatch.Stop()
+    $elapsed = $stopwatch.Elapsed
+    $formattedElapsed = "{0:00}:{1:00}:{2:00}.{3:000}" -f $elapsed.Hours,
+        $elapsed.Minutes, $elapsed.Seconds, $elapsed.Milliseconds
     Write-Host "Total build time: $formattedElapsed"
 }
